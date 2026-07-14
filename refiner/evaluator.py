@@ -13,8 +13,9 @@ import subprocess
 import sys
 from typing import Any, Optional
 
+from . import generic_metrics
 from .llm import LLMClient
-from .prompts import JUDGE_SYSTEM
+from .prompts import GENERIC_JUDGE_SYSTEM, JUDGE_SYSTEM
 from .skillmd import extract_json_object
 
 _DIMENSIONS = ("task_completion", "response_quality", "efficiency", "tool_usage")
@@ -23,6 +24,11 @@ _WEIGHTS = {"task_completion": 0.55, "response_quality": 0.30, "efficiency": 0.0
 # 綜合分數：硬指標(測試) 與 軟指標(judge) 的權重
 HARD_WEIGHT = 0.6
 SOFT_WEIGHT = 0.4
+
+# 通用分：完成度為主體，效率在「已完成」前提下最多再加成 EFF_BONUS。
+GENERIC_EFF_BONUS = 0.4        # generic_score = completion × (0.6 + 0.4·eff)
+# coding：原綜合分為主，效率僅 ±CODING_EFF_TWEAK 微調（向後相容）。
+CODING_EFF_TWEAK = 0.05        # score = coding × (0.95 + 0.05·eff)
 
 
 # ------------------------------------------------------------------ #
@@ -121,32 +127,113 @@ def _parse_scores(raw: str) -> Optional[dict[str, Any]]:
 
 
 # ------------------------------------------------------------------ #
-#  綜合分數                                                            #
+#  通用（場景無關）有效性 judge + 任務類型判定                          #
 # ------------------------------------------------------------------ #
 
 
-def evaluate_session(llm: LLMClient, session: dict[str, Any], *, use_judge: bool = True) -> dict[str, Any]:
-    """合成硬(測試)+軟(judge) → session["_score"], session["_success"]。就地修改並回傳 session。"""
+def resolve_task_type(session: dict[str, Any]) -> str:
+    """判定任務類型：標籤優先，否則以「有沒有測試訊號」偵測回退。回 "coding" | "general"。"""
+    tag = str(session.get("task_type") or "").strip().lower()
+    if tag in ("coding", "general"):
+        return tag
     test = session.get("test") or {}
-    hard = float(test.get("pass_rate", 0.0)) if test else None
+    if isinstance(test, dict) and test.get("total"):
+        return "coding"
+    return "general"
 
-    soft = None
-    if use_judge:
-        scores = session.get("_judge_scores") or judge_session(llm, session)
-        if scores:
-            soft = float(scores.get("overall_score", 0.0))
 
-    if hard is not None and soft is not None:
-        score = round(HARD_WEIGHT * hard + SOFT_WEIGHT * soft, 3)
-    elif hard is not None:
-        score = round(hard, 3)
-    elif soft is not None:
-        score = round(soft, 3)
-    else:
-        score = 0.0
+def generic_completion_score(llm: LLMClient, session: dict[str, Any]) -> float:
+    """通用 LLM judge：回 task_completion（0..1）。解析失敗 → 保守 0.5。就地存 _generic_judge。"""
+    cached = session.get("_generic_judge")
+    if isinstance(cached, dict) and isinstance(cached.get("task_completion"), (int, float)):
+        return float(cached["task_completion"])
+    payload = {
+        "session_id": session.get("session_id"),
+        "task_id": session.get("task_id"),
+        "trajectory": session.get("_trajectory", ""),
+        "summary": session.get("_summary", ""),
+    }
+    try:
+        raw = llm.chat(GENERIC_JUDGE_SYSTEM, json.dumps(payload, ensure_ascii=False), temperature=0.1, max_tokens=800)
+        parsed = extract_json_object(raw) or {}
+    except Exception:  # noqa: BLE001
+        parsed = {}
+    tc = parsed.get("task_completion")
+    rq = parsed.get("response_quality")
+    result = {
+        "task_completion": max(0.0, min(1.0, float(tc))) if isinstance(tc, (int, float)) and not isinstance(tc, bool) else 0.5,
+        "response_quality": max(0.0, min(1.0, float(rq))) if isinstance(rq, (int, float)) and not isinstance(rq, bool) else None,
+        "rationale": str(parsed.get("rationale") or "").strip(),
+    }
+    session["_generic_judge"] = result
+    return result["task_completion"]
+
+
+# ------------------------------------------------------------------ #
+#  綜合分數（coding 原評分 + 通用效率層）                              #
+# ------------------------------------------------------------------ #
+
+
+def evaluate_sessions(llm: LLMClient, sessions: list[dict[str, Any]], *, use_judge: bool = True) -> list[dict[str, Any]]:
+    """對一組（同 goal）sessions 評分：先算 cohort 效率，再逐一 evaluate_session。
+
+    cohort 效率需整組一起算（min-max 正規化），故提供批次入口。
+    """
+    generic_metrics.attach_cohort_efficiency(sessions)
+    for s in sessions:
+        evaluate_session(llm, s, use_judge=use_judge, _cohort_done=True)
+    return sessions
+
+
+def evaluate_session(
+    llm: LLMClient,
+    session: dict[str, Any],
+    *,
+    use_judge: bool = True,
+    _cohort_done: bool = False,
+) -> dict[str, Any]:
+    """評分：coding → 原(pytest+judge)為主 + 效率微調；general → 通用(completion×效率)。
+
+    就地寫入 session["_score"] / ["_success"] / ["_metrics"] / ["_task_type"]。
+    單獨呼叫時 cohort=自己一人（效率=中性 1.0）；批次請用 evaluate_sessions。
+    """
+    if not _cohort_done and "_metrics" not in session:
+        generic_metrics.attach_cohort_efficiency([session])
+
+    metrics = session.get("_metrics") or {}
+    efficiency = float(metrics.get("efficiency_score", 1.0))
+    task_type = resolve_task_type(session)
+    session["_task_type"] = task_type
+
+    if task_type == "coding":
+        test = session.get("test") or {}
+        hard = float(test.get("pass_rate", 0.0)) if test else None
+        soft = None
+        if use_judge:
+            scores = session.get("_judge_scores") or judge_session(llm, session)
+            if scores:
+                soft = float(scores.get("overall_score", 0.0))
+        if hard is not None and soft is not None:
+            base = HARD_WEIGHT * hard + SOFT_WEIGHT * soft
+        elif hard is not None:
+            base = hard
+        elif soft is not None:
+            base = soft
+        else:
+            base = 0.0
+        # 原分為主，效率僅 ±CODING_EFF_TWEAK 微調（efficiency=1 → ×1.0，中性；越低越扣）
+        score = round(base * (1.0 - CODING_EFF_TWEAK + CODING_EFF_TWEAK * efficiency), 3)
+        session["_success"] = bool(test.get("all_pass")) if test else (score >= 0.75)
+        session["_metrics"]["base_coding_score"] = round(base, 3)
+    else:  # general
+        completion = generic_completion_score(llm, session) if use_judge else 0.5
+        # 完成度為主體，效率在已完成前提下加成
+        score = round(completion * (1.0 - GENERIC_EFF_BONUS + GENERIC_EFF_BONUS * efficiency), 3)
+        session["_success"] = completion >= 0.75
+        session["_metrics"]["completion"] = round(completion, 3)
 
     session["_score"] = score
-    # PRM 對齊：把綜合分數當成該 session 的 turn 分數，供 summarizer/execution 顯示
+    session["_metrics"]["task_type"] = task_type
+    # PRM 對齊：綜合分當該 session 的 turn 分數，供 summarizer/execution 顯示
     session["_avg_prm"] = score
-    session["_success"] = bool(test.get("all_pass")) if test else (score >= 0.75)
     return session

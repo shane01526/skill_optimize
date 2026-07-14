@@ -37,18 +37,22 @@ def test_full_run(tmp_path):
     assert os.path.exists(os.path.join(out, "before_after.json"))
     assert os.path.exists(summary["refined_skill_path"])
 
-    # 兩個 golden task × 3 變體 = 6 sessions
+    # golden task 數 × 3 變體（每個 task 都跑三變體）
+    import glob as _glob
     import json
+    n_tasks = len([d for d in _glob.glob(os.path.join(TASKS, "*")) if os.path.isdir(d)])
     report = json.load(open(os.path.join(out, "before_after.json"), encoding="utf-8"))
-    assert len(report["variant_scores"]) == 6
+    assert len(report["variant_scores"]) == n_tasks * 3
 
-    # 勝出變體是 v_a（指引最強 → pytest 全過），winner 依跨 task 平均選出
+    # 勝出變體是 v_a（coding 指引最強 → pytest 全過），winner 依跨 task 平均選出
     assert report["winner"]["variant"] == "v_a"
     agg = {a["variant"]: a["avg_score"] for a in report["variant_aggregate"]}
     assert agg["v_a"] > agg["v_b"] > agg["v_c"]
 
-    # 每變體都帶 actual_used_skill_ids
+    # 每變體都帶 actual_used_skill_ids + 通用指標欄位
     assert all(a["actual_used_skill_ids"] for a in report["variant_aggregate"])
+    assert all(r.get("num_turns") is not None for r in report["variant_scores"])
+    assert all(r.get("efficiency_score") is not None for r in report["variant_scores"])
 
 
 def test_verifier_blocks_low_score(tmp_path):

@@ -16,6 +16,8 @@ def _variant_scores(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for s in sessions:
         test = s.get("test") or {}
+        m = s.get("_metrics") or {}
+        raw = m.get("raw") or {}
         rows.append(
             {
                 "session_id": s.get("session_id"),
@@ -24,10 +26,19 @@ def _variant_scores(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "skill_id": s.get("skill_id"),
                 "actual_used_skill_ids": s.get("actual_used_skill_ids") or [],
                 "task_id": s.get("task_id"),
+                "task_type": s.get("_task_type") or m.get("task_type"),
                 "runner_mode": s.get("runner_mode"),
                 "pass_rate": test.get("pass_rate"),
                 "tests": f"{test.get('passed', 0)}/{test.get('total', 0)}" if test else "",
                 "judge_overall": (s.get("_judge_scores") or {}).get("overall_score"),
+                # 通用（場景無關）指標
+                "num_turns": raw.get("num_turns"),
+                "num_tool_calls": raw.get("num_tool_calls"),
+                "tool_error_rate": raw.get("tool_error_rate"),
+                "response_chars": raw.get("response_chars"),
+                "elapsed_sec": raw.get("elapsed_sec"),
+                "efficiency_score": m.get("efficiency_score"),
+                "completion": m.get("completion"),
                 "score": s.get("_score"),
                 "success": s.get("_success"),
             }
@@ -47,15 +58,22 @@ def _variant_aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for variant, items in by_variant.items():
         scores = [i["score"] for i in items if i.get("score") is not None]
         pass_rates = [i["pass_rate"] for i in items if i.get("pass_rate") is not None]
+        effs = [i["efficiency_score"] for i in items if i.get("efficiency_score") is not None]
+        turns = [i["num_turns"] for i in items if i.get("num_turns") is not None]
+        elapsed = [i["elapsed_sec"] for i in items if i.get("elapsed_sec") is not None]
         avg = round(sum(scores) / len(scores), 3) if scores else 0.0
         agg.append(
             {
                 "variant": variant,
                 "skill_id": items[0].get("skill_id"),
                 "actual_used_skill_ids": items[0].get("actual_used_skill_ids") or [],
+                "task_type": ",".join(sorted({str(i.get("task_type")) for i in items if i.get("task_type")})) or None,
                 "num_tasks": len(items),
                 "avg_score": avg,
                 "avg_pass_rate": round(sum(pass_rates) / len(pass_rates), 3) if pass_rates else None,
+                "avg_efficiency": round(sum(effs) / len(effs), 3) if effs else None,
+                "avg_num_turns": round(sum(turns) / len(turns), 2) if turns else None,
+                "avg_elapsed_sec": round(sum(elapsed) / len(elapsed), 3) if elapsed else None,
                 "all_success": all(i.get("success") for i in items),
             }
         )

@@ -126,9 +126,8 @@ def refine(
 
     # 1. summarize + metadata
     summarizer.summarize_sessions(llm, sessions)
-    # 2. evaluate（補齊 _score/_success；若 log 已含 test，evaluator 會沿用）
-    for s in sessions:
-        evaluator.evaluate_session(llm, s, use_judge=use_judge)
+    # 2. evaluate（cohort 效率需整組一起算；coding 走原評分+效率微調，general 走通用分）
+    evaluator.evaluate_sessions(llm, sessions, use_judge=use_judge)
     # 3. aggregate by skill
     groups = aggregation.aggregate_by_skill(sessions)
 

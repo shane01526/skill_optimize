@@ -81,7 +81,9 @@ def normalize_experiment_record(rec: dict[str, Any]) -> dict[str, Any]:
         "skill_name": skill_name,
         "variant_label": rec.get("variant_label") or skill_name,
         "task_id": rec.get("task_id", ""),
+        "task_type": rec.get("task_type", ""),
         "runner_mode": rec.get("runner_mode", ""),
+        "runner_meta": rec.get("runner_meta", {}),
         "actual_used_skill_ids": list(actual_ids),
         "turns": turns,
     }

@@ -38,6 +38,21 @@ def _read_task_prompt(task_dir: str) -> str:
     return "Fix the failing tests in this directory."
 
 
+def _read_task_type(task_dir: str) -> str:
+    """讀 task.json 的 task_type（標籤優先）；否則以有無 test_*.py 偵測回退。"""
+    task_json = os.path.join(task_dir, "task.json")
+    if os.path.exists(task_json):
+        try:
+            with open(task_json, "r", encoding="utf-8") as fh:
+                tt = str(json.load(fh).get("task_type") or "").strip().lower()
+            if tt in ("coding", "general"):
+                return tt
+        except (json.JSONDecodeError, OSError):
+            pass
+    has_tests = any(f.startswith("test_") and f.endswith(".py") for f in os.listdir(task_dir)) if os.path.isdir(task_dir) else False
+    return "coding" if has_tests else "general"
+
+
 def _load_variant(skill_md_path: str) -> dict[str, Any]:
     with open(skill_md_path, "r", encoding="utf-8") as fh:
         raw = fh.read()
@@ -90,12 +105,17 @@ def run_variant_on_task(
     if mode == "auto":
         chosen = "codex" if codex_available() else "mock"
 
+    # 通用計時：三種模式都記 started/ended（供 generic_metrics 算 elapsed_sec）
+    started = time.time()
     if chosen == "codex":
         turns, meta = _run_codex(instruction, ws, timeout)
     elif chosen == "api":
         turns, meta = _run_llm_agent(instruction, ws, llm)
     else:  # mock
         turns, meta = _run_mock(instruction, ws, variant, meta_label=variant_label)
+    ended = time.time()
+    meta.setdefault("started_at", started)
+    meta.setdefault("ended_at", ended)
 
     rec = {
         "session_id": f"{task_id}::{variant_label}",
@@ -103,6 +123,7 @@ def run_variant_on_task(
         "skill_name": skill_name,
         "variant_label": variant_label,
         "task_id": task_id,
+        "task_type": _read_task_type(task_dir),
         "variant_path": skill_md_path,
         "selected_skill_ids": [skill_id],
         "runner_mode": chosen,

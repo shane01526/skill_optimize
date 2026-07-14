@@ -4,6 +4,7 @@
   "skill_name": "coding-debug",
   "variant_label": "v_b",
   "task_id": "task_001",
+  "task_type": "coding",
   "variant_path": "skills/coding-debug/v_b/SKILL.md",
   "selected_skill_ids": [
     "coding-debug"
@@ -11,7 +12,9 @@
   "runner_mode": "mock",
   "runner_meta": {
     "strength": 0.571,
-    "applied_file": "C:\\Users\\user\\Desktop\\2026_Cathay\\DDT_MLE\\optimize_skill_pipeline\\output\\workspaces\\task_001__v_b\\stringcalc.py"
+    "applied_file": "output/workspaces/task_001__v_b/stringcalc.py",
+    "started_at": 1784015334.7497182,
+    "ended_at": 1784015334.7518544
   },
   "workspace": "output/workspaces/task_001__v_b",
   "turns": [
@@ -42,6 +45,6 @@
     "total": 5,
     "pass_rate": 0.6,
     "all_pass": false,
-    "raw": ".FF                                                                    [100%]\n================================== FAILURES ===================================\n________________________________ test_newline _________________________________\n\n    def test_newline():\n>       assert add(\"1\\n2,3\") == 6\n\n..\\..\\..\\golden\\tasks\\task_001\\test_stringcalc.py:17: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\nstringcalc.py:4: in add\n    return sum(int(p) for p in numbers.split(\",\"))\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\n.0 = <list_iterator object at 0x0000028E5746AE90>\n\n>   return sum(int(p) for p in numbers.split(\",\"))\nE   ValueError: invalid literal for int() with base 10: '1\\n2'\n\nstringcalc.py:4: ValueError\n_______________________________ test_ignore_big _______________________________\n\n    def test_ignore_big():\n>       assert add(\"2,1001\") == 2\nE       AssertionError: assert 1003 == 2\nE        +  where 1003 = add('2,1001')\n\n..\\..\\..\\golden\\tasks\\task_001\\test_stringcalc.py:21: AssertionError\n=========================== short test summary info ===========================\nFAILED test_stringcalc.py::test_newline - ValueError: invalid literal for int...\nFAILED test_stringcalc.py::test_ignore_big - AssertionError: assert 1003 == 2\n2 failed, 3 passed in 0.08s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
+    "raw": ".FF                                                                    [100%]\n================================== FAILURES ===================================\n________________________________ test_newline _________________________________\n\n    def test_newline():\n>       assert add(\"1\\n2,3\") == 6\n\n..\\..\\..\\golden\\tasks\\task_001\\test_stringcalc.py:17: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\nstringcalc.py:4: in add\n    return sum(int(p) for p in numbers.split(\",\"))\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\n.0 = <list_iterator object at 0x00000224AAB5B010>\n\n>   return sum(int(p) for p in numbers.split(\",\"))\nE   ValueError: invalid literal for int() with base 10: '1\\n2'\n\nstringcalc.py:4: ValueError\n_______________________________ test_ignore_big _______________________________\n\n    def test_ignore_big():\n>       assert add(\"2,1001\") == 2\nE       AssertionError: assert 1003 == 2\nE        +  where 1003 = add('2,1001')\n\n..\\..\\..\\golden\\tasks\\task_001\\test_stringcalc.py:21: AssertionError\n=========================== short test summary info ===========================\nFAILED test_stringcalc.py::test_newline - ValueError: invalid literal for int...\nFAILED test_stringcalc.py::test_ignore_big - AssertionError: assert 1003 == 2\n2 failed, 3 passed in 0.13s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
   }
 }

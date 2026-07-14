@@ -219,25 +219,58 @@ description: ...
 <section id="s-score">
 <h2>★ 評分流程詳解（Scoring，一步步）</h2>
 <div class="card">
-  <p>每個 <b>(變體 × golden task)</b> 會產生一個 session，評分分成「硬指標（客觀測試）」與
-  「軟指標（LLM judge）」兩條，再合成為該 session 的<b>綜合分</b>；最後把同一變體跨多個 task
-  的綜合分取平均，決定<b>勝出變體</b>。程式全在 <code>refiner/evaluator.py</code>。</p>
+  <p>每個 <b>(變體 × task)</b> 會產生一個 session。評分先<b>依任務類型分流</b>：
+  <b>coding</b> 走「pytest 硬指標 + LLM judge 軟指標」為主、再用通用效率分微調；
+  <b>general（任何場景）</b> 走「通用完成度 judge × 效率」。最後把同一變體跨多個 task 的綜合分
+  取平均，決定<b>勝出變體</b>。程式在 <code>refiner/evaluator.py</code> 與 <code>refiner/generic_metrics.py</code>。</p>
   <div class="flow">一個 session（變體 v × task t）
    │
-   ├─▶ Step 1 硬指標  run_pytest(workspace)  →  pass_rate ∈ [0,1]
+   ├─▶ 通用指標（任何場景都算）
+   │     num_turns / elapsed / tool 次數·錯誤率 / 輸出長度
+   │     → cohort min-max 反向正規化 → efficiency_score ∈ [0,1]
    │
-   ├─▶ Step 2 軟指標  LLM judge 四維加權      →  judge.overall ∈ [0,1]
-   │
-   ▼ Step 3 合成
-綜合分 score = 0.6 × pass_rate + 0.4 × judge.overall
-   │            _success = all_pass（有測試時）
-   ▼ Step 4 聚合
-同一變體跨 task 取 avg_score  →  取最高者為 winner</div>
+   ▼ resolve_task_type(session)   # 標籤優先，否則有無測試偵測
+ ┌───────────────┴────────────────┐
+ coding                            general（場景無關）
+   │ pytest pass_rate（硬 60%）       │ 通用 completion judge
+   │ + LLM judge 四維（軟 40%）       │   （任務完成度）
+   │ = base                          │
+   ▼ 效率微調 ±5%                    ▼ 效率加成 ≤40%
+ score = base × (0.95+0.05·eff)   score = completion × (0.6+0.4·eff)
+ └───────────────┬────────────────┘
+   ▼ 聚合：同一變體跨 task 取 avg_score → 取最高者為 winner</div>
 </div>
 
 <div class="card">
-  <h3>Step 1 — 硬指標：pytest 通過率（客觀 ground truth）</h3>
-  <p>對應 <code>evaluator.py::run_pytest → _parse_pytest_output</code>。這是文件「coding 任務好判斷好壞」的核心。</p>
+  <h3>通用（場景無關）評分：不依賴 pytest 也能比較 skill</h3>
+  <p>對應 <code>refiner/generic_metrics.py</code>。以下四類指標<b>任何任務都能算</b>，全部從 session 既有
+  欄位取得，不需額外資料源：</p>
+  <table>
+    <tr><th>指標</th><th>來源</th><th>方向</th><th>權重</th></tr>
+    <tr><td><code>num_turns</code></td><td>len(turns)：對話輪數</td><td>越少越好</td><td>0.35</td></tr>
+    <tr><td><code>elapsed_sec</code></td><td>runner_meta 的 ended−started：執行時間</td><td>越少越好</td><td>0.25</td></tr>
+    <tr><td><code>num_tool_calls</code></td><td>所有 turn 的工具呼叫總數</td><td>越少越好</td><td>0.15</td></tr>
+    <tr><td><code>tool_error_rate</code></td><td>有錯誤的 tool_results 佔比</td><td>越低越好</td><td>0.15</td></tr>
+    <tr><td><code>response_chars</code></td><td>回覆總字數（代理 token 消耗）</td><td>越少越好</td><td>0.10</td></tr>
+  </table>
+  <ul>
+    <li><b>正規化</b>：以「同一 goal 的變體群（cohort）」做 min-max <b>反向</b>正規化
+      → 該群最小值得 1.0、最大值得 0.0；全相等或只有一個值 → 1.0（無區別）。
+      加權平均得 <code>efficiency_score ∈ [0,1]</code>。</li>
+    <li><b>缺值處理</b>：某項在 cohort 全缺（如 mock 無真實時間）→ 該項不計入，權重按剩餘項重分配，
+      並在 <code>skipped_metrics</code> 標註。</li>
+    <li><b>防呆</b>：效率「越少越好」，單獨用會獎勵擺爛。故通用分一定是
+      <code>完成度 judge × 效率</code>——先確認有完成，再在完成前提下比效率。</li>
+  </ul>
+  <div class="callout"><b>通用有效性 judge</b>（<code>prompts.GENERIC_JUDGE_SYSTEM</code>）不假設 coding，
+  只評 <code>task_completion / response_quality</code>；明確要求「做得少或放棄 → task_completion 要低」，
+  避免短 trajectory 被誤判為好。</div>
+</div>
+
+<div class="card">
+  <h3>Step 1（coding 專用）— 硬指標：pytest 通過率（客觀 ground truth）</h3>
+  <p>對應 <code>evaluator.py::run_pytest → _parse_pytest_output</code>。這是文件「coding 任務好判斷好壞」的核心；
+  非 coding 任務沒有這一步（改由上方通用完成度 judge 提供有效性訊號）。</p>
   <ul>
     <li>在該 (變體×task) 的<b>獨立 workspace</b> 跑 <code>pytest -q</code>（agent 已在此改過程式），
       彼此不互相污染。</li>
@@ -254,7 +287,7 @@ description: ...
 </div>
 
 <div class="card">
-  <h3>Step 2 — 軟指標：LLM judge 四維加權</h3>
+  <h3>Step 2（coding 專用）— 軟指標：LLM judge 四維加權</h3>
   <p>對應 <code>evaluator.py::judge_session → _parse_scores</code>，system prompt 為
   <code>prompts.JUDGE_SYSTEM</code>（沿用 SkillClaw session_judge 的四維與權重）。</p>
   <ul>
@@ -278,13 +311,21 @@ description: ...
 </div>
 
 <div class="card">
-  <h3>Step 3 — 合成綜合分（硬 60% + 軟 40%）</h3>
-  <p>對應 <code>evaluator.py::evaluate_session</code>（<code>HARD_WEIGHT=0.6, SOFT_WEIGHT=0.4</code>）。</p>
-  <pre>score = 0.6 × pass_rate + 0.4 × judge.overall_score   # round 3</pre>
+  <h3>Step 3 — 合成綜合分（依任務類型分流）</h3>
+  <p>對應 <code>evaluator.py::evaluate_session</code>。先 <code>resolve_task_type</code>（標籤優先，
+  否則有無測試偵測），再分流：</p>
+  <pre># coding：原 pytest+judge 為主體，效率僅 ±5% 微調（向後相容）
+base  = 0.6 × pass_rate + 0.4 × judge.overall_score
+score = base × (0.95 + 0.05 × efficiency_score)
+
+# general（場景無關）：完成度為主體，效率在已完成前提下加成 ≤40%
+score = completion × (0.6 + 0.4 × efficiency_score)</pre>
   <ul>
-    <li>退化情形：只有硬指標 → 取 <code>pass_rate</code>；只有軟指標 → 取 <code>overall</code>；兩者皆無 → 0。</li>
-    <li><code>_success</code>：有測試時 = <code>all_pass</code>；無測試時 = <code>score ≥ 0.75</code>。</li>
-    <li>同時把 <code>_avg_prm = score</code>，讓 summarizer / execution 顯示與排序時對齊（借 SkillClaw PRM 概念）。</li>
+    <li>coding 退化情形：只有硬指標 → 取 pass_rate；只有軟指標 → 取 overall；皆無 → 0。</li>
+    <li><code>_success</code>：coding 用 <code>all_pass</code>；general 用 <code>completion ≥ 0.75</code>。</li>
+    <li>效率<b>中性</b>（cohort 無區別）時 efficiency=1.0：coding <code>×(0.95+0.05)=×1.0</code>，
+      分數與升級前一致 → <b>向後相容</b>。</li>
+    <li>同時把 <code>_avg_prm = score</code>，讓 summarizer / execution 排序時對齊（借 SkillClaw PRM 概念）。</li>
   </ul>
 </div>
 
@@ -306,8 +347,11 @@ description: ...
     <tr><td><code>v_b</code></td><td>0.6</td><td>0.803</td><td>0.6·0.6 + 0.4·0.803</td><td><b>0.681</b></td></tr>
     <tr><td><code>v_c</code></td><td>0.4</td><td>0.803</td><td>0.6·0.4 + 0.4·0.803</td><td><b>0.561</b></td></tr>
   </table>
-  <p class="mut">→ 三個變體軟指標相同（mock 特性），故差距完全由 <b>pytest 通過率</b>拉開；
+  <p class="mut">→ 三個變體軟指標相同（mock 特性），故差距主要由 <b>pytest 通過率</b>拉開；
   <code>v_a</code> 全過勝出。真實 LLM judge 下軟指標也會分化。</p>
+  <p class="mut">上表為 coding 的 <code>base</code> 分（Step 3 前）。實際 <code>score</code> 會再乘上效率微調
+  <code>×(0.95+0.05·efficiency)</code>；因效率僅 ±5%，數字幾乎不變（例：v_a base 0.921 → 視 cohort 效率
+  約 0.91~0.92），winner 不受影響。實際數字見下方第 5 節對照表。</p>
 </div>
 
 <div class="card">
@@ -341,24 +385,31 @@ description: ...
   <h3>各變體在 golden task 的表現</h3>
   <p class="mut">分數怎麼算的一步步拆解見 <a href="#s-score">★ 評分流程詳解</a>。</p>
   <table>
-    <tr><th>變體</th><th>task</th><th>runner</th><th>測試</th><th>pass_rate</th><th>judge</th><th>綜合分</th><th>成功</th></tr>
+    <tr><th>變體</th><th>task</th><th>類型</th><th>測試</th><th>pass_rate</th><th>judge</th>
+      <th>輪數</th><th>時間(s)</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
     {% for r in report.variant_scores %}
     <tr class="{{ 'win' if report.winner and r.session_id == report.winner.session_id else '' }}">
-      <td><code>{{ r.variant }}</code></td><td>{{ r.task_id }}</td><td>{{ r.runner_mode }}</td>
+      <td><code>{{ r.variant }}</code></td><td>{{ r.task_id }}</td><td>{{ r.task_type }}</td>
       <td>{{ r.tests }}</td><td>{{ r.pass_rate }}</td><td>{{ r.judge_overall }}</td>
+      <td>{{ r.num_turns }}</td><td>{{ r.elapsed_sec }}</td><td>{{ r.tool_error_rate }}</td>
+      <td>{{ r.efficiency_score }}</td>
       <td><b>{{ r.score }}</b></td>
       <td class="{{ 'ok' if r.success else 'no' }}">{{ '✓' if r.success else '✗' }}</td>
     </tr>
     {% endfor %}
   </table>
+  <p class="mut">「輪數 / 時間 / tool錯誤率 / 效率」為<b>通用（場景無關）</b>指標；「測試 / pass_rate / judge」為
+  <b>coding 專用</b>。效率 = cohort 內反向正規化後的加權分（越高越省資源）。</p>
   {% if report.variant_aggregate %}
   <h3>各變體跨 task 平均（winner 依此選出）</h3>
   <table>
-    <tr><th>變體</th><th>skill_id</th><th>task 數</th><th>平均 pass_rate</th><th>平均綜合分</th><th>全成功</th></tr>
+    <tr><th>變體</th><th>類型</th><th>task 數</th><th>平均 pass_rate</th><th>平均輪數</th><th>平均時間(s)</th>
+      <th>平均效率</th><th>平均綜合分</th><th>全成功</th></tr>
     {% for a in report.variant_aggregate %}
     <tr class="{{ 'win' if report.winner and a.variant == report.winner.variant else '' }}">
-      <td><code>{{ a.variant }}</code></td><td>{{ a.skill_id }}</td><td>{{ a.num_tasks }}</td>
-      <td>{{ a.avg_pass_rate }}</td><td><b>{{ a.avg_score }}</b></td>
+      <td><code>{{ a.variant }}</code></td><td>{{ a.task_type }}</td><td>{{ a.num_tasks }}</td>
+      <td>{{ a.avg_pass_rate }}</td><td>{{ a.avg_num_turns }}</td><td>{{ a.avg_elapsed_sec }}</td>
+      <td>{{ a.avg_efficiency }}</td><td><b>{{ a.avg_score }}</b></td>
       <td class="{{ 'ok' if a.all_success else 'no' }}">{{ '✓' if a.all_success else '✗' }}</td></tr>
     {% endfor %}
   </table>

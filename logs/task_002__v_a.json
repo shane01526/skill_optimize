@@ -4,6 +4,7 @@
   "skill_name": "coding-debug",
   "variant_label": "v_a",
   "task_id": "task_002",
+  "task_type": "coding",
   "variant_path": "skills/coding-debug/v_a/SKILL.md",
   "selected_skill_ids": [
     "coding-debug"
@@ -11,7 +12,9 @@
   "runner_mode": "mock",
   "runner_meta": {
     "strength": 1.0,
-    "applied_file": "C:\\Users\\user\\Desktop\\2026_Cathay\\DDT_MLE\\optimize_skill_pipeline\\output\\workspaces\\task_002__v_a\\fizzbuzz.py"
+    "applied_file": "output/workspaces/task_002__v_a/fizzbuzz.py",
+    "started_at": 1784015331.4104621,
+    "ended_at": 1784015331.4132257
   },
   "workspace": "output/workspaces/task_002__v_a",
   "turns": [
@@ -42,6 +45,6 @@
     "total": 5,
     "pass_rate": 1.0,
     "all_pass": true,
-    "raw": ".....                                                                    [100%]\n5 passed in 0.02s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
+    "raw": ".....                                                                    [100%]\n5 passed in 0.03s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
   }
 }

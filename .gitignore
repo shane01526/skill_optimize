@@ -13,6 +13,9 @@ logs/*.jsonl
 !logs/task_002__v_a.json
 !logs/task_002__v_b.json
 !logs/task_002__v_c.json
+!logs/task_003__v_a.json
+!logs/task_003__v_b.json
+!logs/task_003__v_c.json
 # 忽略 Phase 2 探勘產生的 mined_*.json
 logs/mined_*.json
 

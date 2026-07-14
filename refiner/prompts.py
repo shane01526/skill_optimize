@@ -52,6 +52,30 @@ Return EXACTLY one JSON object:
 No markdown fences. No extra text.
 """
 
+# 通用（場景無關）有效性 judge：不假設 coding，只判斷任務完成度與回應品質。
+# 用於非 coding 任務，或作為通用評分層的「有沒有完成」訊號。
+GENERIC_JUDGE_SYSTEM = """\
+You are a task-agnostic evaluator for AI agent sessions. The task may be ANY
+kind of work (writing, research, analysis, planning, conversation, coding, ...).
+
+You receive one session with a trajectory and an analysis summary.
+
+Score on a 0.0-1.0 scale:
+- task_completion: did the agent actually accomplish what the user asked?
+- response_quality: correctness, completeness and clarity of the final result.
+
+Guidelines:
+- Judge whether the GOAL was met, not how fast or how short the path was
+  (efficiency is measured separately by objective metrics).
+- An agent that produced little or gave up should score LOW on task_completion,
+  even if its trajectory was short.
+- Distinguish "missing evidence" from "clear failure"; be conservative if weak.
+
+Return EXACTLY one JSON object:
+{"task_completion": <float>, "response_quality": <float>, "rationale": "<brief>"}
+No markdown fences. No extra text.
+"""
+
 # 依 SkillClaw execution._EVOLVE_FROM_SESSIONS_SYSTEM 精簡（保留保守編輯原則）。
 EVOLVE_SYSTEM = """\
 You are a skill engineer for a coding-agent skill refinement system.

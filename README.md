@@ -73,6 +73,20 @@ python -m refiner.pipeline publish        # 掃 skills/<goal>/*/SKILL.md 逐一�
 開檔取出 `skill_id` → 記為 `actual_used_skill_ids` → 與結果對齊（見 `normalizer.extract_used_skill_ids`）。
 以此克服「Codex log 無 skill_id 欄位」的前提限制。
 
+## 評分（通用場景無關 + coding 專用）
+
+評分依 `task_type` 分流（標籤優先，否則以有無 `test_*.py` 偵測）：
+
+- **通用（任何場景）** `refiner/generic_metrics.py`：從 session 既有欄位算
+  `num_turns / elapsed_sec / num_tool_calls / tool_error_rate / response_chars`，
+  以 cohort（同 goal 變體群）min-max 反向正規化成 `efficiency_score`。
+  通用綜合分 = `completion(通用 judge) × (0.6 + 0.4·efficiency)`——先確認有完成再比效率，避免獎勵擺爛。
+- **coding 專用**：保留原本 `pytest 通過率(硬) + 四維 LLM judge(軟)` 綜合分為主體，
+  再乘 `×(0.95 + 0.05·efficiency)` 做效率微調（向後相容）。
+
+完整一步步拆解見 `docs/skill_refinement.html` 的「★ 評分流程詳解」。
+`golden/tasks/task_003/` 為非 coding 範例（`task.json: {"task_type":"general"}`，無測試）。
+
 ---
 
 ## Pipeline 階段（版本 A `refiner/`）
