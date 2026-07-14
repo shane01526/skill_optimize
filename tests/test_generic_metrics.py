@@ -93,3 +93,56 @@ def test_generic_score_penalizes_doing_nothing():
     # 擺爛者即使效率高，分數仍遠低於有完成者
     assert lazy["_score"] < good["_score"]
     assert lazy["_success"] is False
+
+
+# ---- cohort 按 (goal, task) 分組（不跨 task/goal 污染）------------ #
+
+
+def _sess(skill_name, task_id, num_turns, variant):
+    """造一個 session：num_turns 用 turns 數量表示。"""
+    return {
+        "skill_name": skill_name,
+        "task_id": task_id,
+        "variant_label": variant,
+        "turns": [{"response_text": "x", "tool_calls": [], "tool_results": []} for _ in range(num_turns)],
+        "runner_meta": {},
+    }
+
+
+def test_cohort_grouped_by_goal_task():
+    # 同 goal 兩個 task：task_A 輪數 1/9、task_B 輪數 2/3
+    a_fast = _sess("g", "task_A", 1, "v_a")
+    a_slow = _sess("g", "task_A", 9, "v_b")
+    b_fast = _sess("g", "task_B", 2, "v_a")
+    b_slow = _sess("g", "task_B", 3, "v_b")
+    gm.attach_cohort_efficiency([a_fast, a_slow, b_fast, b_slow])
+
+    # 每個 session 只跟「同 task」比：各桶 size=2
+    for s in (a_fast, a_slow, b_fast, b_slow):
+        assert s["_metrics"]["cohort_size"] == 2
+    assert a_fast["_metrics"]["cohort_key"] == "g::task_A"
+    assert b_fast["_metrics"]["cohort_key"] == "g::task_B"
+
+    # task_A 內：1 輪 → num_turns 效率 1.0；9 輪 → 0.0
+    assert a_fast["_metrics"]["per_metric"]["num_turns"] == 1.0
+    assert a_slow["_metrics"]["per_metric"]["num_turns"] == 0.0
+    # task_B 內：2 輪 → 1.0；3 輪 → 0.0（不受 task_A 的 1/9 影響）
+    assert b_fast["_metrics"]["per_metric"]["num_turns"] == 1.0
+    assert b_slow["_metrics"]["per_metric"]["num_turns"] == 0.0
+
+
+def test_other_bucket_does_not_affect_this_bucket():
+    # 本桶固定 2/4；另一桶放極端值 100，應完全不影響本桶正規化
+    this_fast = _sess("g", "t1", 2, "v_a")
+    this_slow = _sess("g", "t1", 4, "v_b")
+    other = _sess("g", "t2", 100, "v_a")
+    gm.attach_cohort_efficiency([this_fast, this_slow, other])
+    assert this_fast["_metrics"]["per_metric"]["num_turns"] == 1.0   # 本桶最小
+    assert this_slow["_metrics"]["per_metric"]["num_turns"] == 0.0   # 本桶最大
+
+
+def test_singleton_bucket_is_neutral():
+    only = _sess("g", "solo", 7, "v_a")
+    gm.attach_cohort_efficiency([only])
+    assert only["_metrics"]["cohort_size"] == 1
+    assert only["_metrics"]["efficiency_score"] == 1.0   # min==max → 中性

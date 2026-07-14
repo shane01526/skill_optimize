@@ -1,8 +1,11 @@
 """通用（場景無關）評分指標。
 
 從 session 既有欄位（turns / tool_calls / tool_results / response_text /
-runner_meta 計時）算出「效率類」原始指標，並以「同一 goal 的變體群（cohort）」
+runner_meta 計時）算出「效率類」原始指標，並以「同一 (goal, task) 的變體群（cohort）」
 做 min-max 反向正規化 → 0..1 的效率分數（越省資源越高）。
+
+cohort 明確按 ``(skill_name/goal, task_id)`` 分組：效率只跟「做同一件事（同 goal、
+同 task）的其他變體」比較，即使 logs/ 混了多個 goal 或多個 task 也不會互相污染。
 
 這些指標任何任務場景都能算，不依賴 pytest。效率分「越少越好」，因此**單獨使用會
 獎勵擺爛**；務必與有效性訊號（completion judge）相乘使用（見 evaluator）。
@@ -80,7 +83,7 @@ def normalize_efficiency(
     raw: dict[str, Any],
     cohort: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """把一筆 raw 指標，相對於 cohort（同 goal 的所有變體 raw 指標）正規化成 0..1。
+    """把一筆 raw 指標，相對於 cohort（同一 (goal, task) 的變體 raw 指標）正規化成 0..1。
 
     - 「越小越好」項用 cohort 的 min/max 反向正規化。
     - tool_error_rate 直接 1 - rate（本身已 0..1，與 cohort 無關）。
@@ -124,14 +127,31 @@ def normalize_efficiency(
     }
 
 
-def attach_cohort_efficiency(sessions: list[dict[str, Any]]) -> None:
-    """就地為每個 session 補 _metrics（raw + efficiency），cohort = 傳入的整組 sessions。
+def _cohort_key(session: dict[str, Any]) -> tuple[str, str]:
+    """cohort 分組鍵 = (goal, task)。goal 用 skill_name（同一 skill 的所有變體相同）。"""
+    return (str(session.get("skill_name") or ""), str(session.get("task_id") or ""))
 
-    通常在同一 goal 的所有變體 session 上呼叫（evaluator 已收集齊）。
+
+def attach_cohort_efficiency(sessions: list[dict[str, Any]]) -> None:
+    """就地為每個 session 補 _metrics（raw + efficiency）。
+
+    cohort **明確按 (goal, task) 分組**：效率只跟「同 goal、同 task 的其他變體」比較，
+    即使傳入的 sessions 混了多個 goal / task 也不會互相污染。單一元素桶（該 goal+task
+    只有一個變體）→ min==max → efficiency 中性 1.0。
     """
-    raws = [compute_raw_metrics(s) for s in sessions]
-    for s, raw in zip(sessions, raws):
-        eff = normalize_efficiency(raw, raws)
-        existing = s.get("_metrics") or {}
-        existing.update({"raw": raw, **eff})
-        s["_metrics"] = existing
+    # 先分桶
+    buckets: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for s in sessions:
+        buckets.setdefault(_cohort_key(s), []).append(s)
+
+    # 每桶各自算 raw 並在桶內正規化
+    for key, bucket in buckets.items():
+        raws = [compute_raw_metrics(s) for s in bucket]
+        cohort_str = "::".join(key)
+        for s, raw in zip(bucket, raws):
+            eff = normalize_efficiency(raw, raws)
+            existing = s.get("_metrics") or {}
+            existing.update(
+                {"raw": raw, **eff, "cohort_key": cohort_str, "cohort_size": len(bucket)}
+            )
+            s["_metrics"] = existing

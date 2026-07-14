@@ -1,7 +1,7 @@
 {
   "coding-debug": {
     "skill_id": "coding-debug",
-    "version": 7,
+    "version": 8,
     "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
     "history": [
       {
@@ -50,6 +50,13 @@
         "version": 7,
         "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
         "timestamp": "2026-07-14T07:49:05.504461+00:00",
+        "action": "improve_skill",
+        "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。"
+      },
+      {
+        "version": 8,
+        "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
+        "timestamp": "2026-07-14T08:17:50.737791+00:00",
         "action": "improve_skill",
         "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。"
       }

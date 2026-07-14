@@ -9,24 +9,24 @@
 
 | 變體 | task | runner | 測試 | pass_rate | judge | 綜合分 | 成功 |
 |---|---|---|---|---|---|---|---|
-| coding-debug | task_002 | mock | 5/5 | 1.0 | 0.803 | **0.908** | True |
 | coding-debug | task_001 | mock | 5/5 | 1.0 | 0.803 | **0.906** | True |
+| coding-debug | task_002 | mock | 5/5 | 1.0 | 0.803 | **0.906** | True |
 | coding-debug | task_003 | mock | 0/0 | 0.0 | None | **0.752** | True |
 | coding-debug | task_003 | mock | 0/0 | 0.0 | None | **0.752** | True |
-| coding-debug | task_003 | mock | 0/0 | 0.0 | None | **0.749** | True |
-| coding-debug | task_001 | mock | 3/5 | 0.6 | 0.803 | **0.674** | False |
-| coding-debug | task_002 | mock | 3/5 | 0.6 | 0.803 | **0.674** | False |
+| coding-debug | task_003 | mock | 0/0 | 0.0 | None | **0.72** | True |
+| coding-debug | task_002 | mock | 3/5 | 0.6 | 0.803 | **0.672** | False |
+| coding-debug | task_001 | mock | 3/5 | 0.6 | 0.803 | **0.669** | False |
 | coding-debug | task_001 | mock | 2/5 | 0.4 | 0.803 | **0.557** | False |
 | coding-debug | task_002 | mock | 2/5 | 0.4 | 0.803 | **0.557** | False |
 
-**勝出變體**：`coding-debug`（綜合分 0.908）
+**勝出變體**：`coding-debug`（綜合分 0.906）
 
 ## 精煉前 / 精煉後
 
 ### Before（coding-debug / coding-debug）
 > Use for debugging failing tests.
 
-### After（v7 / coding-debug）
+### After（v8 / coding-debug）
 > Use for debugging failing tests.
 
 ### 內容 diff

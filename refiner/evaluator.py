@@ -175,9 +175,10 @@ def generic_completion_score(llm: LLMClient, session: dict[str, Any]) -> float:
 
 
 def evaluate_sessions(llm: LLMClient, sessions: list[dict[str, Any]], *, use_judge: bool = True) -> list[dict[str, Any]]:
-    """對一組（同 goal）sessions 評分：先算 cohort 效率，再逐一 evaluate_session。
+    """對一組 sessions 評分：先算 cohort 效率，再逐一 evaluate_session。
 
-    cohort 效率需整組一起算（min-max 正規化），故提供批次入口。
+    cohort 效率會**自動按 (goal, task) 分組**做 min-max 正規化（見
+    generic_metrics.attach_cohort_efficiency），故可安心傳入混含多個 goal/task 的整組 sessions。
     """
     generic_metrics.attach_cohort_efficiency(sessions)
     for s in sessions:

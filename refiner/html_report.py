@@ -254,9 +254,10 @@ description: ...
     <tr><td><code>response_chars</code></td><td>回覆總字數（代理 token 消耗）</td><td>越少越好</td><td>0.10</td></tr>
   </table>
   <ul>
-    <li><b>正規化</b>：以「同一 goal 的變體群（cohort）」做 min-max <b>反向</b>正規化
-      → 該群最小值得 1.0、最大值得 0.0；全相等或只有一個值 → 1.0（無區別）。
-      加權平均得 <code>efficiency_score ∈ [0,1]</code>。</li>
+    <li><b>正規化</b>：cohort <b>明確按 (goal, task) 分組</b>——效率只在「同 goal、同 task 的變體群」內
+      做 min-max <b>反向</b>正規化（不跨 task／跨 goal 比較，避免難易度不同互相污染）
+      → 該群最小值得 1.0、最大值得 0.0；全相等或只有一個變體 → 1.0（無區別）。
+      加權平均得 <code>efficiency_score ∈ [0,1]</code>。（對照表每列標有 <code>cohort_key</code>／<code>cohort_size</code>。）</li>
     <li><b>缺值處理</b>：某項在 cohort 全缺（如 mock 無真實時間）→ 該項不計入，權重按剩餘項重分配，
       並在 <code>skipped_metrics</code> 標註。</li>
     <li><b>防呆</b>：效率「越少越好」，單獨用會獎勵擺爛。故通用分一定是

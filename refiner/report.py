@@ -38,6 +38,8 @@ def _variant_scores(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "response_chars": raw.get("response_chars"),
                 "elapsed_sec": raw.get("elapsed_sec"),
                 "efficiency_score": m.get("efficiency_score"),
+                "cohort_key": m.get("cohort_key"),
+                "cohort_size": m.get("cohort_size"),
                 "completion": m.get("completion"),
                 "score": s.get("_score"),
                 "success": s.get("_success"),

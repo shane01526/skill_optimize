@@ -1,7 +1,7 @@
 ---
 skill_id: coding-debug
 name: coding-debug
-version: 7
+version: 8
 description: Use for debugging failing tests.
 category: coding
 ---
