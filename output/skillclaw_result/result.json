@@ -1,0 +1,97 @@
+{
+  "model": "mock",
+  "num_sessions": 6,
+  "baseline": {
+    "name": "coding-debug",
+    "description": "Use for debugging failing tests.",
+    "content": "# Coding Debug\n\nWhen tests fail, look at the error and fix the code."
+  },
+  "action": "improve_skill",
+  "rationale": "[MOCK-B] 勝出變體（v_a/v_b）共通做法：重現優先、以測試為規格、最小修改、分段驗證。",
+  "accepted": true,
+  "verify": {
+    "enabled": true,
+    "accepted": true,
+    "decision": "accept",
+    "score": 0.84,
+    "threshold": 0.75,
+    "reason": "[MOCK-B] 候選有證據支撐、保留 baseline 具體資訊。",
+    "checks": {
+      "grounded_in_evidence": 0.85,
+      "preserves_existing_value": 0.85,
+      "specificity_and_reusability": 0.82,
+      "safe_to_publish": 0.84
+    }
+  },
+  "refined": {
+    "name": "coding-debug",
+    "description": "Use for debugging failing unit tests in a Python project. Reproduce first, read tests as spec, make the smallest fix.",
+    "content": "# Coding Debug\n\nWhen tests fail, look at the error and fix the code.\n\n## 精煉補充（[MOCK-B] SkillClaw 由勝出變體證據萃取）\n- 先重現失敗測試以確認可重現，再定位最小修改點。\n- 把每個測試 case 當規格逐條對照，補齊缺漏分支（空輸入 / 邊界 / 需忽略的條件）。\n- 修完先跑相關測試快速回饋，全綠後再跑完整套件。\n"
+  },
+  "judge_scores": [
+    {
+      "session_id": "task_001::v_a",
+      "variant_label": "v_a",
+      "pass_rate": 1.0,
+      "overall_score": 1.0,
+      "task_completion": 1.0,
+      "response_quality": 1.0,
+      "efficiency": 1.0,
+      "tool_usage": 1.0
+    },
+    {
+      "session_id": "task_001::v_b",
+      "variant_label": "v_b",
+      "pass_rate": 0.6,
+      "overall_score": 0.574,
+      "task_completion": 0.571,
+      "response_quality": 0.571,
+      "efficiency": 0.621,
+      "tool_usage": 0.571
+    },
+    {
+      "session_id": "task_001::v_c",
+      "variant_label": "v_c",
+      "pass_rate": 0.4,
+      "overall_score": 0.003,
+      "task_completion": 0.0,
+      "response_quality": 0.0,
+      "efficiency": 0.05,
+      "tool_usage": 0.0
+    },
+    {
+      "session_id": "task_002::v_a",
+      "variant_label": "v_a",
+      "pass_rate": 1.0,
+      "overall_score": 1.0,
+      "task_completion": 1.0,
+      "response_quality": 1.0,
+      "efficiency": 1.0,
+      "tool_usage": 1.0
+    },
+    {
+      "session_id": "task_002::v_b",
+      "variant_label": "v_b",
+      "pass_rate": 0.6,
+      "overall_score": 0.574,
+      "task_completion": 0.571,
+      "response_quality": 0.571,
+      "efficiency": 0.621,
+      "tool_usage": 0.571
+    },
+    {
+      "session_id": "task_002::v_c",
+      "variant_label": "v_c",
+      "pass_rate": 0.4,
+      "overall_score": 0.003,
+      "task_completion": 0.0,
+      "response_quality": 0.0,
+      "efficiency": 0.05,
+      "tool_usage": 0.0
+    }
+  ],
+  "error": null,
+  "groups": {
+    "coding-debug": 6
+  }
+}

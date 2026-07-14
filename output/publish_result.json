@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "ok": true,
+      "skill_id": "coding-debug",
+      "name": "coding-debug",
+      "errors": [],
+      "path": "skills\\coding-debug\\baseline\\SKILL.md"
+    },
+    {
+      "ok": true,
+      "skill_id": "coding-debug",
+      "name": "coding-debug",
+      "errors": [],
+      "path": "skills\\coding-debug\\v_a\\SKILL.md"
+    },
+    {
+      "ok": true,
+      "skill_id": "coding-debug",
+      "name": "coding-debug",
+      "errors": [],
+      "path": "skills\\coding-debug\\v_b\\SKILL.md"
+    },
+    {
+      "ok": true,
+      "skill_id": "coding-debug",
+      "name": "coding-debug",
+      "errors": [],
+      "path": "skills\\coding-debug\\v_c\\SKILL.md"
+    }
+  ],
+  "passed": 4,
+  "failed": 0
+}

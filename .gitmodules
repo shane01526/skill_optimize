@@ -1,0 +1,3 @@
+[submodule "third_party/skillclaw"]
+	path = third_party/skillclaw
+	url = https://github.com/AMAP-ML/SkillClaw.git

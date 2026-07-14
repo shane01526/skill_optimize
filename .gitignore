@@ -1,0 +1,30 @@
+# 執行產物（可由 pipeline 重新產生）
+output/workspaces/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# logs：預設忽略，但保留下方 6 個範例 log（force-added）供 clone 後直接看對照表
+logs/*.json
+logs/*.jsonl
+!logs/task_001__v_a.json
+!logs/task_001__v_b.json
+!logs/task_001__v_c.json
+!logs/task_002__v_a.json
+!logs/task_002__v_b.json
+!logs/task_002__v_c.json
+# 忽略 Phase 2 探勘產生的 mined_*.json
+logs/mined_*.json
+
+# 保留範例產出供查閱（版本 A + 版本 B + 上架驗證）
+!output/before_after.json
+!output/before_after.md
+!output/coding-debug.refined.SKILL.md
+!output/skill_registry.json
+!output/publish_result.json
+!output/skillclaw_result/
+!output/skillclaw_result/**
+
+# 版本 B 轉接暫存 / 執行產物（可重新產生）
+third_party/adapt_output_*.json
+third_party/sessions_for_skillclaw.json

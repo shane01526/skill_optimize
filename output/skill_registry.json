@@ -1,0 +1,37 @@
+{
+  "coding-debug": {
+    "skill_id": "coding-debug",
+    "version": 4,
+    "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
+    "history": [
+      {
+        "version": 1,
+        "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
+        "timestamp": "2026-07-14T04:05:26.685438+00:00",
+        "action": "improve_skill",
+        "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。"
+      },
+      {
+        "version": 2,
+        "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
+        "timestamp": "2026-07-14T04:07:22.247332+00:00",
+        "action": "improve_skill",
+        "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。"
+      },
+      {
+        "version": 3,
+        "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
+        "timestamp": "2026-07-14T04:09:39.736786+00:00",
+        "action": "improve_skill",
+        "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。"
+      },
+      {
+        "version": 4,
+        "content_sha": "c11a9e3a3dfe656c60fd03b4bd3e5b32a1cc822dbeee253725486f2e0744949a",
+        "timestamp": "2026-07-14T05:23:07.548018+00:00",
+        "action": "improve_skill",
+        "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。"
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+# Skill 精煉機制 pipeline — 版本 A (自建) 依賴
+# LLM providers（擇一即可；pipeline 會自動偵測環境變數）
+anthropic>=0.40.0        # 預設 provider（本機為 Claude 環境）
+openai>=1.40.0           # OpenAI-compatible endpoint / 版本 B evolve_server 需要
+
+# 資料 / 樣板 / 測試
+PyYAML>=6.0
+jsonschema>=4.20.0
+Jinja2>=3.1.0
+pytest>=8.0.0

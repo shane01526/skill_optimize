@@ -1,0 +1,224 @@
+{
+  "goal": "coding-debug",
+  "generated_action": "improve_skill",
+  "rationale": "[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。",
+  "accepted": true,
+  "verify": {
+    "enabled": true,
+    "accepted": true,
+    "decision": "accept",
+    "score": 0.86,
+    "threshold": 0.75,
+    "reason": "[MOCK] 候選 skill 有證據支撐且保留既有具體資訊。",
+    "checks": {
+      "grounded_in_evidence": 0.85,
+      "preserves_existing_value": 0.9,
+      "specificity_and_reusability": 0.85,
+      "safe_to_publish": 0.85
+    }
+  },
+  "num_sessions": 6,
+  "num_variants": 1,
+  "winner": {
+    "session_id": "task_001::v_a",
+    "skill_name": "coding-debug",
+    "variant": "v_a",
+    "skill_id": "coding-debug",
+    "actual_used_skill_ids": [
+      "coding-debug"
+    ],
+    "task_id": "task_001",
+    "runner_mode": "mock",
+    "pass_rate": 1.0,
+    "tests": "5/5",
+    "judge_overall": 0.803,
+    "score": 0.921,
+    "success": true,
+    "avg_score": 0.921,
+    "num_tasks": 2
+  },
+  "variant_aggregate": [
+    {
+      "variant": "v_a",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "num_tasks": 2,
+      "avg_score": 0.921,
+      "avg_pass_rate": 1.0,
+      "all_success": true
+    },
+    {
+      "variant": "v_b",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "num_tasks": 2,
+      "avg_score": 0.681,
+      "avg_pass_rate": 0.6,
+      "all_success": false
+    },
+    {
+      "variant": "v_c",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "num_tasks": 2,
+      "avg_score": 0.561,
+      "avg_pass_rate": 0.4,
+      "all_success": false
+    }
+  ],
+  "variant_scores": [
+    {
+      "session_id": "task_001::v_a",
+      "skill_name": "coding-debug",
+      "variant": "v_a",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "task_id": "task_001",
+      "runner_mode": "mock",
+      "pass_rate": 1.0,
+      "tests": "5/5",
+      "judge_overall": 0.803,
+      "score": 0.921,
+      "success": true
+    },
+    {
+      "session_id": "task_002::v_a",
+      "skill_name": "coding-debug",
+      "variant": "v_a",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "task_id": "task_002",
+      "runner_mode": "mock",
+      "pass_rate": 1.0,
+      "tests": "5/5",
+      "judge_overall": 0.803,
+      "score": 0.921,
+      "success": true
+    },
+    {
+      "session_id": "task_001::v_b",
+      "skill_name": "coding-debug",
+      "variant": "v_b",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "task_id": "task_001",
+      "runner_mode": "mock",
+      "pass_rate": 0.6,
+      "tests": "3/5",
+      "judge_overall": 0.803,
+      "score": 0.681,
+      "success": false
+    },
+    {
+      "session_id": "task_002::v_b",
+      "skill_name": "coding-debug",
+      "variant": "v_b",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "task_id": "task_002",
+      "runner_mode": "mock",
+      "pass_rate": 0.6,
+      "tests": "3/5",
+      "judge_overall": 0.803,
+      "score": 0.681,
+      "success": false
+    },
+    {
+      "session_id": "task_001::v_c",
+      "skill_name": "coding-debug",
+      "variant": "v_c",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "task_id": "task_001",
+      "runner_mode": "mock",
+      "pass_rate": 0.4,
+      "tests": "2/5",
+      "judge_overall": 0.803,
+      "score": 0.561,
+      "success": false
+    },
+    {
+      "session_id": "task_002::v_c",
+      "skill_name": "coding-debug",
+      "variant": "v_c",
+      "skill_id": "coding-debug",
+      "actual_used_skill_ids": [
+        "coding-debug"
+      ],
+      "task_id": "task_002",
+      "runner_mode": "mock",
+      "pass_rate": 0.4,
+      "tests": "2/5",
+      "judge_overall": 0.803,
+      "score": 0.561,
+      "success": false
+    }
+  ],
+  "before": {
+    "skill_id": "coding-debug",
+    "name": "coding-debug",
+    "description": "Use for debugging failing tests.",
+    "content": "# Coding Debug\n\nWhen tests fail, look at the error and fix the code."
+  },
+  "after": {
+    "skill_id": "coding-debug",
+    "name": "coding-debug",
+    "version": 4,
+    "description": "Use for debugging failing tests.",
+    "content": "# Coding Debug\n\nWhen tests fail, look at the error and fix the code.\n\n## 精煉補充（[MOCK] 由勝出變體證據萃取）\n- 先重現失敗測試，再定位最小修改點。\n- 修完只跑相關測試快速回饋，全綠後再跑完整套件。\n"
+  },
+  "content_diff": [
+    {
+      "kind": "hunk",
+      "text": "--- "
+    },
+    {
+      "kind": "hunk",
+      "text": "+++ "
+    },
+    {
+      "kind": "hunk",
+      "text": "@@ -2,2 +2,6 @@"
+    },
+    {
+      "kind": "ctx",
+      "text": " "
+    },
+    {
+      "kind": "ctx",
+      "text": " When tests fail, look at the error and fix the code."
+    },
+    {
+      "kind": "add",
+      "text": "+"
+    },
+    {
+      "kind": "add",
+      "text": "+## 精煉補充（[MOCK] 由勝出變體證據萃取）"
+    },
+    {
+      "kind": "add",
+      "text": "+- 先重現失敗測試，再定位最小修改點。"
+    },
+    {
+      "kind": "add",
+      "text": "+- 修完只跑相關測試快速回饋，全綠後再跑完整套件。"
+    }
+  ]
+}
