@@ -98,7 +98,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <h1>Skill 精煉機制 — 詳細說明</h1>
   <div class="sub">從多個 skill 變體的使用紀錄中，篩選出更有效率、效用的版本，精煉成標準化共用 Skill。</div>
   <div class="sub mut">個人版 MVP · 實驗驅動（Phase 1）＋ Log 探勘（Phase 2）· 基礎參考：SkillClaw（AMAP-ML）</div>
-  <div class="sub mut">本頁對照表數字為<b>真實 Gemini（gemini-flash-latest）api 模式實跑</b>；版本 B 對照為離線 mock。</div>
+  <div class="sub mut">本頁數字為 <b>api 模式實跑</b>：<b>Gemini（gemini-flash-latest）同時擔任 runner（實際執行任務、修 code）與 judge（評分）</b>；版本 B 對照為離線 mock。</div>
   <nav class="toc">
     <a href="#s1">1 總覽</a>
     <a href="#s2">2 Pipeline 流程</a>
@@ -264,6 +264,16 @@ description: ...
 <section id="s4">
   <div class="sechead"><span class="secno">4</span><h2>評分機制</h2></div>
   <p class="lead">每個 (變體×task) session 先算通用效率指標，再依任務類型分流評分，最後跨 task 平均選出 winner。降低對 LLM 的依賴是核心設計。</p>
+
+  <div class="callout warn"><b>本次實跑 Gemini 身兼兩角，請勿混淆：</b>
+  <ol style="margin:6px 0 0 0;padding-left:20px">
+    <li><b>runner（執行任務）</b>：api 模式下 Gemini <b>真的當 coding agent 去修 code</b>，把修好的程式寫回 workspace。
+      → 這一步的產出由 <b>pytest 客觀驗證</b>（pass_rate 是測試跑出來的，不是 Gemini 自評）。</li>
+    <li><b>judge（評分）</b>：對執行結果打四維軟分數。</li>
+  </ol>
+  <span class="mut">副作用：Gemini 能力足以無視 skill 差異、把這種簡單 coding 任務全部修對（三變體 pass_rate 都 1.0），
+  因此 coding 難顯出 skill 高下——差異改由 general 任務與效率分拉開。若只想單純測「LLM as a judge」，
+  應改用 <b>mock runner（固定不同 pass_rate 模擬好壞產出）＋ 真 Gemini judge</b>。</span></div>
 
   <div class="card">
     <h3>4.1 評分分流（決策樹）</h3>
@@ -672,6 +682,7 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
 </main>
 <footer class="wrap">
   Skill 精煉機制 · 版本 A（自建 pipeline）· 本頁由 <code>refiner/html_report.py</code> 自動產生（單一檔、內嵌 SVG/CSS、離線可開）。
+  本次實跑：api 模式，Gemini <code>gemini-flash-latest</code> 同時當 runner（執行任務）與 judge（評分）。
   資料來源：<code>output/before_after.json</code> · <code>skillclaw_result</code> · <code>publish_result.json</code>。基礎參考：AMAP-ML/SkillClaw。
 </footer>
 </body>
