@@ -412,8 +412,11 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
     </table>
     <pre>judge.overall = 0.55·task_completion + 0.30·response_quality
               + 0.10·tool_usage    + 0.05·efficiency   （各維 clamp 到 [0,1]）</pre>
-    <p class="mut">公式示意（假想四維 tc=0.8, rq=0.8, ef=0.85, tu=0.8）：
-    overall = 0.55·0.8 + 0.30·0.8 + 0.10·0.8 + 0.05·0.85 = <b>0.803</b>（本次 Gemini 實跑的實際 judge 見第 5 節）。
+    <p class="mut"><b>本次 Gemini 實跑</b>（task_001 · v_a）：四維皆 1.0 →
+    overall = 0.55·1.0 + 0.30·1.0 + 0.10·1.0 + 0.05·1.0 = <b>1.0</b>。
+    Gemini 一次就把 String Calculator 全部修對（5/5 通過），故各維滿分；rationale：
+    <span class="mut">「single turn、100% pass rate、correct/complete/efficient」</span>。
+    公式示意：若四維為 0.8/0.8/0.85/0.8 → overall=0.803。
     真實 LLM 模式下四維由模型實際評分、會分化。解析失敗或任一維非數字 → 回 None（該 session 只用硬指標）。</p>
   </div>
 
@@ -425,26 +428,31 @@ score = base × (0.95 + 0.05 × efficiency)
 
 # general：完成度為主體，效率在已完成前提下加成 ≤40%
 score = completion × (0.6 + 0.4 × efficiency)</pre>
-    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 公式示意（假想數字，非本次實跑）</h4>
-    <div class="callout warn">下表用<b>假想的固定 judge=0.803、且變體 pass_rate 有落差</b>來示範公式怎麼算，
-    不是本次 Gemini 實跑的數字（本次 Gemini 三個 coding 變體 pass_rate 都是 1.0）。<b>實際數字見第 5 節對照表。</b></div>
+    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 實算（本次 Gemini 實跑，task_001）</h4>
+    <p class="mut">Gemini（api 模式）三個變體<b>都把測試全修過（pass_rate=1.0、judge=1.0）</b>，
+    故 base 都是 <code>0.6·1.0 + 0.4·1.0 = 1.0</code>；差異只剩效率微調 <code>×(0.95+0.05·eff)</code>：</p>
     <table>
       <tr><th>變體</th><th>pass_rate</th><th>judge</th><th>base=0.6h+0.4s</th><th>效率</th><th>×(0.95+0.05·eff)</th><th>綜合分</th></tr>
-      <tr><td><code>示例1</code></td><td>1.0</td><td>0.803</td><td>0.921</td><td>0.785</td><td>×0.989</td><td><b>0.911</b></td></tr>
-      <tr><td><code>示例2</code></td><td>0.6</td><td>0.803</td><td>0.681</td><td>0.65</td><td>×0.983</td><td><b>0.669</b></td></tr>
-      <tr><td><code>示例3</code></td><td>0.4</td><td>0.803</td><td>0.561</td><td>0.85</td><td>×0.993</td><td><b>0.557</b></td></tr>
+      <tr><td><code>v_a</code></td><td>1.0</td><td>1.0</td><td>1.0</td><td>0.65</td><td>×0.983</td><td><b>0.982</b></td></tr>
+      <tr class="win"><td><code>v_b</code></td><td>1.0</td><td>1.0</td><td>1.0</td><td>0.985</td><td>×0.999</td><td><b>0.999</b></td></tr>
+      <tr><td><code>v_c</code></td><td>1.0</td><td>1.0</td><td>1.0</td><td>0.958</td><td>×0.998</td><td><b>0.998</b></td></tr>
     </table>
-    <p class="mut">效率僅 ±5% 微調（乘數落在 0.95~1.0），不足以翻轉 pass_rate 拉開的差距。這就是「向後相容」：效率中性時乘數≈1，分數等同純 pytest+judge。</p>
+    <div class="callout warn"><b>真實 LLM 實跑的觀察</b>：Gemini 能力足以無視 skill 差異、把這種簡單 coding 任務全修對，
+    所以 coding 分數幾乎貼齊（0.982~0.999），差異只由效率微調拉出零點幾。<b>真正拉開變體高下的是 general 任務</b>（見下方與第 5 節）。
+    這也點出：任務對 agent 太簡單時，coding 難顯出 skill 差異，需要更難的 golden task。</div>
 
-    <h4 style="margin:14px 0 6px;color:#cdd6e6">general 實算（示意）</h4>
-    <p class="mut">general 沒有 pytest，改以 completion（規則或 LLM）為主體，效率加成最多 40%：</p>
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">general 實算（本次 Gemini 實跑）</h4>
+    <p class="mut">general 沒有 pytest，改以 completion 為主體、效率加成最多 40%。以下是本次兩個 general task 的真實數字：</p>
     <table>
-      <tr><th>情境</th><th>completion</th><th>效率</th><th>completion×(0.6+0.4·eff)</th><th>綜合分</th><th>_success（≥0.75?）</th></tr>
-      <tr><td>使用者確認滿意、又快</td><td>1.0</td><td>0.9</td><td>1.0×(0.6+0.36)</td><td class="ok"><b>0.96</b></td><td class="ok">✓</td></tr>
-      <tr><td>有完成但囉唆</td><td>1.0</td><td>0.3</td><td>1.0×(0.6+0.12)</td><td><b>0.72</b></td><td class="no">✗</td></tr>
-      <tr><td>擺爛（使用者說不對）、但很快</td><td>0.0</td><td>1.0</td><td>0.0×(0.6+0.4)</td><td class="no"><b>0.0</b></td><td class="no">✗</td></tr>
+      <tr><th>task · 變體</th><th>completion（來源）</th><th>效率</th><th>completion×(0.6+0.4·eff)</th><th>綜合分</th><th>成功</th></tr>
+      <tr><td>task_003 · v_a</td><td>1.0 <span class="badge b-llm">llm</span></td><td>0.9</td><td>1.0×(0.6+0.36)</td><td class="ok"><b>0.96</b></td><td class="ok">✓</td></tr>
+      <tr><td>task_003 · v_c</td><td>0.5 <span class="badge b-llm">llm</span></td><td>0.75</td><td>0.5×(0.6+0.30)</td><td class="no"><b>0.45</b></td><td class="no">✗</td></tr>
+      <tr><td>task_004 · v_b</td><td>1.0 <span class="badge b-rule">rule</span></td><td>0.65</td><td>1.0×(0.6+0.26)</td><td class="ok"><b>0.86</b></td><td class="ok">✓</td></tr>
+      <tr><td>task_004 · v_c</td><td>0.0 <span class="badge b-rule">rule</span></td><td>0.65</td><td>0.0×(0.6+0.26)</td><td class="no"><b>0.0</b></td><td class="no">✗</td></tr>
     </table>
-    <p class="mut"><b>關鍵</b>：末列證明「防呆」有效——即使效率滿分，completion=0（擺爛）→ 綜合分仍為 0，不會因為「快」而勝出。
+    <p class="mut"><b>看點</b>：task_003 沒有使用者後續回覆 → detector 信心不足（0.245&lt;0.5）→ 退回 <b>Gemini judge</b>（source=llm），
+    v_c 被判 0.5；task_004 有對話腳本 → <b>規則 detector</b>（source=rule）直接判定，v_c 因使用者說「不對、重寫」→ completion=0.0。
+    末列證明「防呆」有效：completion=0（擺爛）即使效率不差，綜合分仍為 0，不會因為快而勝出。
     <code>_success</code>：coding 用 all_pass；general 用 completion ≥ 0.75。</p>
   </div>
 

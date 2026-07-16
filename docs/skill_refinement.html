@@ -213,7 +213,28 @@ description: ...
 
     <h3>Skill 上架驗證</h3>
     
-    <p class="mut">（執行 <code>python -m refiner.pipeline publish</code> 後顯示上架結果。）</p>
+    <p class="mut">上架檢查：欄位完整（skill_id/name/description）、skill_id slug 格式、唯一性（同 id 不同 name → 衝突）。</p>
+    <table>
+      <tr><th>SKILL.md</th><th>結果</th><th>skill_id / 錯誤</th></tr>
+      
+      <tr><td><code>skills\coding-debug\baseline\SKILL.md</code></td>
+        <td class="ok">✓ 通過</td>
+        <td>coding-debug</td></tr>
+      
+      <tr><td><code>skills\coding-debug\v_a\SKILL.md</code></td>
+        <td class="ok">✓ 通過</td>
+        <td>coding-debug</td></tr>
+      
+      <tr><td><code>skills\coding-debug\v_b\SKILL.md</code></td>
+        <td class="ok">✓ 通過</td>
+        <td>coding-debug</td></tr>
+      
+      <tr><td><code>skills\coding-debug\v_c\SKILL.md</code></td>
+        <td class="ok">✓ 通過</td>
+        <td>coding-debug</td></tr>
+      
+    </table>
+    <p class="mut">通過 4 / 失敗 0。</p>
     
 
     <h3>實際使用的 skill_id（actual_used_skill_ids）</h3>
@@ -383,8 +404,11 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
     </table>
     <pre>judge.overall = 0.55·task_completion + 0.30·response_quality
               + 0.10·tool_usage    + 0.05·efficiency   （各維 clamp 到 [0,1]）</pre>
-    <p class="mut">公式示意（假想四維 tc=0.8, rq=0.8, ef=0.85, tu=0.8）：
-    overall = 0.55·0.8 + 0.30·0.8 + 0.10·0.8 + 0.05·0.85 = <b>0.803</b>（本次 Gemini 實跑的實際 judge 見第 5 節）。
+    <p class="mut"><b>本次 Gemini 實跑</b>（task_001 · v_a）：四維皆 1.0 →
+    overall = 0.55·1.0 + 0.30·1.0 + 0.10·1.0 + 0.05·1.0 = <b>1.0</b>。
+    Gemini 一次就把 String Calculator 全部修對（5/5 通過），故各維滿分；rationale：
+    <span class="mut">「single turn、100% pass rate、correct/complete/efficient」</span>。
+    公式示意：若四維為 0.8/0.8/0.85/0.8 → overall=0.803。
     真實 LLM 模式下四維由模型實際評分、會分化。解析失敗或任一維非數字 → 回 None（該 session 只用硬指標）。</p>
   </div>
 
@@ -396,26 +420,31 @@ score = base × (0.95 + 0.05 × efficiency)
 
 # general：完成度為主體，效率在已完成前提下加成 ≤40%
 score = completion × (0.6 + 0.4 × efficiency)</pre>
-    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 公式示意（假想數字，非本次實跑）</h4>
-    <div class="callout warn">下表用<b>假想的固定 judge=0.803、且變體 pass_rate 有落差</b>來示範公式怎麼算，
-    不是本次 Gemini 實跑的數字（本次 Gemini 三個 coding 變體 pass_rate 都是 1.0）。<b>實際數字見第 5 節對照表。</b></div>
+    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 實算（本次 Gemini 實跑，task_001）</h4>
+    <p class="mut">Gemini（api 模式）三個變體<b>都把測試全修過（pass_rate=1.0、judge=1.0）</b>，
+    故 base 都是 <code>0.6·1.0 + 0.4·1.0 = 1.0</code>；差異只剩效率微調 <code>×(0.95+0.05·eff)</code>：</p>
     <table>
       <tr><th>變體</th><th>pass_rate</th><th>judge</th><th>base=0.6h+0.4s</th><th>效率</th><th>×(0.95+0.05·eff)</th><th>綜合分</th></tr>
-      <tr><td><code>示例1</code></td><td>1.0</td><td>0.803</td><td>0.921</td><td>0.785</td><td>×0.989</td><td><b>0.911</b></td></tr>
-      <tr><td><code>示例2</code></td><td>0.6</td><td>0.803</td><td>0.681</td><td>0.65</td><td>×0.983</td><td><b>0.669</b></td></tr>
-      <tr><td><code>示例3</code></td><td>0.4</td><td>0.803</td><td>0.561</td><td>0.85</td><td>×0.993</td><td><b>0.557</b></td></tr>
+      <tr><td><code>v_a</code></td><td>1.0</td><td>1.0</td><td>1.0</td><td>0.65</td><td>×0.983</td><td><b>0.982</b></td></tr>
+      <tr class="win"><td><code>v_b</code></td><td>1.0</td><td>1.0</td><td>1.0</td><td>0.985</td><td>×0.999</td><td><b>0.999</b></td></tr>
+      <tr><td><code>v_c</code></td><td>1.0</td><td>1.0</td><td>1.0</td><td>0.958</td><td>×0.998</td><td><b>0.998</b></td></tr>
     </table>
-    <p class="mut">效率僅 ±5% 微調（乘數落在 0.95~1.0），不足以翻轉 pass_rate 拉開的差距。這就是「向後相容」：效率中性時乘數≈1，分數等同純 pytest+judge。</p>
+    <div class="callout warn"><b>真實 LLM 實跑的觀察</b>：Gemini 能力足以無視 skill 差異、把這種簡單 coding 任務全修對，
+    所以 coding 分數幾乎貼齊（0.982~0.999），差異只由效率微調拉出零點幾。<b>真正拉開變體高下的是 general 任務</b>（見下方與第 5 節）。
+    這也點出：任務對 agent 太簡單時，coding 難顯出 skill 差異，需要更難的 golden task。</div>
 
-    <h4 style="margin:14px 0 6px;color:#cdd6e6">general 實算（示意）</h4>
-    <p class="mut">general 沒有 pytest，改以 completion（規則或 LLM）為主體，效率加成最多 40%：</p>
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">general 實算（本次 Gemini 實跑）</h4>
+    <p class="mut">general 沒有 pytest，改以 completion 為主體、效率加成最多 40%。以下是本次兩個 general task 的真實數字：</p>
     <table>
-      <tr><th>情境</th><th>completion</th><th>效率</th><th>completion×(0.6+0.4·eff)</th><th>綜合分</th><th>_success（≥0.75?）</th></tr>
-      <tr><td>使用者確認滿意、又快</td><td>1.0</td><td>0.9</td><td>1.0×(0.6+0.36)</td><td class="ok"><b>0.96</b></td><td class="ok">✓</td></tr>
-      <tr><td>有完成但囉唆</td><td>1.0</td><td>0.3</td><td>1.0×(0.6+0.12)</td><td><b>0.72</b></td><td class="no">✗</td></tr>
-      <tr><td>擺爛（使用者說不對）、但很快</td><td>0.0</td><td>1.0</td><td>0.0×(0.6+0.4)</td><td class="no"><b>0.0</b></td><td class="no">✗</td></tr>
+      <tr><th>task · 變體</th><th>completion（來源）</th><th>效率</th><th>completion×(0.6+0.4·eff)</th><th>綜合分</th><th>成功</th></tr>
+      <tr><td>task_003 · v_a</td><td>1.0 <span class="badge b-llm">llm</span></td><td>0.9</td><td>1.0×(0.6+0.36)</td><td class="ok"><b>0.96</b></td><td class="ok">✓</td></tr>
+      <tr><td>task_003 · v_c</td><td>0.5 <span class="badge b-llm">llm</span></td><td>0.75</td><td>0.5×(0.6+0.30)</td><td class="no"><b>0.45</b></td><td class="no">✗</td></tr>
+      <tr><td>task_004 · v_b</td><td>1.0 <span class="badge b-rule">rule</span></td><td>0.65</td><td>1.0×(0.6+0.26)</td><td class="ok"><b>0.86</b></td><td class="ok">✓</td></tr>
+      <tr><td>task_004 · v_c</td><td>0.0 <span class="badge b-rule">rule</span></td><td>0.65</td><td>0.0×(0.6+0.26)</td><td class="no"><b>0.0</b></td><td class="no">✗</td></tr>
     </table>
-    <p class="mut"><b>關鍵</b>：末列證明「防呆」有效——即使效率滿分，completion=0（擺爛）→ 綜合分仍為 0，不會因為「快」而勝出。
+    <p class="mut"><b>看點</b>：task_003 沒有使用者後續回覆 → detector 信心不足（0.245&lt;0.5）→ 退回 <b>Gemini judge</b>（source=llm），
+    v_c 被判 0.5；task_004 有對話腳本 → <b>規則 detector</b>（source=rule）直接判定，v_c 因使用者說「不對、重寫」→ completion=0.0。
+    末列證明「防呆」有效：completion=0（擺爛）即使效率不差，綜合分仍為 0，不會因為快而勝出。
     <code>_success</code>：coding 用 all_pass；general 用 completion ≥ 0.75。</p>
   </div>
 
@@ -435,17 +464,94 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
   <p class="lead">左側是各變體實測分數（綜合分以長條視覺化），右側是精煉前→後的 skill 內容與 diff。</p>
   <div class="card">
     
-    <div class="callout good">發布閘：score = <b>0.86</b> / 門檻 0.75
-      → accept（grounded_in_evidence=0.85 preserves_existing_value=0.9 specificity_and_reusability=0.85 safe_to_publish=0.85 ）</div>
+    <div class="callout good">發布閘：score = <b>0.98</b> / 門檻 0.75
+      → accept（grounded_in_evidence=1.0 preserves_existing_value=1.0 specificity_and_reusability=1.0 safe_to_publish=1.0 ）</div>
     
-    <p><b>精煉理由：</b>[MOCK] 勝出變體共通做法：先重現、最小修改、分段驗證。</p>
+    <p><b>精煉理由：</b>Variant B achieved the highest scores on coding tasks (0.999 and 0.992) by treating tests as specifications and listing concrete edge cases (empty strings, delimiters, boundary filters). Variant A also performed very well (0.982) and offered a highly structured workflow (reproducing first with pytest, locating minimal modification points, and incremental verification). Merging these two approaches provides a highly effective, structured debugging guide that prevents over-engineering and ensures robust edge-case coverage.</p>
 
     <h3>各變體逐 task 表現</h3>
     <table>
       <tr><th>變體</th><th>task</th><th>類型</th><th>pass_rate</th><th>judge</th><th>達標(來源)</th>
         <th>輪數</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
       
+      <tr class="">
+        <td><code>v_b</code></td><td>task_001</td>
+        <td><span class="badge b-coding">coding</span></td>
+        <td>1.0</td>
+        <td>1.0</td>
+        <td>—</td>
+        <td>1</td><td>0.0</td><td>0.985</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:100%"></div></div><span class="bar-n">0.999</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
+      <tr class="">
+        <td><code>v_c</code></td><td>task_001</td>
+        <td><span class="badge b-coding">coding</span></td>
+        <td>1.0</td>
+        <td>1.0</td>
+        <td>—</td>
+        <td>1</td><td>0.0</td><td>0.958</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:100%"></div></div><span class="bar-n">0.998</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
+      <tr class="">
+        <td><code>v_c</code></td><td>task_002</td>
+        <td><span class="badge b-coding">coding</span></td>
+        <td>1.0</td>
+        <td>1.0</td>
+        <td>—</td>
+        <td>1</td><td>0.0</td><td>0.945</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:100%"></div></div><span class="bar-n">0.997</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
+      <tr class="">
+        <td><code>v_b</code></td><td>task_002</td>
+        <td><span class="badge b-coding">coding</span></td>
+        <td>1.0</td>
+        <td>0.99</td>
+        <td>—</td>
+        <td>1</td><td>0.0</td><td>0.925</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:99%"></div></div><span class="bar-n">0.992</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
       <tr class="win">
+        <td><code>v_a</code></td><td>task_001</td>
+        <td><span class="badge b-coding">coding</span></td>
+        <td>1.0</td>
+        <td>1.0</td>
+        <td>—</td>
+        <td>1</td><td>0.0</td><td>0.65</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:98%"></div></div><span class="bar-n">0.982</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
+      <tr class="">
+        <td><code>v_a</code></td><td>task_002</td>
+        <td><span class="badge b-coding">coding</span></td>
+        <td>1.0</td>
+        <td>1.0</td>
+        <td>—</td>
+        <td>1</td><td>0.0</td><td>0.65</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:98%"></div></div><span class="bar-n">0.982</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
+      <tr class="">
+        <td><code>v_a</code></td><td>task_003</td>
+        <td><span class="badge b-general">general</span></td>
+        <td>0.0</td>
+        <td>—</td>
+        <td>1.0 <span class="badge b-llm">llm</span></td>
+        <td>1</td><td>0.0</td><td>0.9</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:96%"></div></div><span class="bar-n">0.96</span></div></td>
+        <td class="ok">✓</td>
+      </tr>
+      
+      <tr class="">
         <td><code>v_a</code></td><td>task_004</td>
         <td><span class="badge b-general">general</span></td>
         <td>0.0</td>
@@ -457,24 +563,13 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
       </tr>
       
       <tr class="">
-        <td><code>v_a</code></td><td>task_001</td>
-        <td><span class="badge b-coding">coding</span></td>
-        <td>1.0</td>
-        <td>0.803</td>
+        <td><code>v_b</code></td><td>task_003</td>
+        <td><span class="badge b-general">general</span></td>
+        <td>0.0</td>
         <td>—</td>
-        <td>1</td><td>0.0</td><td>0.66</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:91%"></div></div><span class="bar-n">0.906</span></div></td>
-        <td class="ok">✓</td>
-      </tr>
-      
-      <tr class="">
-        <td><code>v_a</code></td><td>task_002</td>
-        <td><span class="badge b-coding">coding</span></td>
-        <td>1.0</td>
-        <td>0.803</td>
-        <td>—</td>
-        <td>1</td><td>0.0</td><td>0.66</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:91%"></div></div><span class="bar-n">0.906</span></div></td>
+        <td>1.0 <span class="badge b-llm">llm</span></td>
+        <td>1</td><td>0.0</td><td>0.861</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:94%"></div></div><span class="bar-n">0.944</span></div></td>
         <td class="ok">✓</td>
       </tr>
       
@@ -490,79 +585,13 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
       </tr>
       
       <tr class="">
-        <td><code>v_a</code></td><td>task_003</td>
-        <td><span class="badge b-general">general</span></td>
-        <td>0.0</td>
-        <td>—</td>
-        <td>0.8 <span class="badge b-llm">llm</span></td>
-        <td>1</td><td>1.0</td><td>0.85</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:75%"></div></div><span class="bar-n">0.752</span></div></td>
-        <td class="ok">✓</td>
-      </tr>
-      
-      <tr class="">
         <td><code>v_c</code></td><td>task_003</td>
         <td><span class="badge b-general">general</span></td>
         <td>0.0</td>
         <td>—</td>
-        <td>0.8 <span class="badge b-llm">llm</span></td>
-        <td>1</td><td>1.0</td><td>0.85</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:75%"></div></div><span class="bar-n">0.752</span></div></td>
-        <td class="ok">✓</td>
-      </tr>
-      
-      <tr class="">
-        <td><code>v_b</code></td><td>task_003</td>
-        <td><span class="badge b-general">general</span></td>
-        <td>0.0</td>
-        <td>—</td>
-        <td>0.8 <span class="badge b-llm">llm</span></td>
-        <td>1</td><td>1.0</td><td>0.75</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:72%"></div></div><span class="bar-n">0.72</span></div></td>
-        <td class="ok">✓</td>
-      </tr>
-      
-      <tr class="">
-        <td><code>v_b</code></td><td>task_001</td>
-        <td><span class="badge b-coding">coding</span></td>
-        <td>0.6</td>
-        <td>0.803</td>
-        <td>—</td>
-        <td>1</td><td>0.0</td><td>0.65</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:67%"></div></div><span class="bar-n">0.669</span></div></td>
-        <td class="no">✗</td>
-      </tr>
-      
-      <tr class="">
-        <td><code>v_b</code></td><td>task_002</td>
-        <td><span class="badge b-coding">coding</span></td>
-        <td>0.6</td>
-        <td>0.803</td>
-        <td>—</td>
-        <td>1</td><td>0.0</td><td>0.65</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:67%"></div></div><span class="bar-n">0.669</span></div></td>
-        <td class="no">✗</td>
-      </tr>
-      
-      <tr class="">
-        <td><code>v_c</code></td><td>task_001</td>
-        <td><span class="badge b-coding">coding</span></td>
-        <td>0.4</td>
-        <td>0.803</td>
-        <td>—</td>
-        <td>1</td><td>1.0</td><td>0.85</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:56%"></div></div><span class="bar-n">0.557</span></div></td>
-        <td class="no">✗</td>
-      </tr>
-      
-      <tr class="">
-        <td><code>v_c</code></td><td>task_002</td>
-        <td><span class="badge b-coding">coding</span></td>
-        <td>0.4</td>
-        <td>0.803</td>
-        <td>—</td>
-        <td>1</td><td>1.0</td><td>0.85</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:56%"></div></div><span class="bar-n">0.557</span></div></td>
+        <td>0.5 <span class="badge b-llm">llm</span></td>
+        <td>1</td><td>0.0</td><td>0.75</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:45%"></div></div><span class="bar-n">0.45</span></div></td>
         <td class="no">✗</td>
       </tr>
       
@@ -588,25 +617,25 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
       
       <tr class="win">
         <td><code>v_a</code></td><td>4</td>
-        <td>0.5</td><td>1.25</td><td>0.768</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:88%"></div></div><span class="bar-n">0.881</span></div></td>
+        <td>0.5</td><td>1.25</td><td>0.775</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:97%"></div></div><span class="bar-n">0.971</span></div></td>
         <td class="ok">✓</td></tr>
       
       <tr class="">
         <td><code>v_b</code></td><td>4</td>
-        <td>0.3</td><td>1.5</td><td>0.675</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:73%"></div></div><span class="bar-n">0.73</span></div></td>
-        <td class="no">✗</td></tr>
+        <td>0.5</td><td>1.5</td><td>0.855</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:95%"></div></div><span class="bar-n">0.949</span></div></td>
+        <td class="ok">✓</td></tr>
       
       <tr class="">
         <td><code>v_c</code></td><td>4</td>
-        <td>0.2</td><td>1.5</td><td>0.8</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:47%"></div></div><span class="bar-n">0.467</span></div></td>
+        <td>0.5</td><td>1.5</td><td>0.826</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:61%"></div></div><span class="bar-n">0.611</span></div></td>
         <td class="no">✗</td></tr>
       
     </table>
     
-    <p>勝出變體：<span class="chip ok">v_a</span>（跨 4 task 平均綜合分 0.881）→ 送入 execution 萃取做法。</p>
+    <p>勝出變體：<span class="chip ok">v_a</span>（跨 4 task 平均綜合分 0.971）→ 送入 execution 萃取做法。</p>
   </div>
 
   <div class="grid">
@@ -619,25 +648,36 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
 When tests fail, look at the error and fix the code.</pre>
     </div>
     <div class="card">
-      <h3>After（精煉後 · v1）</h3>
+      <h3>After（精煉後 · v13）</h3>
       
       <p class="mut">coding-debug · <b>coding-debug</b></p>
-      <p class="mut">Use for debugging failing tests.</p>
-      <pre># Coding Debug
+      <p class="mut">Use for debugging failing tests by treating them as specifications and making minimal, targeted fixes.</p>
+      <pre># Coding Debug (代碼除錯與測試修復)
 
-When tests fail, look at the error and fix the code.
+## 核心原則：以測試為規格，最小化修改
 
-## 精煉補充（[MOCK] 由勝出變體證據萃取）
-- 先重現失敗測試，再定位最小修改點。
-- 修完只跑相關測試快速回饋，全綠後再跑完整套件。
-</pre>
+1. **重現並定位問題 (Reproduce & Locate)**
+   - **先執行測試**：直接執行測試指令（如 `pytest -q`），閱讀第一個失敗的斷言 (Assertion) 與 Traceback，確認能穩定重現。
+   - **定位最小修改點**：從 Traceback 往回追溯出錯的程式碼行，專注於該處，**切忌盲目重寫大片程式碼**。
+
+2. **以測試為規格進行對照 (Treat Tests as Specifications)**
+   - 將測試案例視為功能規格，逐一列出並檢查以下常見邊界與分支：
+     - **空輸入/極端值**：空字串 `""`、`None`、`0`、空陣列等。
+     - **單一值/常規值**：單個元素、標準輸入。
+     - **邊界條件**：上界/下界過濾（例如大於 1000 需忽略、負數需拋出異常等）。
+     - **多重格式/分隔符**：是否支援多種分隔符（如 `,` 與 `\n`）、自定義分隔符。
+   - 逐條對照目前實作，找出「哪些規格/分支尚未被處理」。
+
+3. **最小修改與分段驗證 (Minimal Change & Incremental Verification)**
+   - **一次只補一個缺失分支**：針對缺少的 Case 補上對應的 `if/else` 分支或邏輯，修改完立即重跑相關測試。
+   - **分段驗證**：先確保當前修改的測試通過，最後再執行完整測試套件，確保沒有引入回歸 Bug (Regression)。</pre>
       
     </div>
   </div>
   
   <div class="card">
     <h3>內容 diff（before → after）</h3>
-    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -2,2 +2,6 @@</span><span class="ctx"> </span><span class="ctx"> When tests fail, look at the error and fix the code.</span><span class="add">+</span><span class="add">+## 精煉補充（[MOCK] 由勝出變體證據萃取）</span><span class="add">+- 先重現失敗測試，再定位最小修改點。</span><span class="add">+- 修完只跑相關測試快速回饋，全綠後再跑完整套件。</span></pre>
+    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,19 @@</span><span class="del">-# Coding Debug</span><span class="add">+# Coding Debug (代碼除錯與測試修復)</span><span class="ctx"> </span><span class="del">-When tests fail, look at the error and fix the code.</span><span class="add">+## 核心原則：以測試為規格，最小化修改</span><span class="add">+</span><span class="add">+1. **重現並定位問題 (Reproduce & Locate)**</span><span class="add">+   - **先執行測試**：直接執行測試指令（如 `pytest -q`），閱讀第一個失敗的斷言 (Assertion) 與 Traceback，確認能穩定重現。</span><span class="add">+   - **定位最小修改點**：從 Traceback 往回追溯出錯的程式碼行，專注於該處，**切忌盲目重寫大片程式碼**。</span><span class="add">+</span><span class="add">+2. **以測試為規格進行對照 (Treat Tests as Specifications)**</span><span class="add">+   - 將測試案例視為功能規格，逐一列出並檢查以下常見邊界與分支：</span><span class="add">+     - **空輸入/極端值**：空字串 `""`、`None`、`0`、空陣列等。</span><span class="add">+     - **單一值/常規值**：單個元素、標準輸入。</span><span class="add">+     - **邊界條件**：上界/下界過濾（例如大於 1000 需忽略、負數需拋出異常等）。</span><span class="add">+     - **多重格式/分隔符**：是否支援多種分隔符（如 `,` 與 `\n`）、自定義分隔符。</span><span class="add">+   - 逐條對照目前實作，找出「哪些規格/分支尚未被處理」。</span><span class="add">+</span><span class="add">+3. **最小修改與分段驗證 (Minimal Change & Incremental Verification)**</span><span class="add">+   - **一次只補一個缺失分支**：針對缺少的 Case 補上對應的 `if/else` 分支或邏輯，修改完立即重跑相關測試。</span><span class="add">+   - **分段驗證**：先確保當前修改的測試通過，最後再執行完整測試套件，確保沒有引入回歸 Bug (Regression)。</span></pre>
   </div>
   
 </section>
@@ -721,7 +761,63 @@ When tests fail, look at the error and fix the code.
   </div>
 
   
-  <div class="callout warn">版本 B 尚未實跑。執行 <code>python third_party/adapt_to_skillclaw.py --refine --mock</code> 後重新產生本頁。</div>
+  <div class="card">
+    <h3>實跑對照（同一批 logs，各自精煉）</h3>
+    <p class="mut">版本 B LLM：mock（離線模擬——注入介面相容 Mock 驅動 SkillClaw 原生階段）
+    </p>
+    <table>
+      <tr><th>維度</th><th>版本 A</th><th>版本 B</th></tr>
+      <tr><td>精煉動作</td><td>improve_skill</td><td>improve_skill</td></tr>
+      <tr><td>是否採用</td>
+        <td class="ok">採用</td>
+        <td class="ok">採用</td></tr>
+      <tr><td>驗證閘分數</td><td>0.98</td><td>0.84</td></tr>
+    </table>
+    
+    <h3>版本 B — SkillClaw session_judge 對各變體評分</h3>
+    <table>
+      <tr><th>變體</th><th>pass_rate</th><th>judge overall</th><th>completion</th><th>quality</th><th>efficiency</th><th>tool</th></tr>
+      
+      <tr><td><code>v_a</code></td><td>1.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_b</code></td><td>1.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_c</code></td><td>1.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_a</code></td><td>1.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_b</code></td><td>1.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_c</code></td><td>1.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_a</code></td><td>0.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_b</code></td><td>0.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_c</code></td><td>0.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_a</code></td><td>0.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_b</code></td><td>0.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+      <tr><td><code>v_c</code></td><td>0.0</td><td><b>0.702</b></td>
+        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
+      
+    </table>
+    <p class="mut">兩版對同一批變體的排序一致（v_a &gt; v_b &gt; v_c）→ 互相佐證。</p>
+    
+  </div>
   
 </section>
 
