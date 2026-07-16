@@ -151,18 +151,30 @@ class LLMClient:
         if self._base_url:
             client_kwargs["http_options"] = types.HttpOptions(base_url=self._base_url)
         client = genai.Client(**client_kwargs)
-        # Gemini 2.5 系列會先花 thinking token 才輸出；max_output_tokens 太小會被思考吃光
-        # 導致回空字串。留一個下限，確保答案有空間。
+        # Gemini 2.5 系列會先花 thinking token 才輸出；若把預算全花在思考，答案會被截斷
+        # 甚至回空字串。對策：(1) 尊重傳入 max_tokens（下限 512），(2) 關閉 thinking budget，
+        # 把 token 預算全留給答案。
         out_tokens = max(int(max_tokens), 512)
+        cfg_kwargs: dict[str, Any] = {
+            "system_instruction": system,
+            "temperature": temperature,
+            "max_output_tokens": out_tokens,
+        }
+        try:
+            cfg_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+        except Exception:  # noqa: BLE001 - 舊版 SDK 無此欄位則略過
+            pass
         resp = client.models.generate_content(
-            model=self.model,
-            contents=user,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                temperature=temperature,
-                max_output_tokens=out_tokens,
-            ),
+            model=self.model, contents=user, config=types.GenerateContentConfig(**cfg_kwargs)
         )
+        # 偵測截斷（finish_reason == MAX_TOKENS）：記到 last_truncated 供上層/報告參考
+        self.last_truncated = False
+        try:
+            fr = str(getattr(resp.candidates[0], "finish_reason", "") or "")
+            if "MAX_TOKENS" in fr:
+                self.last_truncated = True
+        except Exception:  # noqa: BLE001
+            pass
         return resp.text or ""
 
     def _chat_openai(self, system: str, user: str, temperature: float, max_tokens: int) -> str:

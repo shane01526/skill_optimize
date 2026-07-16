@@ -73,7 +73,9 @@
     <ul style="margin:0">
       <li><b>grounded（非即時查詢）</b>：本測試離線、無網路。「新聞」是附在每個 task 的 <code>sources.md</code> 來源材料；Gemini 依 skill 綜整這些材料，<b>不假裝有即時查詢</b>。</li>
       <li><b>Gemini 身兼兩角</b>：runner（依 skill 實際產出綜整）＋ judge（評「產出 vs 來源」的完成度/品質）。</li>
-      <li><b>改善的主要證據</b>＝第 4 節「回測」：baseline skill 與 refined skill 各自真跑一次、由 judge 評分對照。第 5 節對話裡的「使用者後續回饋」是<b>預寫腳本（illustrative）</b>，僅用來示範規則式 completion detector，非改善證據。</li>
+      <li><b>改善的主要證據</b>＝第 4 節「回測」：baseline skill 與 refined skill 各自真跑、由 grounded judge 評分對照。第 5 節對話裡的「使用者後續回饋」是<b>預寫腳本（illustrative）</b>，僅用來示範規則式 completion detector，非改善證據。</li>
+      <li><b>多次 rollout 取平均</b>：每個 (變體×task) 與每次回測都跑 <b>3 次</b> 取 mean±std，降低單次 LLM 隨機性；成功率＝達標次數佔比。</li>
+      <li><b>已修正回覆截斷</b>：先前 Gemini 2.5 的 thinking token 會吃掉輸出預算導致答案被切斷；本次已關閉 thinking budget 並把產出上限拉到 4096，產出皆完整。</li>
     </ul>
   </div>
 </section>
@@ -83,125 +85,127 @@
   <p class="lead">各 skill 變體在每個 general task 的 Gemini judge 完成度、達標來源（規則/LLM）、效率與綜合分。</p>
   <div class="card">
     <div class="kpi">
-      <div class="box"><div class="n">12</div><div class="l">變體×task session</div></div>
+      <div class="box"><div class="n">12</div><div class="l">變體×task 組</div></div>
+      <div class="box"><div class="n">3×</div><div class="l">每組 rollout</div></div>
       <div class="box"><div class="n">improve_skill</div><div class="l">精煉動作</div></div>
       <div class="box"><div class="n ok">採用</div><div class="l">發布閘</div></div>
-      <div class="box"><div class="n">0.95</div><div class="l">verify 分數</div></div>
+      <div class="box"><div class="n">1.0</div><div class="l">verify 分數</div></div>
     </div>
+    <p class="mut">每個 (變體×task) 跑 <b>3 次 rollout</b> 取平均，降低單次 LLM variance。分數以 <b>mean ± std</b> 呈現。</p>
     <table>
-      <tr><th>task</th><th>變體</th><th>完成度</th><th>達標來源</th><th>信心</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
+      <tr><th>task</th><th>變體</th><th>完成度 mean±std</th><th>達標來源</th><th>綜合分 mean±std</th><th>3 次分數</th><th>成功率</th></tr>
       
       <tr>
         <td>customer_inquiry</td><td><code>v_b</code></td>
-        <td>0.5</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.75</td>
-        <td><b>0.45</b></td>
-        <td class="no">✗</td>
+        <td><b>0.98</b> <span class="mut">± 0.006</span></td>
+        <td class="mut" style="font-size:12px">[0.972, 0.982, 0.987]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>customer_inquiry</td><td><code>v_a</code></td>
-        <td>0.5</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.682</td>
-        <td><b>0.436</b></td>
-        <td class="no">✗</td>
+        <td><b>0.963</b> <span class="mut">± 0.047</span></td>
+        <td class="mut" style="font-size:12px">[0.897, 0.993, 1.0]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>customer_inquiry</td><td><code>v_c</code></td>
-        <td>0.0</td>
+        <td>0.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-rule">rule</span></td>
-        <td>0.762</td><td>0.95</td>
-        <td><b>0.0</b></td>
-        <td class="no">✗</td>
-      </tr>
-      
-      <tr>
-        <td>news_digest_easy</td><td><code>v_a</code></td>
-        <td>1.0</td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td>0.762</td><td>0.758</td>
-        <td><b>0.903</b></td>
-        <td class="ok">✓</td>
+        <td><b>0.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[0.0, 0.0, 0.0]</td>
+        <td class="no">0%</td>
       </tr>
       
       <tr>
         <td>news_digest_easy</td><td><code>v_b</code></td>
-        <td>1.0</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.675</td>
-        <td><b>0.87</b></td>
-        <td class="ok">✓</td>
+        <td><b>0.941</b> <span class="mut">± 0.022</span></td>
+        <td class="mut" style="font-size:12px">[0.91, 0.962, 0.95]</td>
+        <td class="ok">100%</td>
+      </tr>
+      
+      <tr>
+        <td>news_digest_easy</td><td><code>v_a</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-rule">rule</span></td>
+        <td><b>0.907</b> <span class="mut">± 0.032</span></td>
+        <td class="mut" style="font-size:12px">[0.862, 0.92, 0.938]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>news_digest_easy</td><td><code>v_c</code></td>
-        <td>0.0</td>
+        <td>0.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-rule">rule</span></td>
-        <td>0.762</td><td>1.0</td>
-        <td><b>0.0</b></td>
-        <td class="no">✗</td>
+        <td><b>0.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[0.0, 0.0, 0.0]</td>
+        <td class="no">0%</td>
       </tr>
       
       <tr>
         <td>news_digest_hard</td><td><code>v_b</code></td>
-        <td>0.5</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.9</td>
-        <td><b>0.48</b></td>
-        <td class="no">✗</td>
-      </tr>
-      
-      <tr>
-        <td>news_digest_hard</td><td><code>v_a</code></td>
-        <td>0.5</td>
-        <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.841</td>
-        <td><b>0.468</b></td>
-        <td class="no">✗</td>
+        <td><b>0.943</b> <span class="mut">± 0.041</span></td>
+        <td class="mut" style="font-size:12px">[0.921, 0.908, 1.0]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>news_digest_hard</td><td><code>v_c</code></td>
-        <td>0.0</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.75</td>
-        <td><b>0.0</b></td>
-        <td class="no">✗</td>
+        <td><b>0.942</b> <span class="mut">± 0.024</span></td>
+        <td class="mut" style="font-size:12px">[0.974, 0.918, 0.933]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
-        <td>news_digest_medium</td><td><code>v_a</code></td>
-        <td>1.0</td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td>0.762</td><td>0.9</td>
-        <td><b>0.96</b></td>
-        <td class="ok">✓</td>
+        <td>news_digest_hard</td><td><code>v_a</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-llm">llm</span></td>
+        <td><b>0.894</b> <span class="mut">± 0.026</span></td>
+        <td class="mut" style="font-size:12px">[0.924, 0.898, 0.86]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>news_digest_medium</td><td><code>v_b</code></td>
-        <td>0.5</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.833</td>
-        <td><b>0.467</b></td>
-        <td class="no">✗</td>
+        <td><b>0.95</b> <span class="mut">± 0.028</span></td>
+        <td class="mut" style="font-size:12px">[0.921, 0.941, 0.987]</td>
+        <td class="ok">100%</td>
+      </tr>
+      
+      <tr>
+        <td>news_digest_medium</td><td><code>v_a</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-rule">rule</span></td>
+        <td><b>0.904</b> <span class="mut">± 0.032</span></td>
+        <td class="mut" style="font-size:12px">[0.86, 0.931, 0.922]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>news_digest_medium</td><td><code>v_c</code></td>
-        <td>0.0</td>
+        <td>0.733 <span class="mut">± 0.249</span></td>
         <td><span class="badge b-llm">llm</span></td>
-        <td>0.0</td><td>0.677</td>
-        <td><b>0.0</b></td>
-        <td class="no">✗</td>
+        <td><b>0.715</b> <span class="mut">± 0.233</span></td>
+        <td class="mut" style="font-size:12px">[0.789, 0.4, 0.956]</td>
+        <td class="mid">67%</td>
       </tr>
       
     </table>
     <p class="mut">達標來源 <span class="badge b-rule">rule</span>＝規則式 detector（零 LLM，靠使用者後續回饋訊號）；
-    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。精煉理由：Analysis of high-performing sessions (news_digest_medium::v_a, news_digest_easy::v_b, news_digest_hard::v_b, customer_inquiry::v_b) shows that successful summaries require strict source attribution, explicit conflict preservation (never smoothing over differences), honest reporting of information gaps using '來源未提及' (source not mentioned), filtering out irrelevant noise, and structuring multi-faceted information (like separating facts, emotions, and policy-compliant replies) within tight length limits. Low-performing sessions failed precisely because they smoothed over conflicts, hallucinated missing details, or failed to filter out noise. The refined skill incorporates these concrete practices.</p>
+    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。成功率＝3 次中 completion≥0.75 的比例。精煉理由：Across the highest-performing runs (scores 0.86 to 0.974), the most successful agents consistently structured their summaries using clear, explicit categorization to handle conflicts, information gaps, and source attribution. Low-performing or rejected runs failed because they either flattened conflicts or mixed up customer demands with official company policies. The refined skill synthesizes these winning practices—such as side-by-side conflict presentation, explicit 'information gap' labeling, and strict separation of facts from demands/policies—into a highly actionable, structured guide.</p>
   </div>
 </section>
 
@@ -221,32 +225,34 @@ Read the material and write a summary.</pre>
       <h3>After（refined）</h3>
       
       <p class="mut">info-digest · <b>info-digest</b></p>
-      <p class="mut">Use for summarizing information, handling conflicting sources, filtering noise, and managing strict constraints.</p>
+      <p class="mut">Synthesize and summarize information from multiple sources while handling conflicts, filtering noise, identifying information gaps, and strictly mapping source attributions.</p>
       <pre># Info Digest
 
-A systematic guide for synthesizing multiple information sources under strict constraints, handling conflicts, noise, and information gaps.
+Use this skill to synthesize information from multiple sources under strict constraints (e.g., character limits, strict grounding, and source attribution).
 
-## 1. Strict Source Attribution
-- Attribute every key fact, number, or claim to its specific source using explicit tags (e.g., `(S1)`, `[S2]`).
-- Do not generalize or omit source tags.
+## Core Practices
 
-## 2. Explicit Conflict Handling
-- If sources present conflicting numbers, dates, or claims, **do not smooth them over or choose one**.
-- Explicitly present all conflicting versions with their respective source tags (e.g., "S1 states 1,200 people, while S2 reports 1,500").
+### 1. Structure & Layout
+- **Categorize Information**: Group findings into logical, structured sections (e.g., "Facts", "Emotions/Demands", "Conflicts", "Gaps").
+- **Enforce Length Limits**: Keep summaries extremely concise. Use bullet points to maximize information density.
 
-## 3. Handling Information Gaps & Noise
-- **Information Gaps**: If asked a specific question that is not answered in the sources, explicitly state "來源未提及" (Source not mentioned). Do not hallucinate or extrapolate.
-- **Noise Filtering**: Completely exclude any source or information that is irrelevant to the core topic.
+### 2. Handling Conflicts & Contradictions
+- **Side-by-Side Presentation**: Never choose one version or flatten a conflict. Present conflicting facts side-by-side with their respective sources.
+  * *Example*: "Layoff numbers: Source A reports 1,200 affected [S1], while Source B reports 1,500 [S2]."
 
-## 4. Structure & Length Constraints
-- Keep summaries extremely concise to fit within tight character or word limits (e.g., 120 or 150 characters).
-- For multi-faceted inputs (e.g., customer complaints), structure the output clearly (e.g., separating "Facts", "Emotions/Demands", and "Reply Points" matching company policy).</pre>
+### 3. Managing Information Gaps & Noise
+- **Acknowledge Gaps Honestly**: If a critical piece of information or a specific question is not answered by the sources, explicitly state "Source not mentioned" or "Information not available in sources". Do not extrapolate or guess.
+- **Filter Noise**: Explicitly exclude irrelevant sources from the final summary.
+
+### 4. Strict Grounding & Attribution
+- **Source Mapping**: Append source tags (e.g., `[S1]`, `(S2)`) immediately after every key fact or point.
+- **Separate Demands from Policies**: When summarizing customer service or policy issues, strictly separate what the customer *demands* (e.g., 3-day turnaround) from what the official company policy *permits* (e.g., 5-day SLA) to avoid misleading stakeholders.</pre>
       
     </div>
   </div>
   
   <div class="card"><h3>內容 diff（baseline → refined）</h3>
-    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,19 @@</span><span class="ctx"> # Info Digest</span><span class="ctx"> </span><span class="del">-Read the material and write a summary.</span><span class="add">+A systematic guide for synthesizing multiple information sources under strict constraints, handling conflicts, noise, and information gaps.</span><span class="add">+</span><span class="add">+## 1. Strict Source Attribution</span><span class="add">+- Attribute every key fact, number, or claim to its specific source using explicit tags (e.g., `(S1)`, `[S2]`).</span><span class="add">+- Do not generalize or omit source tags.</span><span class="add">+</span><span class="add">+## 2. Explicit Conflict Handling</span><span class="add">+- If sources present conflicting numbers, dates, or claims, **do not smooth them over or choose one**.</span><span class="add">+- Explicitly present all conflicting versions with their respective source tags (e.g., "S1 states 1,200 people, while S2 reports 1,500").</span><span class="add">+</span><span class="add">+## 3. Handling Information Gaps & Noise</span><span class="add">+- **Information Gaps**: If asked a specific question that is not answered in the sources, explicitly state "來源未提及" (Source not mentioned). Do not hallucinate or extrapolate.</span><span class="add">+- **Noise Filtering**: Completely exclude any source or information that is irrelevant to the core topic.</span><span class="add">+</span><span class="add">+## 4. Structure & Length Constraints</span><span class="add">+- Keep summaries extremely concise to fit within tight character or word limits (e.g., 120 or 150 characters).</span><span class="add">+- For multi-faceted inputs (e.g., customer complaints), structure the output clearly (e.g., separating "Facts", "Emotions/Demands", and "Reply Points" matching company policy).</span></pre>
+    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,21 @@</span><span class="ctx"> # Info Digest</span><span class="ctx"> </span><span class="del">-Read the material and write a summary.</span><span class="add">+Use this skill to synthesize information from multiple sources under strict constraints (e.g., character limits, strict grounding, and source attribution).</span><span class="add">+</span><span class="add">+## Core Practices</span><span class="add">+</span><span class="add">+### 1. Structure & Layout</span><span class="add">+- **Categorize Information**: Group findings into logical, structured sections (e.g., "Facts", "Emotions/Demands", "Conflicts", "Gaps").</span><span class="add">+- **Enforce Length Limits**: Keep summaries extremely concise. Use bullet points to maximize information density.</span><span class="add">+</span><span class="add">+### 2. Handling Conflicts & Contradictions</span><span class="add">+- **Side-by-Side Presentation**: Never choose one version or flatten a conflict. Present conflicting facts side-by-side with their respective sources.</span><span class="add">+  * *Example*: "Layoff numbers: Source A reports 1,200 affected [S1], while Source B reports 1,500 [S2]."</span><span class="add">+</span><span class="add">+### 3. Managing Information Gaps & Noise</span><span class="add">+- **Acknowledge Gaps Honestly**: If a critical piece of information or a specific question is not answered by the sources, explicitly state "Source not mentioned" or "Information not available in sources". Do not extrapolate or guess.</span><span class="add">+- **Filter Noise**: Explicitly exclude irrelevant sources from the final summary.</span><span class="add">+</span><span class="add">+### 4. Strict Grounding & Attribution</span><span class="add">+- **Source Mapping**: Append source tags (e.g., `[S1]`, `(S2)`) immediately after every key fact or point.</span><span class="add">+- **Separate Demands from Policies**: When summarizing customer service or policy issues, strictly separate what the customer *demands* (e.g., 3-day turnaround) from what the official company policy *permits* (e.g., 5-day SLA) to avoid misleading stakeholders.</span></pre>
   </div>
   
 </section>
@@ -306,33 +312,55 @@ No markdown fences. No extra text.
 
 <section id="s4">
   <div class="sechead"><span class="secno">4</span><h2>回測：優化前 vs 優化後（實際產出＋評分）</h2></div>
-  <p class="lead">同一批 task，baseline skill 與 refined skill 各讓 Gemini 真跑一次、各由 judge 評完成度，直接看出改善（delta &gt; 0）或退步（照實呈現）。</p>
+  <p class="lead">同一批 task，baseline skill 與 refined skill 各讓 Gemini 跑 3 次、由 grounded judge 評分，取 <b>mean</b> 對照，直接看出改善（Δ&gt;0）或退步（照實呈現）。分數旁標 ±std 與 3 次原始分數。</p>
+  <div class="callout warn"><b>如何誠實解讀這批數字：</b>修正截斷後，baseline skill 的產出多已完整，加上 Gemini 本身能力強，
+  即使籠統的 baseline 也能產出不錯的綜整，因此 baseline 分數普遍偏高（0.94~1.0）、refined 的改善幅度較小（整體約 +0.01）。
+  這是<b>真實且重要的觀察</b>：任務對強模型偏簡單時，skill 差異在「最終品質」上難顯著——差異更會出現在
+  <b>穩定度（std / 成功率）</b>與<b>更難、限制更嚴的任務</b>上。先前看似大幅改善，部分是 baseline 被截斷的假象，已修正。</div>
   
   <div class="card">
     <h3>customer_inquiry
       
-        <span class="delta-pos">（Δ完成度 +0.580）</span>
+        <span class="delta-pos">（Δmean 完成度 +0.007）</span>
       
     </h3>
     <table>
-      <tr><th style="width:8%"></th><th style="width:12%">完成度</th><th>Gemini 實際產出 ＋ judge rationale</th></tr>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（3 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>0.42<br><span class="mut" style="font-size:11px">涵蓋0.3/忠實1.0/衝突1.0/格式0.4</span></td>
-        <td><pre>【事實】
-* 信用卡第二次出現3500元不明扣款(S1)，上次通報未獲回覆(S2)。
-* 公司政策：確認未授權交易全額退還，處理時效5工作天(S3)。
+        <td>0.973 <span class="mut">± 0.002</span><br><span class="mut" style="font-size:11px">[0.97, 0.975, 0.975]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式0.9</span></td>
+        <td><pre>以下為針對客戶訴求整理的摘要與回覆重點：
 
-【情緒/要求】
-* 不滿被忽視且考慮換銀行(S2)。
-* 要求</pre><p class="mut">judge：回答未完成且在「要求」處中斷。缺失了客戶在S1、S3提出的具體要求（如3天內回覆、確認盜刷全額退款），且完全沒有列出「建議回覆重點」（違反驗收點3）。</p></td>
+**一、 事實 (Facts)**
+* 信用卡帳單出現第二次 3,500 元不明扣款 (S1)。
+* 客戶先前通報後未收到後續回覆 (S2)。
+* 公司既有政策：確認為未授權交易者全額退還，處理時效為 5 個工作天 (S3)。
+
+**二、 客戶情緒與要求 (Demands & Emotions)**
+* **情緒**：不滿被忽視，考慮換銀行 (S2)。
+* **要求**：查明並退款 (S1)；3 個工作天內回覆進度 (S3)；若確認盜刷須全額退款 (S3)。
+
+**三、 建議回覆重點 (Key Replies)**
+* 針對未回覆致歉，並承諾於 3 個工作天內回覆處理進度 (S2, S3)。
+* 說明公司政策：若確認為未授權交易，將依規定全額退還，處理時效為 5 個工作天 (S3)。</pre><p class="mut">judge：The answer perfectly covers all requirements, strictly adheres to the sources, separates facts from emotions/demands, and only uses the provided policy for the reply. The character count is around 240 characters (excluding spaces/markdown, it is slightly over the 180-character limit in Chinese, but extremely concise and well-structured).</p></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="ok">1.0<br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
-        <td><pre>【事實】信用卡二次遭不明扣款3500元(S1)，前次通報未獲回覆(S2)。
-【情緒/要求】不滿被忽視、考慮換行(S2)；要求查明(S1)、3工作天內回覆並於確認盜刷後全額退款(S3)。
-【回覆重點】承諾查明(S1)；依政策告知確認未授權交易將全額退還，處理時效為5工作天(S3)。</pre><p class="mut">judge：回答完美符合所有驗收條件：完整涵蓋所有訴求、清晰區分事實與情緒/要求、回覆重點僅依據既有政策且無額外承諾、正確標註來源(Sx)，且字數控制在135字，未超過180字上限。</p></td>
+        <td class="ok">0.98 <span class="mut">± 0.014</span><br><span class="mut" style="font-size:11px">[1.0, 0.97, 0.97]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
+        <td><pre>### 客訴摘要與回覆重點
+
+**一、 事實**
+* 信用卡帳單出現第二次 3,500 元不明扣款 [S1]。
+* 上次通報後未收到後續回覆 [S2]。
+* 公司政策：確認為未授權交易者全額退還，處理時效為 5 個工作天 [S3]。
+
+**二、 客戶情緒與要求**
+* **情緒**：不滿、覺得被忽視，考慮換銀行 [S2]。
+* **要求**：查明並退款 [S1]；3 個工作天內回覆進度 [S3]；若確認盜刷需全額退款 [S3]。
+
+**三、 建議回覆重點**
+* 針對未回覆致歉，並依政策於 5 個工作天內回覆處理進度 [S2, S3]。
+* 承諾查明扣款，若確認為未授權交易，將依規定全額退款 [S1, S3]。</pre><p class="mut">judge：The answer perfectly meets all criteria. It covers all points from S1-S3, separates facts from emotions/demands, provides response suggestions strictly based on the provided company policy, cites sources correctly using [Sx], and stays within the 180-character limit (the Chinese text is around 170 characters excluding formatting symbols).</p></td>
       </tr>
     </table>
   </div>
@@ -340,20 +368,23 @@ No markdown fences. No extra text.
   <div class="card">
     <h3>news_digest_easy
       
-        <span class="delta-pos">（Δ完成度 +0.500）</span>
+        <span class="delta-zero">（Δmean 完成度 +0.000）</span>
       
     </h3>
     <table>
-      <tr><th style="width:8%"></th><th style="width:12%">完成度</th><th>Gemini 實際產出 ＋ judge rationale</th></tr>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（3 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>0.5<br><span class="mut" style="font-size:11px">涵蓋None/忠實None/衝突None/格式None</span></td>
-        <td><pre>國泰金2026上半年稅後淨利420億元，年增12%，主因壽險投資收益回升(S1)。下半年將以數位轉型為重點，並已導入AI客服試點(S2)。法說會後股價盤中漲2.3%，下半年將維持穩健配息(S3)。</pre><p class="mut">judge：</p></td>
+        <td>1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
+        <td><pre>國泰金控於法說會宣布2026上半年稅後淨利達420億元，年增12%，主因為壽險投資收益回升 (S1)。管理層表示下半年重點為數位轉型，並已導入AI客服試點 (S2)。法說會後其股價盤中上漲2.3%，發言人指出下半年將維持穩健配息政策 (S3)。</pre><p class="mut">judge：The answer perfectly synthesizes all three sources, correctly attributes them with (S1), (S2), and (S3), stays strictly within the facts provided, and is well under the 120-character limit (approx. 108 characters including punctuation).</p></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="ok">1.0<br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
-        <td><pre>國泰金控法說會宣布2026上半年稅後淨利420億元，年增12%，主因為壽險投資收益回升(S1)。下半年將以數位轉型為重點並已導入AI客服試點(S2)。會後股價盤中上漲2.3%，下半年將維持穩健配息(S3)。</pre><p class="mut">judge：摘要完美符合所有要求，字數在120字以內（約101字），完整涵蓋S1、S2、S3的關鍵事實，且皆有正確標註來源，內容完全忠於原文。</p></td>
+        <td class="">1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
+        <td><pre>以下為國泰金控法說會資訊綜整：
+
+* **財務與股價**：2026上半年稅後淨利達420億元，年增12%，主因壽險投資收益回升 (S1)。法說會後股價盤中上漲2.3% (S3)。
+* **未來展望**：下半年將維持穩健配息 (S3)，並以數位轉型為重點，目前已導入AI客服試點 (S2)。</pre><p class="mut">judge：The answer perfectly synthesizes all three sources, correctly attributes them with source tags, stays well under the 120-character limit (excluding punctuation/formatting, the core text is around 105 characters), and remains strictly faithful to the provided text.</p></td>
       </tr>
     </table>
   </div>
@@ -361,28 +392,36 @@ No markdown fences. No extra text.
   <div class="card">
     <h3>news_digest_hard
       
-        <span class="delta-neg">（Δ完成度 -0.225）</span>
+        <span class="delta-pos">（Δmean 完成度 +0.035）</span>
       
     </h3>
     <table>
-      <tr><th style="width:8%"></th><th style="width:12%">完成度</th><th>Gemini 實際產出 ＋ judge rationale</th></tr>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（3 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>0.45<br><span class="mut" style="font-size:11px">涵蓋0.1/忠實0.5/衝突1.0/格式0.2</span></td>
-        <td><pre>市場傳聞...但雙方均未正式公布" (S2).
-    *   Honest about gap? Yes, "**來源未提及最終成交金額**".
-    *   Cite sources? Yes (S1, S2, S3, S5).
-    *   Under 150 characters? Yes, 125 characters.
-    *   No external</pre><p class="mut">judge：The provided answer is a meta-evaluation/draft template rather than an actual news synthesis. It fails to synthesize the information from S1, S3, and S5, and only contains a snippet of S2 along with self-evaluation bullet points.</p></td>
+        <td>0.94 <span class="mut">± 0.029</span><br><span class="mut" style="font-size:11px">[0.97, 0.95, 0.9]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式0.9</span></td>
+        <td><pre>根據您提供的來源，針對 A 公司併購 B 新創案綜整如下：
+
+*   **併購目的與營運**：A 公司旨在取得 B 的資安技術與團隊，並將保留 B 品牌獨立運作 (S3)。分析師指出此舉可望提升 A 公司在企業資安市場的市占率，但仍需觀察整合風險 (S5)。
+*   **時程與進度**：交易預計於第三季完成，目前仍待主管機關核准 (S1)。
+*   **成交金額爭議**：市場傳聞成交金額介於 8 至 10 億美元之間，但雙方均未正式公布確切金額 (S2)。
+
+**【主管特別提問回覆】**
+關於本次併購案的**最終成交金額**，來源中明確指出「雙方均未正式公布確切金額」(S2)，因此**來源並未提及最終成交金額**。</pre><p class="mut">judge：The answer is excellent, highly faithful, successfully filters out the noise (S4), flags the conflict/uncertainty regarding the price, and correctly identifies the information gap. The only minor issue is the length: the answer is around 230 characters, which exceeds the strict 150-character limit specified in the prompt. However, the quality of the synthesis is outstanding.</p></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="">0.225<br><span class="mut" style="font-size:11px">涵蓋0.1/忠實0.5/衝突0.2/格式0.1</span></td>
-        <td><pre>問：最終成交金額：來源未提及。
+        <td class="ok">0.975 <span class="mut">± 0.004</span><br><span class="mut" style="font-size:11px">[0.98, 0.97, 0.975]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式0.9</span></td>
+        <td><pre>### 併購案資訊綜整
 
-    Let's check if there are any conflicts. S2 says "傳聞金額介於 8 至 10 億美元之間，但雙方均未正式公布確切金額". There is no conflicting information between sources, just a rumor vs. unannounced reality. I will present this clearly.
+* **併購目的與營運**：A 公司收購 B 新創旨在取得其資安技術與團隊 [S3]，併購後將保留 B 品牌獨立運作 [S3]。
+* **時程與審查**：交易預計於第三季完成，目前仍待主管機關核准 [S1]。
+* **市場預期**：分析師指出此案可望提升 A 公司在企業資安市場的市占率，但後續整合風險仍需觀察 [S5]。
+* **成交金額衝突**：市場傳聞成交金額介於 8 至 10 億美元之間 [S2]，但雙方均未正式公布確切金額 [S2]。
+* **無關雜訊排除**：S4 屬員工餐廳菜單報導，與本併購案無關，已予排除。
 
-    Let's</pre><p class="mut">judge：回答未完成且包含大量草稿/思考過程（英文部分）。未對新聞進行綜整，亦未標註來源（Sx），僅回答了特別提問中最終金額未提及。</p></td>
+### 主管特別提問回覆
+* **最終成交金額**：來源未提及（雙方均未正式公布確切金額 [S2]）。</pre><p class="mut">judge：The answer is extremely accurate, faithful, and handles all constraints perfectly (excluding S4, identifying the lack of final price, and citing sources). The only minor issue is that the length is around 230 characters, which slightly exceeds the strict 150-character limit, but the quality of synthesis is exceptional.</p></td>
       </tr>
     </table>
   </div>
@@ -390,22 +429,32 @@ No markdown fences. No extra text.
   <div class="card">
     <h3>news_digest_medium
       
-        <span class="delta-pos">（Δ完成度 +0.150）</span>
+        <span class="delta-pos">（Δmean 完成度 +0.010）</span>
       
     </h3>
     <table>
-      <tr><th style="width:8%"></th><th style="width:12%">完成度</th><th>Gemini 實際產出 ＋ judge rationale</th></tr>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（3 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>0.35<br><span class="mut" style="font-size:11px">涵蓋0.2/忠實0.9/衝突0.0/格式0.3</span></td>
-        <td><pre>未證實確切占比。 (22)
-    S3指出裁員集中於硬體部門，軟體與AI團隊不受影響並持續徵才。 (30)
-    S4報導消息公布後股價下跌1.8%，分析師對能否改善獲利看法分歧，有人看好精簡成本，有人擔心影響士氣。 (5</pre><p class="mut">judge：回答嚴重截斷且不完整。完全遺漏了 S1 的資訊（1,200人、4%）以及 S2 的關鍵數字（1,500人），因此未能呈現 S1 與 S2 之間的裁員人數衝突。格式上出現奇怪的數字標記（如 (22), (30), (5），且未標註 S1 與 S2 的來源。</p></td>
+        <td>0.99 <span class="mut">± 0.014</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 0.97]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
+        <td><pre>根據來源，某科技公司宣布新一輪裁員，主要集中在硬體部門，軟體與 AI 團隊不受影響且持續徵才 (S3)。
+
+然而，各方對裁員人數說法不一：
+* **1,200人**：占全球約 4% (S1)。
+* **1,500人**：公司未證實確切占比 (S2)。
+
+消息公布後，該公司股價下跌 1.8% (S4)。分析師對此看法分歧，有人看好精簡成本，有人則擔心影響士氣 (S4)。</pre><p class="mut">judge：The answer perfectly meets all criteria. It covers all sources (S1-S4), explicitly highlights the conflict regarding the number of laid-off employees (1,200 vs 1,500), correctly attributes sources, and is well within the 150-character limit (around 135 characters).</p></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="ok">0.5<br><span class="mut" style="font-size:11px">涵蓋None/忠實None/衝突None/格式None</span></td>
-        <td><pre>某科技公司裁員，S1指約1,200人(占4%)，S2稱約1,500人(占比未證實)。S3指主要集中硬體部門，軟體與AI團隊不受影響且持續徵才。S4報導公布後股價跌1.8%，分析師對能否改善獲利看法分歧。</pre><p class="mut">judge：</p></td>
+        <td class="ok">1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">涵蓋1.0/忠實1.0/衝突1.0/格式1.0</span></td>
+        <td><pre>### 裁員事件綜整摘要
+
+* **裁員規模衝突**：甲報指出裁員約 1,200 人（占全球 4%）[S1]；乙報則報導約 1,500 人，且公司未證實確切占比 [S2]。
+* **部門影響**：發言人稱主要集中在硬體部門，軟體與 AI 團隊不受影響且持續徵才 [S3]。
+* **市場反應**：消息公布後股價下跌 1.8% [S4]。
+* **分析師觀點**：對能否改善獲利看法分歧，有人看好精簡成本，有人擔心影響士氣 [S4]。
+* **資訊缺口**：確切裁員生效日期與補償方案，來源未提及。</pre><p class="mut">judge：The answer perfectly meets all criteria. It covers all sources (S1-S4), explicitly highlights the conflict regarding the number of laid-off employees (1,200 vs 1,500), cites the sources correctly, stays within the 150-word limit (excluding formatting/headers, the core text is extremely concise and well under the limit), and correctly notes information gaps as '來源未提及'.</p></td>
       </tr>
     </table>
   </div>
@@ -433,9 +482,18 @@ No markdown fences. No extra text.
 
 > 註：離線 grounded 測試，來源即下方材料。
 </p>
-      <pre>【事實】帳單第二次出現3500元不明扣款(S1)，上次通報未獲回覆(S2)。
-【情緒/要求】不滿被忽視且考慮換銀行(S2)；要求查明、3工作天內回覆進度，若屬盜刷需全額退款(S1,S3)。
-【回覆重點】致歉並回覆進度(S2)；依政策說明若確認為未授權交易將全額退還，但處理時效為5工作天(S3)。</pre>
+      <pre>根據來源（S1-S3）綜整之客訴摘要與回覆重點如下：
+
+**一、 客戶反映事實**
+* 信用卡帳單出現一筆 3,500 元不明扣款，且已是第二次發生 (S1)。
+* 上次通報後未收到後續回覆，客戶感到被忽視 (S2)。
+
+**二、 客戶情緒與要求**
+* **情緒**：不滿，並考慮更換其他家銀行 (S2)。
+* **要求**：查明並退款 (S1)；要求 3 個工作天內回覆處理進度，若確認為盜刷須全額退款 (S3)。
+
+**三、 建議回覆重點**
+* 說明公司既有政策：確認為未授權交易者，依規定全額退還，處理時效為 5 個工作天 (S3)。</pre>
       
     
       
@@ -461,7 +519,9 @@ No markdown fences. No extra text.
 
 > 註：這是離線 grounded 測試，「新聞」即下方附上的來源材料，非即時查詢。
 </p>
-      <pre>國泰金控2026上半年稅後淨利420億元，年增12%，主因為壽險投資收益回升(S1)。下半年將數位轉型列為重點，並已導入AI客服試點(S2)。法說會後股價盤中上漲2.3%，下半年將維持穩健配息政策(S</pre>
+      <pre>以下為國泰金控法說會相關資訊綜整：
+
+國泰金控2026上半年稅後淨利達420億元，年增12%，主因為壽險投資收益回升 (S1)。管理層表示下半年重點為數位轉型，已導入AI客服試點 (S2)。法說會後其股價盤中上漲2.3%，發言人指出下半年將維持穩健配息政策 (S3)。</pre>
       
     
       
@@ -491,9 +551,20 @@ No markdown fences. No extra text.
 
 > 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。
 </p>
-      <pre>A公司宣布收購B新創，預計第三季完成，待主管機關核准(S1)。併購目的為取得B的資安技術與團隊，並保留其品牌獨立運作(S3)；若完成可望提升A公司企業資安市占率，但有整合風險(S5)。
+      <pre>### 1. 併購案要點綜整
 
-【主管提問</pre>
+*   **交易進度與目的**：A公司宣布收購B新創，預計第三季完成，仍待主管機關核准（S1）。併購旨在取得B的資安技術與團隊，並將保留其品牌獨立運作（S3）。
+*   **市場影響與風險**：分析師指出此舉可望提升A公司在企業資安市場的市占率，但仍需觀察整合風險（S5）。
+*   **交易金額爭議**：市場傳聞成交金額介於8至10億美元之間，但雙方均未正式公布確切金額（S2）。
+
+*(註：S4與併購案無關，已予以排除)*
+
+---
+
+### 2. 主管特別提問回覆
+
+*   **這次併購案的最終成交金額是多少？**
+    **來源未提及**最終成交金額。根據S2報導，雙方均未正式公布確切金額，市場僅傳聞金額介於8至10億美元之間。</pre>
       
     
       
@@ -520,7 +591,13 @@ No markdown fences. No extra text.
 
 > 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。
 </p>
-      <pre>某科技公司宣布裁員，但規模說法不一：S1稱影響約1,200人（約占全球4%），S2則指約1,500人（公司未證實占比）。S3指出裁員主要集中在硬體部門，軟體與AI團隊不受影響並將持續徵才。S4報導消息公布後股價下跌1.8%，分析師對裁員能否改善獲利看法分歧。</pre>
+      <pre>根據來源資料，該科技公司宣布新一輪裁員，其關鍵資訊綜整如下：
+
+*   **裁員人數與占比衝突**：S1 指出裁員影響約 1,200 人（約占全球 4%）[S1]；但 S2 報導裁員規模約為 1,500 人，且公司未證實確切占比 [S2]。
+*   **影響部門**：裁員主要集中在硬體部門，軟體與 AI 團隊不受影響且持續徵才 [S3]。
+*   **市場反應**：消息公布後股價下跌 1.8% [S4]。
+*   **分析師看法**：對能否改善獲利看法分歧，有人看好精簡成本，有人擔心影響士氣 [S4]。
+*   **其他資訊**：裁員具體時程與補償方案，來源未提及。</pre>
       
     
       
@@ -547,8 +624,20 @@ No markdown fences. No extra text.
 
 > 註：離線 grounded 測試，來源即下方材料。
 </p>
-      <pre>覆、盜刷全額退款[S1,S3]。\n**回覆重點**：致歉並承諾查明[S1,S2]；說明確認未授權將全額退款，但政策時效為5工作天（與要求3天有衝突）[S3]。"
-    Length: 156 characters</pre>
+      <pre>以下為客訴摘要與回覆重點：
+
+**一、 事實整理**
+* 客戶信用卡帳單出現第二次 3,500 元不明扣款 [S1]。
+* 上次通報後未收到後續回覆 [S2]。
+
+**二、 客戶情緒與訴求**
+* **情緒**：不滿、覺得被忽視，考慮換銀行 [S2]。
+* **訴求**：要求查明並退款 [S1]；要求 3 個工作天內回覆進度 [S3]；若確認盜刷須全額退款 [S3]。
+
+**三、 建議回覆重點**
+* 針對未回覆致歉，並說明處理進度。
+* 依公司政策，若確認為未授權交易將全額退還 [S3]。
+* **時效說明（衝突）**：客戶要求 3 個工作天內回覆 [S3]，但公司既有政策處理時效為 5 個工作天 [S3]。</pre>
       
     
       
@@ -574,7 +663,7 @@ No markdown fences. No extra text.
 
 > 註：這是離線 grounded 測試，「新聞」即下方附上的來源材料，非即時查詢。
 </p>
-      <pre>國泰金2026上半年稅後淨利420億元，年增12%，主因壽險投資收益回升(S1)。下半年重點為數位轉型，已導入AI客服試點(S2)。法說會後股價盤中漲2.3%，發言人稱下半年維持穩健配息(S3)。</pre>
+      <pre>國泰金控法說會宣布2026上半年稅後淨利達420億元，年增12%，主因為壽險投資收益回升 (S1)。管理層表示下半年重點為數位轉型，並已導入AI客服試點 (S2)。法說會後其股價盤中上漲2.3%，發言人指出下半年將維持穩健配息政策 (S3)。</pre>
       
     
       
@@ -604,11 +693,14 @@ No markdown fences. No extra text.
 
 > 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。
 </p>
-      <pre>【主管提問】
-最終成交金額：來源未提及。市場傳聞為 8 至 10 億美元，但雙方未正式公布 [S2]。
+      <pre>根據您提供的來源，針對 A 公司併購 B 新創案的摘要如下：
 
-【併購摘要】
-A 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨立運作 [S3]。交易預計第三季完成，仍待主管機關核准 [S1]。分析師認為此舉可提升 A 公司資安市占率，但有整合風險 [S5]。</pre>
+*   **併購目的與營運**：旨在取得 B 的資安技術與團隊，未來將保留 B 品牌獨立運作 [S3]。
+*   **進度與影響**：預計第三季完成，仍待主管機關核准 [S1]。若完成，A 公司在企業資安市占率可望提升，但需觀察整合風險 [S5]。
+*   **金額衝突**：市場傳聞成交金額介於 8 至 10 億美元之間，但雙方均未正式公布確切金額 [S2]。
+
+**【主管特別提問回覆】**
+關於本次併購案的**最終成交金額**，來源未提及（雙方均未正式公布確切金額）[S2]。</pre>
       
     
       
@@ -635,7 +727,12 @@ A 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨�
 
 > 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。
 </p>
-      <pre>I(79)不(80)受(81)影(82)響(83)且(84)持(85)續(86)徵(87)才(88)[(89)S(90)3(91)](92)。(93)消(94)息(95)</pre>
+      <pre>根據來源，該科技公司宣布新一輪裁員，但各方對受影響人數說法不一：
+* **裁員人數與占比**：甲報指出影響約 1,200 人（約占全球 4%）[S1]；乙報則指規模約 1,500 人，且公司未證實確切占比 [S2]。
+* **部門影響**：主要集中在硬體部門，軟體與 AI 團隊不受影響且持續徵才 [S3]。
+* **市場反應**：消息公布後股價下跌 1.8% [S4]。分析師對能否改善獲利看法分歧 [S4]。
+
+至於具體裁員時間與補償方案，來源未提及。</pre>
       
     
       
@@ -662,9 +759,19 @@ A 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨�
 
 > 註：離線 grounded 測試，來源即下方材料。
 </p>
-      <pre>覆進度，若屬盜刷須全額退款(S1,S3)。 (47)
-    【回覆重點】依公司政策，告知確認為未授權交易將全額退還，並於5工作天內處理完畢(S3)。 (41)
-    Total: 121 Chinese characters + punctuation</pre>
+      <pre>以下為針對客戶訴求整理的摘要與回覆重點：
+
+**一、 事實整理**
+* 信用卡帳單出現第二次 3,500 元不明扣款 (S1)。
+* 上次通報後未收到後續回覆 (S2)。
+* 公司既有政策：確認為未授權交易者依規全額退還，處理時效為 5 個工作天 (S3)。
+
+**二、 客戶情緒與要求**
+* **情緒**：因覺得被忽視而感到不滿，考慮更換銀行 (S2)。
+* **要求**：要求查明並退款 (S1)；要求 3 個工作天內回覆進度，若確認盜刷須全額退款 (S3)。
+
+**三、 建議回覆重點**
+* 說明公司既有政策：若確認為未授權交易將全額退還，並說明標準處理時效為 5 個工作天 (S3)。</pre>
       
     
       
@@ -690,7 +797,7 @@ A 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨�
 
 > 註：這是離線 grounded 測試，「新聞」即下方附上的來源材料，非即時查詢。
 </p>
-      <pre>國泰金控宣布2026上半年稅後淨利達420億元（年增12%），主因壽險投資收益回升(S1)。下半年將以數位轉型為重點，並已導入AI客服試點(S2)。法說會後其股價盤中上漲2.3%，且下</pre>
+      <pre>國泰金控法說會宣布2026上半年稅後淨利達420億元，年增12%，主因為壽險投資收益回升 (S1)。管理層表示下半年重點為數位轉型，並已導入AI客服試點 (S2)。法說會後其股價盤中上漲2.3%，發言人也指出下半年將維持穩健配息政策 (S3)。</pre>
       
     
       
@@ -720,8 +827,12 @@ A 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨�
 
 > 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。
 </p>
-      <pre>(72)管(73)提(74)問(75)回(76)覆(77)】(78)
-    來(79)源(80)未(81)提(82)及(83)最(84)終(85)成(86)交(87)金(</pre>
+      <pre>根據相關報導，A 公司宣布將收購 B 新創以取得其資安技術與團隊，並保留 B 的品牌獨立運作 (S1, S3)。分析師指出此舉可提升 A 公司在企業資安市場的市占率，但仍有整合風險，且交易預計於第三季完成，尚待主管機關核准 (S1, S5)。
+
+關於此案，市場傳聞成交金額介於 8 至 10 億美元之間，但雙方均未正式公布確切金額 (S2)。
+
+**【主管特別提問回覆】**
+關於本次併購案的**最終成交金額**，來源中並未提及確切的最終成交數字（僅有市場傳聞的 8 至 10 億美元，且雙方均未正式公布）(S2)。</pre>
       
     
       
@@ -748,9 +859,9 @@ A 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨�
 
 > 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。
 </p>
-      <pre>1,500 人，公司未證實確切占比"
-        - "S3稱裁員集中硬體部，軟體與AI不受影響且持續徵才" -> S3: "主要集中在硬體部門，軟體與 AI 團隊不受影響，並將持續徵才"
-        - "S4指股價跌1.8</pre>
+      <pre>根據最新報導，某科技公司宣布新一輪裁員，但各方對受影響人數說法不一：甲報指出影響約 1,200 人（約占全球 4%）(S1)；乙報則報導裁員規模約 1,500 人，且公司未證實確切占比(S2)。
+
+在部門影響方面，發言人表示裁員主因集中在硬體部門，軟體與 AI 團隊不受影響且持續徵才(S3)。消息公布後，公司股價下跌 1.8%(S4)。分析師對此看法分歧，有人看好精簡成本，有人則擔心影響士氣(S4)。</pre>
       
     
       

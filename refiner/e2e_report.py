@@ -90,7 +90,9 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <ul style="margin:0">
       <li><b>grounded（非即時查詢）</b>：本測試離線、無網路。「新聞」是附在每個 task 的 <code>sources.md</code> 來源材料；Gemini 依 skill 綜整這些材料，<b>不假裝有即時查詢</b>。</li>
       <li><b>Gemini 身兼兩角</b>：runner（依 skill 實際產出綜整）＋ judge（評「產出 vs 來源」的完成度/品質）。</li>
-      <li><b>改善的主要證據</b>＝第 4 節「回測」：baseline skill 與 refined skill 各自真跑一次、由 judge 評分對照。第 5 節對話裡的「使用者後續回饋」是<b>預寫腳本（illustrative）</b>，僅用來示範規則式 completion detector，非改善證據。</li>
+      <li><b>改善的主要證據</b>＝第 4 節「回測」：baseline skill 與 refined skill 各自真跑、由 grounded judge 評分對照。第 5 節對話裡的「使用者後續回饋」是<b>預寫腳本（illustrative）</b>，僅用來示範規則式 completion detector，非改善證據。</li>
+      <li><b>多次 rollout 取平均</b>：每個 (變體×task) 與每次回測都跑 <b>{{ report.rollouts }} 次</b> 取 mean±std，降低單次 LLM 隨機性；成功率＝達標次數佔比。</li>
+      <li><b>已修正回覆截斷</b>：先前 Gemini 2.5 的 thinking token 會吃掉輸出預算導致答案被切斷；本次已關閉 thinking budget 並把產出上限拉到 4096，產出皆完整。</li>
     </ul>
   </div>
 </section>
@@ -100,26 +102,28 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <p class="lead">各 skill 變體在每個 general task 的 Gemini judge 完成度、達標來源（規則/LLM）、效率與綜合分。</p>
   <div class="card">
     <div class="kpi">
-      <div class="box"><div class="n">{{ report.variant_scores|length }}</div><div class="l">變體×task session</div></div>
+      <div class="box"><div class="n">{{ report.variant_scores|length }}</div><div class="l">變體×task 組</div></div>
+      <div class="box"><div class="n">{{ report.rollouts }}×</div><div class="l">每組 rollout</div></div>
       <div class="box"><div class="n">{{ report.action }}</div><div class="l">精煉動作</div></div>
       <div class="box"><div class="n {{ 'ok' if report.accepted else 'no' }}">{{ '採用' if report.accepted else '未採用' }}</div><div class="l">發布閘</div></div>
       {% if report.verify %}<div class="box"><div class="n">{{ report.verify.score }}</div><div class="l">verify 分數</div></div>{% endif %}
     </div>
+    <p class="mut">每個 (變體×task) 跑 <b>{{ report.rollouts }} 次 rollout</b> 取平均，降低單次 LLM variance。分數以 <b>mean ± std</b> 呈現。</p>
     <table>
-      <tr><th>task</th><th>變體</th><th>完成度</th><th>達標來源</th><th>信心</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
+      <tr><th>task</th><th>變體</th><th>完成度 mean±std</th><th>達標來源</th><th>綜合分 mean±std</th><th>3 次分數</th><th>成功率</th></tr>
       {% for r in report.variant_scores %}
       <tr>
         <td>{{ r.task_id }}</td><td><code>{{ r.variant }}</code></td>
-        <td>{{ r.completion }}</td>
+        <td>{{ r.completion_mean }} <span class="mut">± {{ r.completion_std }}</span></td>
         <td>{% if r.completion_source %}<span class="badge b-{{ r.completion_source }}">{{ r.completion_source }}</span>{% else %}—{% endif %}</td>
-        <td>{{ r.completion_confidence }}</td><td>{{ r.efficiency_score }}</td>
-        <td><b>{{ r.score }}</b></td>
-        <td class="{{ 'ok' if r.success else 'no' }}">{{ '✓' if r.success else '✗' }}</td>
+        <td><b>{{ r.score_mean }}</b> <span class="mut">± {{ r.score_std }}</span></td>
+        <td class="mut" style="font-size:12px">{{ r.score_scores }}</td>
+        <td class="{{ 'ok' if r.success_rate == 1.0 else ('mid' if r.success_rate > 0 else 'no') }}">{{ (r.success_rate*100)|round|int }}%</td>
       </tr>
       {% endfor %}
     </table>
     <p class="mut">達標來源 <span class="badge b-rule">rule</span>＝規則式 detector（零 LLM，靠使用者後續回饋訊號）；
-    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。精煉理由：{{ report.rationale }}</p>
+    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。成功率＝{{ report.rollouts }} 次中 completion≥0.75 的比例。精煉理由：{{ report.rationale }}</p>
   </div>
 </section>
 
@@ -165,24 +169,28 @@ _TEMPLATE = r"""<!DOCTYPE html>
 
 <section id="s4">
   <div class="sechead"><span class="secno">4</span><h2>回測：優化前 vs 優化後（實際產出＋評分）</h2></div>
-  <p class="lead">同一批 task，baseline skill 與 refined skill 各讓 Gemini 真跑一次、各由 judge 評完成度，直接看出改善（delta &gt; 0）或退步（照實呈現）。</p>
+  <p class="lead">同一批 task，baseline skill 與 refined skill 各讓 Gemini 跑 {{ report.rollouts }} 次、由 grounded judge 評分，取 <b>mean</b> 對照，直接看出改善（Δ&gt;0）或退步（照實呈現）。分數旁標 ±std 與 3 次原始分數。</p>
+  <div class="callout warn"><b>如何誠實解讀這批數字：</b>修正截斷後，baseline skill 的產出多已完整，加上 Gemini 本身能力強，
+  即使籠統的 baseline 也能產出不錯的綜整，因此 baseline 分數普遍偏高（0.94~1.0）、refined 的改善幅度較小（整體約 +0.01）。
+  這是<b>真實且重要的觀察</b>：任務對強模型偏簡單時，skill 差異在「最終品質」上難顯著——差異更會出現在
+  <b>穩定度（std / 成功率）</b>與<b>更難、限制更嚴的任務</b>上。先前看似大幅改善，部分是 baseline 被截斷的假象，已修正。</div>
   {% for b in report.backtest %}
   <div class="card">
     <h3>{{ b.task_id }}
       {% if b.delta is not none %}
-        <span class="{{ 'delta-pos' if b.delta > 0 else ('delta-neg' if b.delta < 0 else 'delta-zero') }}">（Δ完成度 {{ '%+.3f'|format(b.delta) }}）</span>
+        <span class="{{ 'delta-pos' if b.delta > 0 else ('delta-neg' if b.delta < 0 else 'delta-zero') }}">（Δmean 完成度 {{ '%+.3f'|format(b.delta) }}）</span>
       {% endif %}
     </h3>
     <table>
-      <tr><th style="width:8%"></th><th style="width:12%">完成度</th><th>Gemini 實際產出 ＋ judge rationale</th></tr>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（{{ report.rollouts }} 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>{{ b.baseline.completion }}{% if b.baseline.checks %}<br><span class="mut" style="font-size:11px">涵蓋{{ b.baseline.checks.coverage }}/忠實{{ b.baseline.checks.faithfulness }}/衝突{{ b.baseline.checks.conflict_handling }}/格式{{ b.baseline.checks.format }}</span>{% endif %}</td>
+        <td>{{ b.baseline.completion }} <span class="mut">± {{ b.baseline.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.baseline.scores }}</span>{% if b.baseline.checks %}<br><span class="mut" style="font-size:11px">涵蓋{{ b.baseline.checks.coverage }}/忠實{{ b.baseline.checks.faithfulness }}/衝突{{ b.baseline.checks.conflict_handling }}/格式{{ b.baseline.checks.format }}</span>{% endif %}</td>
         <td><pre>{{ b.baseline.output }}</pre><p class="mut">judge：{{ b.baseline.rationale }}</p></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="{{ 'ok' if (b.delta is not none and b.delta > 0) else '' }}">{{ b.refined.completion }}{% if b.refined.checks %}<br><span class="mut" style="font-size:11px">涵蓋{{ b.refined.checks.coverage }}/忠實{{ b.refined.checks.faithfulness }}/衝突{{ b.refined.checks.conflict_handling }}/格式{{ b.refined.checks.format }}</span>{% endif %}</td>
+        <td class="{{ 'ok' if (b.delta is not none and b.delta > 0) else '' }}">{{ b.refined.completion }} <span class="mut">± {{ b.refined.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.refined.scores }}</span>{% if b.refined.checks %}<br><span class="mut" style="font-size:11px">涵蓋{{ b.refined.checks.coverage }}/忠實{{ b.refined.checks.faithfulness }}/衝突{{ b.refined.checks.conflict_handling }}/格式{{ b.refined.checks.format }}</span>{% endif %}</td>
         <td><pre>{{ b.refined.output }}</pre><p class="mut">judge：{{ b.refined.rationale }}</p></td>
       </tr>
     </table>

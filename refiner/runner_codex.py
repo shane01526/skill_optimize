@@ -172,7 +172,7 @@ def run_general_variant_on_task(
         try:
             output = client.chat(
                 "You are a careful assistant that strictly grounds answers in the given sources.",
-                instruction, temperature=0.2, max_tokens=2048,
+                instruction, temperature=0.2, max_tokens=4096,
             )
         except Exception as exc:  # noqa: BLE001
             output = f"[runner error] {exc}"

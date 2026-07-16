@@ -30,9 +30,27 @@ from .skillmd import build_skill_md, parse_skill_md
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(HERE)
 
+# 每個 (變體×task) / 每個回測 skill 重複跑的次數，取平均降低單次 LLM variance。
+ROLLOUTS = 3
+
 
 def _p(*parts: str) -> str:
     return os.path.join(PROJECT_ROOT, *parts)
+
+
+def _stats(values: list[float]) -> dict[str, Any]:
+    """回傳 {mean, std, n, scores}（忽略 None）。"""
+    import statistics
+
+    vals = [v for v in values if isinstance(v, (int, float))]
+    if not vals:
+        return {"mean": None, "std": None, "n": 0, "scores": []}
+    return {
+        "mean": round(statistics.fmean(vals), 3),
+        "std": round(statistics.pstdev(vals), 3) if len(vals) > 1 else 0.0,
+        "n": len(vals),
+        "scores": [round(v, 3) for v in vals],
+    }
 
 
 def discover_variants(goal_dir: str) -> list[str]:
@@ -65,7 +83,7 @@ def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, tas
     try:
         output = llm.chat(
             "You are a careful assistant that strictly grounds answers in the given sources.",
-            instruction, temperature=0.2, max_tokens=2048,
+            instruction, temperature=0.2, max_tokens=4096,
         )
     except Exception as exc:  # noqa: BLE001
         output = f"[error] {exc}"
@@ -105,13 +123,33 @@ def _grounded_judge(llm: LLMClient, task_prompt: str, sources: str, answer: str)
     return {**checks, "overall": overall, "rationale": str(parsed.get("rationale") or "").strip()}
 
 
+def _backtest_skill(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_id: str, label: str) -> dict[str, Any]:
+    """對單一 skill 在 task 上跑 ROLLOUTS 次 Gemini + grounded judge，聚合 mean/std。
+
+    保留第 1 次的完整產出/rationale 供報告展示（代表性樣本），其餘只留分數。
+    """
+    runs = [_run_skill_on_task(llm, skill, task_dir, task_id, label) for _ in range(ROLLOUTS)]
+    stats = _stats([r["completion"] for r in runs])
+    rep = runs[0]  # 代表性樣本（第 1 次）
+    return {
+        "label": label,
+        "output": rep["output"],
+        "checks": rep["checks"],
+        "rationale": rep["rationale"],
+        "completion": stats["mean"],       # mean 作為代表分數
+        "completion_std": stats["std"],
+        "n": stats["n"],
+        "scores": stats["scores"],
+    }
+
+
 def backtest(llm: LLMClient, baseline: dict[str, Any], refined: dict[str, Any], tasks: list[str]) -> list[dict[str, Any]]:
-    """對每個 task，baseline skill 與 refined skill 各真跑一次 Gemini + judge → 前後對照。"""
+    """對每個 task，baseline skill 與 refined skill 各跑 ROLLOUTS 次 Gemini + judge → 前後對照（mean）。"""
     rows: list[dict[str, Any]] = []
     for task_dir in tasks:
         task_id = os.path.basename(task_dir)
-        b = _run_skill_on_task(llm, baseline, task_dir, task_id, "baseline")
-        r = _run_skill_on_task(llm, refined, task_dir, task_id, "refined")
+        b = _backtest_skill(llm, baseline, task_dir, task_id, "baseline")
+        r = _backtest_skill(llm, refined, task_dir, task_id, "refined")
         delta = None
         if b["completion"] is not None and r["completion"] is not None:
             delta = round(r["completion"] - b["completion"], 3)
@@ -137,24 +175,28 @@ def run_e2e(
     variants = [v for v in discover_variants(goal_dir) if os.path.basename(os.path.dirname(v)) != "baseline"]
     tasks = discover_tasks(tasks_dir)
 
-    # 1. 每個 (變體×task) 真跑 Gemini 產出
+    # 1. 每個 (變體×task) 真跑 Gemini 產出 × ROLLOUTS 次
     records: list[dict[str, Any]] = []
     for vpath in variants:
         for task_dir in tasks:
             task_id = os.path.basename(task_dir)
-            rec = run_general_variant_on_task(
-                skill_md_path=vpath, task_dir=task_dir, task_id=task_id, mode=mode, llm=llm
-            )
-            records.append(rec)
-            print(f"  ran {rec['variant_label']} × {task_id} ({rec['runner_mode']}/{rec['runner_meta'].get('provider')})")
+            for i in range(ROLLOUTS):
+                rec = run_general_variant_on_task(
+                    skill_md_path=vpath, task_dir=task_dir, task_id=task_id, mode=mode, llm=llm
+                )
+                rec["rollout_idx"] = i
+                records.append(rec)
+            print(f"  ran {os.path.basename(os.path.dirname(vpath))} × {task_id} ×{ROLLOUTS}")
 
-    # 2. normalize → summarize → evaluate（judge + detector + 效率）
+    # 2. normalize → summarize → evaluate（judge + detector + 效率）；每個 rollout 各自評分
     sessions = [normalize_experiment_record(r) for r in records]
-    # 保留原始產出/來源供報告
     for s, r in zip(sessions, records):
         s["agent_output"] = r.get("agent_output")
         s["sources"] = r.get("sources")
         s["task_prompt"] = r.get("task_prompt")
+        s["rollout_idx"] = r.get("rollout_idx")
+        # session_id 加 rollout 後綴，避免 cohort/dedupe 誤判為同一筆
+        s["session_id"] = f"{s['session_id']}#r{r.get('rollout_idx')}"
     summarizer.summarize_sessions(llm, sessions)
     evaluator.evaluate_sessions(llm, sessions, use_judge=True)
 
@@ -162,7 +204,8 @@ def run_e2e(
     groups = aggregation.aggregate_by_skill(sessions)
     baseline = load_baseline_skill(goal_dir)
     existing = [k for k in groups.keys() if k != aggregation.NO_SKILL_KEY]
-    evidence = _dedupe(sessions)
+    # 精煉證據：每個 (變體×task) 只取一個代表 rollout（idx 0），避免 3×36 筆撐爆 evidence 上限
+    evidence = _dedupe([s for s in sessions if s.get("rollout_idx") == 0])
     result = execution.evolve_skill_from_sessions(llm, baseline["name"], evidence, baseline, existing)
 
     refined = None
@@ -188,7 +231,8 @@ def run_e2e(
         "verify": verdict,
         "accepted": bool(verdict and verdict.get("accepted")),
         "variant_scores": _variant_rows(sessions),
-        "sessions": [_session_view(s) for s in sessions],
+        "rollouts": ROLLOUTS,
+        "sessions": [_session_view(s) for s in sessions if s.get("rollout_idx") == 0],
         "baseline_skill": {"name": baseline["name"], "skill_id": baseline.get("skill_id"),
                            "description": baseline.get("description"), "content": baseline.get("content")},
         "refined_skill": ({"name": refined["name"], "skill_id": refined.get("skill_id"),
@@ -216,20 +260,30 @@ def _dedupe(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _variant_rows(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    rows = []
+    """把每個 (變體×task) 的多次 rollout 聚合成一列（mean/std/success_rate）。"""
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for s in sessions:
-        m = s.get("_metrics") or {}
+        key = (s.get("variant_label"), s.get("task_id"))
+        groups.setdefault(key, []).append(s)
+
+    rows = []
+    for (variant, task_id), grp in groups.items():
+        score_stats = _stats([s.get("_score") for s in grp])
+        comp_stats = _stats([(s.get("_metrics") or {}).get("completion") for s in grp])
+        n_success = sum(1 for s in grp if s.get("_success"))
+        # 達標來源以多數為準（rule/llm）
+        srcs = [(s.get("_metrics") or {}).get("completion_source") for s in grp]
+        src = max(set(s for s in srcs if s), key=srcs.count) if any(srcs) else None
         rows.append({
-            "variant": s.get("variant_label"),
-            "task_id": s.get("task_id"),
-            "completion": m.get("completion"),
-            "completion_source": m.get("completion_source"),
-            "completion_confidence": m.get("completion_confidence"),
-            "efficiency_score": m.get("efficiency_score"),
-            "score": s.get("_score"),
-            "success": s.get("_success"),
+            "variant": variant, "task_id": task_id,
+            "completion_mean": comp_stats["mean"], "completion_std": comp_stats["std"],
+            "completion_source": src,
+            "score_mean": score_stats["mean"], "score_std": score_stats["std"],
+            "score_scores": score_stats["scores"],
+            "success_rate": round(n_success / len(grp), 3),
+            "n": len(grp),
         })
-    return sorted(rows, key=lambda r: (r["task_id"], -(r["score"] or 0)))
+    return sorted(rows, key=lambda r: (r["task_id"], -(r["score_mean"] or 0)))
 
 
 def _session_view(s: dict[str, Any]) -> dict[str, Any]:
