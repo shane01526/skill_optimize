@@ -33,91 +33,91 @@
       "session_id": "task_001::v_a",
       "variant_label": "v_a",
       "pass_rate": 1.0,
-      "overall_score": 1.0,
-      "task_completion": 1.0,
-      "response_quality": 1.0,
-      "efficiency": 1.0,
-      "tool_usage": 1.0
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_001::v_b",
       "variant_label": "v_b",
-      "pass_rate": 0.6,
-      "overall_score": 0.574,
-      "task_completion": 0.571,
-      "response_quality": 0.571,
-      "efficiency": 0.621,
-      "tool_usage": 0.571
+      "pass_rate": 1.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_001::v_c",
       "variant_label": "v_c",
-      "pass_rate": 0.4,
-      "overall_score": 0.003,
-      "task_completion": 0.0,
-      "response_quality": 0.0,
-      "efficiency": 0.05,
-      "tool_usage": 0.0
+      "pass_rate": 1.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_002::v_a",
       "variant_label": "v_a",
       "pass_rate": 1.0,
-      "overall_score": 1.0,
-      "task_completion": 1.0,
-      "response_quality": 1.0,
-      "efficiency": 1.0,
-      "tool_usage": 1.0
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_002::v_b",
       "variant_label": "v_b",
-      "pass_rate": 0.6,
-      "overall_score": 0.574,
-      "task_completion": 0.571,
-      "response_quality": 0.571,
-      "efficiency": 0.621,
-      "tool_usage": 0.571
+      "pass_rate": 1.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_002::v_c",
       "variant_label": "v_c",
-      "pass_rate": 0.4,
-      "overall_score": 0.003,
-      "task_completion": 0.0,
-      "response_quality": 0.0,
-      "efficiency": 0.05,
-      "tool_usage": 0.0
+      "pass_rate": 1.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_003::v_a",
       "variant_label": "v_a",
       "pass_rate": 0.0,
-      "overall_score": 1.0,
-      "task_completion": 1.0,
-      "response_quality": 1.0,
-      "efficiency": 1.0,
-      "tool_usage": 1.0
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_003::v_b",
       "variant_label": "v_b",
       "pass_rate": 0.0,
-      "overall_score": 0.574,
-      "task_completion": 0.571,
-      "response_quality": 0.571,
-      "efficiency": 0.621,
-      "tool_usage": 0.571
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_003::v_c",
       "variant_label": "v_c",
       "pass_rate": 0.0,
-      "overall_score": 0.003,
-      "task_completion": 0.0,
-      "response_quality": 0.0,
-      "efficiency": 0.05,
-      "tool_usage": 0.0
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     },
     {
       "session_id": "task_004::v_a",

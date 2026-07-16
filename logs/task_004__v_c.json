@@ -5,18 +5,18 @@
   "variant_label": "v_c",
   "task_id": "task_004",
   "task_type": "general",
-  "variant_path": "C:\\Users\\user\\Desktop\\2026_Cathay\\DDT_MLE\\optimize_skill_pipeline\\skills\\coding-debug\\v_c\\SKILL.md",
+  "variant_path": "skills/coding-debug/v_c/SKILL.md",
   "selected_skill_ids": [
     "coding-debug"
   ],
-  "runner_mode": "mock",
+  "runner_mode": "api",
   "runner_meta": {
     "source": "conversation.json",
     "variant": "v_c",
-    "started_at": 1784170796.4835691,
-    "ended_at": 1784170796.4835699
+    "started_at": 1784187730.2824373,
+    "ended_at": 1784187730.2824385
   },
-  "workspace": "C:\\Users\\user\\Desktop\\2026_Cathay\\DDT_MLE\\optimize_skill_pipeline\\output\\workspaces\\task_004__v_c",
+  "workspace": "output/workspaces/task_004__v_c",
   "turns": [
     {
       "prompt_text": "幫我寫一段給 BU 同事的功能發布公告",

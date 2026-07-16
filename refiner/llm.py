@@ -91,17 +91,31 @@ class LLMClient:
     # ---------------------------------------------------------------- #
 
     def chat(self, system: str, user: str, **kwargs: Any) -> str:
-        """送出一次 chat，回傳 assistant 文字內容。"""
+        """送出一次 chat，回傳 assistant 文字內容。
+
+        真實 provider 遇暫時性錯誤（網路/DNS/rate-limit）會重試最多 3 次（指數退避），
+        避免偶發網路失敗被誤記成 skill 失敗（pass_rate=0）。mock 不重試。
+        """
         temperature = kwargs.pop("temperature", self.temperature)
         max_tokens = kwargs.pop("max_tokens", self.max_tokens)
 
         if self.provider == "mock":
             return self._chat_mock(system, user)
-        if self.provider == "anthropic":
-            return self._chat_anthropic(system, user, temperature, max_tokens)
-        if self.provider == "gemini":
-            return self._chat_gemini(system, user, temperature, max_tokens)
-        return self._chat_openai(system, user, temperature, max_tokens)
+
+        import time
+
+        attempts = 3
+        for i in range(attempts):
+            try:
+                if self.provider == "anthropic":
+                    return self._chat_anthropic(system, user, temperature, max_tokens)
+                if self.provider == "gemini":
+                    return self._chat_gemini(system, user, temperature, max_tokens)
+                return self._chat_openai(system, user, temperature, max_tokens)
+            except Exception:  # noqa: BLE001
+                if i == attempts - 1:
+                    raise
+                time.sleep(2 ** i)  # 1s, 2s 退避（不用 random，保持可重現）
 
     # ---------------------------------------------------------------- #
 

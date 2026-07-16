@@ -46,6 +46,8 @@ def run_pytest(task_dir: str, *, timeout: int = 120) -> dict[str, Any]:
     """
     if not os.path.isdir(task_dir):
         return {"passed": 0, "total": 0, "pass_rate": 0.0, "all_pass": False, "raw": "task dir missing"}
+    # 轉絕對路徑：cwd 與 --rootdir 若同為相對路徑，pytest 會把 rootdir 疊在 cwd 上而路徑重複
+    task_dir = os.path.abspath(task_dir)
     try:
         proc = subprocess.run(
             # -p no:cacheprovider + -o 覆寫，讓 workspace 測試不受專案 pytest.ini 影響

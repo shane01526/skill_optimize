@@ -98,6 +98,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <h1>Skill 精煉機制 — 詳細說明</h1>
   <div class="sub">從多個 skill 變體的使用紀錄中，篩選出更有效率、效用的版本，精煉成標準化共用 Skill。</div>
   <div class="sub mut">個人版 MVP · 實驗驅動（Phase 1）＋ Log 探勘（Phase 2）· 基礎參考：SkillClaw（AMAP-ML）</div>
+  <div class="sub mut">本頁對照表數字為<b>真實 Gemini（gemini-flash-latest）api 模式實跑</b>；版本 B 對照為離線 mock。</div>
   <nav class="toc">
     <a href="#s1">1 總覽</a>
     <a href="#s2">2 Pipeline 流程</a>
@@ -205,7 +206,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
     </figure>
   </div>
   <div class="callout warn"><b>本機現況：</b>這台是 Codex Desktop app（狀態存 SQLite），目前無 rollout log；
-  Phase 2 需先安裝經典 CLI 累積對話。故本頁的實跑數字來自 Phase 1 的 mock 模式。</div>
+  Phase 2 需先安裝經典 CLI 累積對話。故本頁實跑走 Phase 1 的 <b>api 模式（真 Gemini 執行任務 + 評分）</b>。</div>
 </section>
 
 <!-- ============ 3 registry ============ -->
@@ -411,8 +412,8 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
     </table>
     <pre>judge.overall = 0.55·task_completion + 0.30·response_quality
               + 0.10·tool_usage    + 0.05·efficiency   （各維 clamp 到 [0,1]）</pre>
-    <p class="mut">實算（本頁 mock：四維固定 tc=0.8, rq=0.8, ef=0.85, tu=0.8）：
-    overall = 0.55·0.8 + 0.30·0.8 + 0.10·0.8 + 0.05·0.85 = <b>0.803</b>。
+    <p class="mut">公式示意（假想四維 tc=0.8, rq=0.8, ef=0.85, tu=0.8）：
+    overall = 0.55·0.8 + 0.30·0.8 + 0.10·0.8 + 0.05·0.85 = <b>0.803</b>（本次 Gemini 實跑的實際 judge 見第 5 節）。
     真實 LLM 模式下四維由模型實際評分、會分化。解析失敗或任一維非數字 → 回 None（該 session 只用硬指標）。</p>
   </div>
 
@@ -424,16 +425,16 @@ score = base × (0.95 + 0.05 × efficiency)
 
 # general：完成度為主體，效率在已完成前提下加成 ≤40%
 score = completion × (0.6 + 0.4 × efficiency)</pre>
-    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 實算（本頁 mock，task_001）</h4>
-    <p class="mut">mock judge overall 固定 0.803；<code>base = 0.6·pass_rate + 0.4·0.803</code>，再乘效率微調
-    <code>×(0.95 + 0.05·eff)</code>。數字與第 5 節對照表一致：</p>
+    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 公式示意（假想數字，非本次實跑）</h4>
+    <div class="callout warn">下表用<b>假想的固定 judge=0.803、且變體 pass_rate 有落差</b>來示範公式怎麼算，
+    不是本次 Gemini 實跑的數字（本次 Gemini 三個 coding 變體 pass_rate 都是 1.0）。<b>實際數字見第 5 節對照表。</b></div>
     <table>
       <tr><th>變體</th><th>pass_rate</th><th>judge</th><th>base=0.6h+0.4s</th><th>效率</th><th>×(0.95+0.05·eff)</th><th>綜合分</th></tr>
-      <tr class="win"><td><code>v_a</code></td><td>1.0</td><td>0.803</td><td>0.921</td><td>0.785</td><td>×0.989</td><td><b>0.911</b></td></tr>
-      <tr><td><code>v_b</code></td><td>0.6</td><td>0.803</td><td>0.681</td><td>0.65</td><td>×0.983</td><td><b>0.669</b></td></tr>
-      <tr><td><code>v_c</code></td><td>0.4</td><td>0.803</td><td>0.561</td><td>0.85</td><td>×0.993</td><td><b>0.557</b></td></tr>
+      <tr><td><code>示例1</code></td><td>1.0</td><td>0.803</td><td>0.921</td><td>0.785</td><td>×0.989</td><td><b>0.911</b></td></tr>
+      <tr><td><code>示例2</code></td><td>0.6</td><td>0.803</td><td>0.681</td><td>0.65</td><td>×0.983</td><td><b>0.669</b></td></tr>
+      <tr><td><code>示例3</code></td><td>0.4</td><td>0.803</td><td>0.561</td><td>0.85</td><td>×0.993</td><td><b>0.557</b></td></tr>
     </table>
-    <p class="mut">效率僅 ±5% 微調（乘數落在 0.95~1.0），不足以翻轉 pass_rate 拉開的差距 → v_a 穩定勝出。這就是「向後相容」：效率中性時乘數≈1，分數等同純 pytest+judge。</p>
+    <p class="mut">效率僅 ±5% 微調（乘數落在 0.95~1.0），不足以翻轉 pass_rate 拉開的差距。這就是「向後相容」：效率中性時乘數≈1，分數等同純 pytest+judge。</p>
 
     <h4 style="margin:14px 0 6px;color:#cdd6e6">general 實算（示意）</h4>
     <p class="mut">general 沒有 pytest，改以 completion（規則或 LLM）為主體，效率加成最多 40%：</p>
