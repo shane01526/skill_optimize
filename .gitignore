@@ -4,6 +4,10 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# API 金鑰：絕不進 git
+.env
+gtest.py
+
 # logs：預設忽略，但保留下方 6 個範例 log（force-added）供 clone 後直接看對照表
 logs/*.json
 logs/*.jsonl

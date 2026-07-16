@@ -11,7 +11,7 @@
 |---|---|---|---|---|---|---|---|
 | coding-debug | task_004 | mock | 0/0 | 0.0 | None | **0.96** | True |
 | coding-debug | task_002 | mock | 5/5 | 1.0 | 0.803 | **0.911** | True |
-| coding-debug | task_001 | mock | 5/5 | 1.0 | 0.803 | **0.909** | True |
+| coding-debug | task_001 | mock | 5/5 | 1.0 | 0.803 | **0.906** | True |
 | coding-debug | task_004 | mock | 0/0 | 0.0 | None | **0.86** | True |
 | coding-debug | task_003 | mock | 0/0 | 0.0 | None | **0.752** | True |
 | coding-debug | task_003 | mock | 0/0 | 0.0 | None | **0.752** | True |
@@ -29,7 +29,7 @@
 ### Before（coding-debug / coding-debug）
 > Use for debugging failing tests.
 
-### After（v10 / coding-debug）
+### After（v12 / coding-debug）
 > Use for debugging failing tests.
 
 ### 內容 diff

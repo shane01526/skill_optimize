@@ -1,6 +1,6 @@
 {
   "model": "mock",
-  "num_sessions": 9,
+  "num_sessions": 12,
   "baseline": {
     "name": "coding-debug",
     "description": "Use for debugging failing tests.",
@@ -118,10 +118,40 @@
       "response_quality": 0.0,
       "efficiency": 0.05,
       "tool_usage": 0.0
+    },
+    {
+      "session_id": "task_004::v_a",
+      "variant_label": "v_a",
+      "pass_rate": 0.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
+    },
+    {
+      "session_id": "task_004::v_b",
+      "variant_label": "v_b",
+      "pass_rate": 0.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
+    },
+    {
+      "session_id": "task_004::v_c",
+      "variant_label": "v_c",
+      "pass_rate": 0.0,
+      "overall_score": 0.702,
+      "task_completion": 0.7,
+      "response_quality": 0.7,
+      "efficiency": 0.75,
+      "tool_usage": 0.7
     }
   ],
   "error": null,
   "groups": {
-    "coding-debug": 9
+    "coding-debug": 12
   }
 }

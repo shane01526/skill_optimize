@@ -2,6 +2,7 @@
 # LLM providers（擇一即可；pipeline 會自動偵測環境變數）
 anthropic>=0.40.0        # 預設 provider（本機為 Claude 環境）
 openai>=1.40.0           # OpenAI-compatible endpoint / 版本 B evolve_server 需要
+google-genai>=0.3.0      # Google Gemini provider（GEMINI_API_KEY / GOOGLE_API_KEY）
 
 # 資料 / 樣板 / 測試
 PyYAML>=6.0

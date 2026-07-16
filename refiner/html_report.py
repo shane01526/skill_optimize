@@ -1,7 +1,8 @@
 """產生詳細說明 HTML（docs/skill_refinement.html）—— 使用者要的查閱檔。
 
-單一 HTML、內嵌 CSS、可離線開。用 Jinja2 把 before_after.json 的對照表
-渲染進去，其餘章節為手寫說明（含流程圖、架構對應表、陷阱與對策）。
+單一 HTML、內嵌 CSS + 手繪 SVG，可離線開（無外部 CDN）。用 Jinja2 把
+before_after.json / skillclaw_result / publish_result 的資料渲染進去，
+其餘為手寫說明。圖表為主、文字為輔。
 
 用法：
   python -m refiner.html_report            # 讀 output/before_after.json
@@ -29,544 +30,640 @@ _TEMPLATE = r"""<!DOCTYPE html>
   :root{
     --bg:#0f1116; --panel:#171a21; --panel2:#1e222b; --ink:#e7eaf0; --muted:#9aa3b2;
     --line:#2a2f3a; --accent:#5b9dff; --good:#3fb950; --warn:#d29922; --bad:#f85149;
-    --add:#123a20; --del:#3a1214; --chip:#232838;
+    --add:#123a20; --del:#3a1214; --chip:#232838; --purple:#a371f7;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
     line-height:1.7;font-size:15px}
-  header{padding:40px 24px 28px;background:linear-gradient(160deg,#1a2030,#0f1116);border-bottom:1px solid var(--line)}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-  h1{font-size:30px;margin:0 0 6px}
-  h2{font-size:22px;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-  h3{font-size:17px;margin:24px 0 8px;color:#cdd6e6}
+  header{padding:44px 24px 30px;background:radial-gradient(120% 140% at 20% 0%,#1c2740,#0f1116 60%);border-bottom:1px solid var(--line)}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  h1{font-size:31px;margin:0 0 6px}
+  h2{font-size:22px;margin:0 0 4px}
+  h3{font-size:16.5px;margin:22px 0 8px;color:#cdd6e6}
   .sub{color:var(--muted);font-size:15px}
-  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0}
+  .lead{color:#c7d0de;font-size:14.5px;margin:2px 0 14px;border-left:3px solid var(--accent);padding-left:12px}
+  section{margin:38px 0}
+  .sechead{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px}
+  .secno{color:var(--accent);font-weight:700;font-size:15px;background:#131a28;border:1px solid var(--line);border-radius:8px;padding:2px 9px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
   .toc a{background:var(--chip);color:#cdd6e6;text-decoration:none;padding:6px 12px;border-radius:20px;font-size:13px;border:1px solid var(--line)}
   .toc a:hover{border-color:var(--accent);color:#fff}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:800px){.grid{grid-template-columns:1fr}}
-  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
-  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:middle}
   th{background:var(--panel2);color:#cdd6e6}
   tr:nth-child(even) td{background:#141821}
   .win td{background:#12291a !important}
-  code,pre{font-family:"JetBrains Mono",Consolas,Menlo,monospace;font-size:13px}
-  pre{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto}
-  .chip{display:inline-block;padding:2px 9px;border-radius:12px;font-size:12px;border:1px solid var(--line);background:var(--chip)}
+  code,pre{font-family:"JetBrains Mono",Consolas,Menlo,monospace}
+  code{font-size:12.5px;color:#e6c07b}
+  pre{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;font-size:12.5px;color:#c8d2e0}
+  .chip{display:inline-block;padding:1px 8px;border-radius:11px;font-size:11.5px;border:1px solid var(--line);background:var(--chip)}
+  .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11.5px;font-weight:600}
+  .b-coding{background:#10233f;color:#8ab4ff;border:1px solid #24405f}
+  .b-general{background:#241a33;color:#c3a0f5;border:1px solid #3d2c58}
+  .b-rule{background:#0f2a1a;color:#6fdd8b;border:1px solid #235537}
+  .b-llm{background:#2c2410;color:#e3c169;border:1px solid #574718}
   .ok{color:var(--good)} .no{color:var(--bad)} .mid{color:var(--warn)}
-  .flow{background:#0b0d12;border:1px dashed var(--line);border-radius:10px;padding:16px;white-space:pre;overflow:auto;color:#b9c2d4;font-family:"JetBrains Mono",Consolas,monospace;font-size:12.5px}
+  .callout{border-left:3px solid var(--accent);background:#141a26;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+  .callout.warn{border-color:var(--warn);background:#241f14}
+  .callout.good{border-color:var(--good);background:#132116}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+  .kpi .box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:110px;flex:1}
+  .kpi .n{font-size:22px;font-weight:700}
+  .kpi .l{color:var(--muted);font-size:12px}
+  .diff{white-space:pre;overflow:auto}
   .diff .add{background:var(--add);color:#7ee787;display:block}
   .diff .del{background:var(--del);color:#ff9a9a;display:block}
   .diff .hunk{color:var(--accent);display:block}
   .diff .ctx{color:var(--muted);display:block}
-  .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}
-  .kpi .box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:120px}
-  .kpi .n{font-size:24px;font-weight:700}
-  .kpi .l{color:var(--muted);font-size:12px}
-  .callout{border-left:3px solid var(--accent);background:#141a26;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
-  .callout.warn{border-color:var(--warn);background:#241f14}
   footer{color:var(--muted);font-size:12px;padding:30px 24px;border-top:1px solid var(--line);margin-top:40px}
-  a{color:var(--accent)}
-  .mut{color:var(--muted)}
-  ul{margin:8px 0 8px 0;padding-left:22px} li{margin:3px 0}
+  a{color:var(--accent)} .mut{color:var(--muted)}
+  ul{margin:8px 0;padding-left:22px} li{margin:3px 0}
+  /* score bar */
+  .bar-wrap{display:flex;align-items:center;gap:8px;min-width:130px}
+  .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,#3fb950,#5b9dff);flex:0 0 auto}
+  .bar-bg{background:#0b0d12;border:1px solid var(--line);border-radius:5px;flex:1;height:11px;overflow:hidden;padding:1px}
+  .bar-n{font-variant-numeric:tabular-nums;font-size:12.5px;min-width:40px;text-align:right;color:#cdd6e6}
+  /* svg diagram */
+  .fig{background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0;overflow:auto}
+  .fig figcaption{color:var(--muted);font-size:12px;margin-top:6px;text-align:center}
+  svg text{font-family:-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif}
 </style>
 </head>
 <body>
 <header><div class="wrap">
   <h1>Skill 精煉機制 — 詳細說明</h1>
   <div class="sub">從多個 skill 變體的使用紀錄中，篩選出更有效率、效用的版本，精煉成標準化共用 Skill。</div>
-  <div class="sub mut">個人版 MVP · 實驗驅動（Phase 1）+ Log 探勘（Phase 2）· 基礎參考：SkillClaw（AMAP-ML）</div>
+  <div class="sub mut">個人版 MVP · 實驗驅動（Phase 1）＋ Log 探勘（Phase 2）· 基礎參考：SkillClaw（AMAP-ML）</div>
   <nav class="toc">
-    <a href="#s1">1 需求與定位</a>
-    <a href="#s2">2 SkillClaw 對應</a>
-    <a href="#s3">3 Pipeline 流程</a>
-    <a href="#s4">4 skill_id / Registry</a>
-    <a href="#s-score">★ 評分流程</a>
-    <a href="#s5">5 精煉前/後對照表</a>
-    <a href="#s6">6 版本 A vs B</a>
+    <a href="#s1">1 總覽</a>
+    <a href="#s2">2 Pipeline 流程</a>
+    <a href="#s3">3 skill_id / Registry</a>
+    <a href="#s4">4 評分機制</a>
+    <a href="#s5">5 精煉前/後對照</a>
+    <a href="#s6">6 與 SkillClaw 差異</a>
     <a href="#s7">7 陷阱與擴展</a>
   </nav>
 </div></header>
 
 <main class="wrap">
 
+<!-- ============ 1 總覽 ============ -->
 <section id="s1">
-<h2>1. 需求與研究定位</h2>
-<div class="card">
-  <p><b>需求：</b>從大量員工使用 Codex Skill 的紀錄中，透過 Log 分析找出可共用的有效做法，
-  進一步整理、合併、精煉成標準化 Skill。</p>
-  <p class="mut">多人使用 / 修改 Skill 的 Log → 找出有效做法與共通模式 → 精煉成新的共用 Skill</p>
-  <ul>
-    <li>目前沒有集團 Log 和同事的 Skill，先做<b>個人版 MVP</b>。</li>
-    <li>MVP 以 <b>coding 任務</b>為實驗場景（好判斷結果好壞）：針對同一目標建立不同寫法的 skill 去跑同一任務，
-      再從結果較好的 skill 裡萃取好做法。</li>
-    <li>流程可擴展，換的是「怎麼判斷任務結果好不好」與「Golden Dataset 怎麼設計」。</li>
-  </ul>
-  <div class="callout"><b>預計產出：</b>① 可執行的 Skill 精煉流程　② 精煉前 / 精煉後對照表（本頁第 5 節）</div>
-</div>
+  <div class="sechead"><span class="secno">1</span><h2>總覽</h2></div>
+  <p class="lead">一句話：同一目標寫多個 skill 變體 → 讓它們跑同一批任務 → 用客觀+行為訊號評分 → 從勝出變體萃取做法 → 精煉成新版並產出對照表。</p>
+  <div class="card">
+    <p><b>需求：</b>從大量員工使用 Codex Skill 的紀錄中，透過 Log 分析找出可共用的有效做法，整理、合併、精煉成標準化 Skill。
+    目前無集團 Log／同事 Skill，故先做<b>個人版 MVP</b>，以 coding 為首個實驗場景（好判斷好壞），流程可擴展到任何場景。</p>
+
+    <figure class="fig">
+      <svg viewBox="0 0 980 132" width="100%" role="img" aria-label="端到端流程">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker>
+        </defs>
+        <g font-size="12.5" fill="#e7eaf0" text-anchor="middle">
+          <g><rect x="8"   y="40" width="150" height="52" rx="9" fill="#171a21" stroke="#3a4560"/>
+             <text x="83" y="62">① 多個 skill 變體</text><text x="83" y="80" fill="#9aa3b2">v_a / v_b / v_c</text></g>
+          <g><rect x="205" y="40" width="150" height="52" rx="9" fill="#171a21" stroke="#3a4560"/>
+             <text x="280" y="62">② 跑同一批任務</text><text x="280" y="80" fill="#9aa3b2">Runner × golden task</text></g>
+          <g><rect x="402" y="40" width="150" height="52" rx="9" fill="#171a21" stroke="#3a4560"/>
+             <text x="477" y="62">③ 評分</text><text x="477" y="80" fill="#9aa3b2">客觀 + 行為訊號</text></g>
+          <g><rect x="599" y="40" width="150" height="52" rx="9" fill="#171a21" stroke="#3a4560"/>
+             <text x="674" y="62">④ 萃取＋精煉</text><text x="674" y="80" fill="#9aa3b2">勝出變體 → 新版</text></g>
+          <g><rect x="796" y="40" width="176" height="52" rx="9" fill="#132116" stroke="#235537"/>
+             <text x="884" y="62" fill="#6fdd8b">⑤ 精煉前/後對照</text><text x="884" y="80" fill="#9aa3b2">＋ registry 版本</text></g>
+          <line x1="158" y1="66" x2="203" y2="66" stroke="#5b9dff" stroke-width="1.6" marker-end="url(#ar)"/>
+          <line x1="355" y1="66" x2="400" y2="66" stroke="#5b9dff" stroke-width="1.6" marker-end="url(#ar)"/>
+          <line x1="552" y1="66" x2="597" y2="66" stroke="#5b9dff" stroke-width="1.6" marker-end="url(#ar)"/>
+          <line x1="749" y1="66" x2="794" y2="66" stroke="#5b9dff" stroke-width="1.6" marker-end="url(#ar)"/>
+        </g>
+      </svg>
+      <figcaption>端到端流程：變體 → 執行 → 評分 → 精煉 → 對照</figcaption>
+    </figure>
+
+    <div class="kpi">
+      <div class="box"><div class="n">{{ report.goal }}</div><div class="l">目標 skill</div></div>
+      <div class="box"><div class="n">{{ report.num_variants }}</div><div class="l">變體數</div></div>
+      <div class="box"><div class="n">{{ report.num_sessions }}</div><div class="l">session 數</div></div>
+      <div class="box"><div class="n">{{ report.generated_action }}</div><div class="l">精煉動作</div></div>
+      <div class="box"><div class="n {{ 'ok' if report.accepted else 'no' }}">{{ '採用' if report.accepted else '未採用' }}</div><div class="l">發布閘</div></div>
+      {% if report.winner %}<div class="box"><div class="n ok">{{ report.winner.variant }}</div><div class="l">勝出變體</div></div>{% endif %}
+    </div>
+    <div class="callout"><b>預計產出：</b>① 可執行的 Skill 精煉流程　② 精煉前 / 精煉後對照表（見第 5 節）　③ 本說明 HTML。</div>
+  </div>
 </section>
 
+<!-- ============ 2 Pipeline ============ -->
 <section id="s2">
-<h2>2. 為何選 SkillClaw、以及對應關係</h2>
-<div class="card">
-  <p>SkillClaw 的 <code>evolve_server</code> 正是可重用的精煉核心：從真實 session 自動去重、改進、合併、驗證 skill。
-  它<b>不需要 golden dataset</b>，缺分數時退回 LLM-judge。本專案借用其設計精神與 prompt，但去掉
-  proxy / OSS / dashboard / Nacos 等重架構，改成可離線、以檔案為主的個人版。</p>
-  <table>
-    <tr><th>本專案階段</th><th>SkillClaw 對應</th><th>版本 A 檔案</th></tr>
-    <tr><td>Log 統一格式</td><td>session dict（turns / _skills_referenced / 分數）</td><td><code>normalizer.py</code></td></tr>
-    <tr><td>摘要 + trajectory</td><td><code>pipeline/summarizer.py</code></td><td><code>summarizer.py</code></td></tr>
-    <tr><td>依 skill 分組</td><td><code>pipeline/aggregation.py</code></td><td><code>aggregation.py</code></td></tr>
-    <tr><td>評分（軟）</td><td><code>pipeline/session_judge.py</code>（四維權重）</td><td><code>evaluator.py</code></td></tr>
-    <tr><td>評分（硬）</td><td>benchmark / PRM 分數</td><td><code>evaluator.run_pytest</code></td></tr>
-    <tr><td>生成精煉版</td><td><code>pipeline/execution.py</code>（improve/create/merge）</td><td><code>execution.py</code></td></tr>
-    <tr><td>before/after 閘</td><td><code>pipeline/skill_verifier.py</code>（≥0.75 四分數）</td><td><code>verifier.py</code></td></tr>
-    <tr><td>skill_id / 版本</td><td><code>core/skill_registry.py</code></td><td><code>registry.py</code></td></tr>
-  </table>
-</div>
+  <div class="sechead"><span class="secno">2</span><h2>Pipeline 流程</h2></div>
+  <p class="lead">兩個階段共用同一套後段（摘要→分組→精煉→驗證→registry）；差別只在「資料來源」與「評分方式」。</p>
+  <div class="grid">
+    <figure class="fig">
+      <svg viewBox="0 0 420 322" width="100%" role="img" aria-label="Phase 1 流程">
+        <defs><marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
+        <g font-size="11" fill="#e7eaf0" text-anchor="middle">
+          <rect x="30" y="8"   width="360" height="44" rx="8" fill="#171a21" stroke="#3a4560"/>
+            <text x="210" y="26">同一目標</text><text x="210" y="42" fill="#9aa3b2">手寫多個 skill 變體 v_a/v_b/v_c</text>
+          <rect x="30" y="72"  width="360" height="44" rx="8" fill="#171a21" stroke="#3a4560"/>
+            <text x="210" y="90">Runner（codex / api / mock）</text><text x="210" y="106" fill="#9aa3b2">每個 (變體×task) 獨立 workspace</text>
+          <rect x="30" y="136" width="360" height="44" rx="8" fill="#10233f" stroke="#24405f"/>
+            <text x="210" y="154" fill="#8ab4ff">Evaluator</text><text x="210" y="170" fill="#9aa3b2">客觀（pytest）＋ 行為訊號 評分</text>
+          <rect x="30" y="200" width="360" height="34" rx="8" fill="#171a21" stroke="#3a4560"/>
+            <text x="210" y="221">Summarize → Aggregate（依 skill）</text>
+          <rect x="30" y="254" width="360" height="44" rx="8" fill="#132116" stroke="#235537"/>
+            <text x="210" y="272" fill="#6fdd8b">Execution 精煉 → Verifier 閘</text><text x="210" y="288" fill="#9aa3b2">→ Registry（版本+1）→ 對照表</text>
+          <line x1="210" y1="52"  x2="210" y2="70"  stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a1)"/>
+          <line x1="210" y1="116" x2="210" y2="134" stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a1)"/>
+          <line x1="210" y1="180" x2="210" y2="198" stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a1)"/>
+          <line x1="210" y1="234" x2="210" y2="252" stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a1)"/>
+        </g>
+      </svg>
+      <figcaption>Phase 1 — 實驗驅動（MVP 主線）</figcaption>
+    </figure>
+    <figure class="fig">
+      <svg viewBox="0 0 420 322" width="100%" role="img" aria-label="Phase 2 流程">
+        <defs><marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#a371f7"/></marker></defs>
+        <g font-size="11" fill="#e7eaf0" text-anchor="middle">
+          <rect x="30" y="8"   width="360" height="44" rx="8" fill="#171a21" stroke="#3d2c58"/>
+            <text x="210" y="26">Codex 日常對話</text><text x="210" y="42" fill="#9aa3b2">rollout-*.jsonl</text>
+          <rect x="30" y="72"  width="360" height="34" rx="8" fill="#171a21" stroke="#3d2c58"/>
+            <text x="210" y="93">篩出使用者自訂 skill 的對話</text>
+          <rect x="30" y="126" width="360" height="44" rx="8" fill="#241a33" stroke="#3d2c58"/>
+            <text x="210" y="144" fill="#c3a0f5">Normalize</text><text x="210" y="160" fill="#9aa3b2">rollout → 統一 session</text>
+          <rect x="30" y="190" width="360" height="52" rx="8" fill="#171a21" stroke="#3d2c58"/>
+            <text x="210" y="212">沿用 Phase 1 後段</text><text x="210" y="230" fill="#9aa3b2">Summarize→…→Registry→對照表</text>
+          <line x1="210" y1="52"  x2="210" y2="70"  stroke="#a371f7" stroke-width="1.5" marker-end="url(#a2)"/>
+          <line x1="210" y1="106" x2="210" y2="124" stroke="#a371f7" stroke-width="1.5" marker-end="url(#a2)"/>
+          <line x1="210" y1="170" x2="210" y2="188" stroke="#a371f7" stroke-width="1.5" marker-end="url(#a2)"/>
+        </g>
+      </svg>
+      <figcaption>Phase 2 — Log 探勘（累積真實 log 後）</figcaption>
+    </figure>
+  </div>
+  <div class="callout warn"><b>本機現況：</b>這台是 Codex Desktop app（狀態存 SQLite），目前無 rollout log；
+  Phase 2 需先安裝經典 CLI 累積對話。故本頁的實跑數字來自 Phase 1 的 mock 模式。</div>
 </section>
 
+<!-- ============ 3 registry ============ -->
 <section id="s3">
-<h2>3. 本專案 Pipeline 流程</h2>
-<div class="grid">
+  <div class="sechead"><span class="secno">3</span><h2>skill_id / 版本 / Registry</h2></div>
+  <p class="lead">Codex log 沒有欄位記錄「用了哪個 skill」；解法是上架就綁 skill_id，並從 log 反查實際讀取的 SKILL.md。</p>
   <div class="card">
-    <h3>Phase 1 — 實驗驅動（MVP 主線）</h3>
-    <div class="flow">同一 coding 目標
-   │  手寫多個 skill 變體 (v_a / v_b / v_c)
-   ▼
-Runner（codex exec / API / mock）
-   │  每個 (變體 × golden task) 獨立 workspace 執行
-   ▼
-Evaluator
-   │  pytest 通過率（硬） + LLM judge 四維（軟）
-   ▼
-Normalize → Summarize → Aggregate(by skill)
-   ▼
-Execution：從勝出變體萃取共通做法 → 精煉版草稿
-   ▼
-Verifier：before/after 四分數閘（≥0.75）
-   ▼
-Registry(version+1) + 精煉前/後對照表</div>
-  </div>
-  <div class="card">
-    <h3>Phase 2 — Log 探勘（累積真實 log 後）</h3>
-    <div class="flow">Codex 經典 CLI 日常對話
-   │  ~/.codex/sessions/**/rollout-*.jsonl
-   ▼
-篩選：使用者自訂 skill →
-   哪幾筆對話更新過該 skill
-   ▼
-Normalize（rollout → 統一 session）
-   ▼
-（沿用 Phase 1 後段，流程不換）
-Summarize → Aggregate → Execution
-   → Verifier → Registry → 對照表
-
-換的只是「資料來源」與「評分方式」。</div>
-    <div class="callout warn"><b>本機現況：</b>這台是 Codex Desktop app（SQLite 狀態），
-      目前無 rollout log；Phase 2 需先安裝經典 CLI 並累積對話。</div>
-  </div>
-</div>
-</section>
-
-<section id="s4">
-<h2>4. skill_id / 版本 / Registry 機制</h2>
-<div class="card">
-  <p>現有 Codex log <b>沒有</b>穩定欄位記錄「用了哪個 Skill」（靠 name/description 讓 LLM 判斷）。
-  因此 skill 上架時就綁定 <code>skill_id</code>，讓使用紀錄、評估結果、精煉都能對齊到同一個 Skill。</p>
-  <pre>---
+    <div class="grid">
+      <div>
+        <pre>---
 skill_id: {{ before.skill_id }}
 name: {{ before.name }}
 version: 1.0.0
 description: ...
 ---</pre>
-  <ul>
-    <li><b>skill_id</b>：作者提供的識別碼（slug，如 <code>coding-debug</code>）；未提供時系統以 <code>SHA-256(name)[:12]</code> 產生。</li>
-    <li><b>version</b> 每次內容變更 +1；<b>content_sha</b> 記錄內容雜湊供衝突偵測。</li>
-    <li><b>history</b>（上限 20 筆）記錄每次 {version, content_sha, timestamp, action, rationale}。</li>
-    <li>Orchestrator（runner）明確記錄 <code>actual_used_skill_ids</code>，不靠事後推斷。</li>
-  </ul>
+      </div>
+      <div>
+        <ul>
+          <li><b>skill_id</b>：作者提供的 slug（如 <code>coding-debug</code>）；未提供時系統以 <code>SHA-256(name)[:12]</code> 產生。</li>
+          <li><b>version</b> 每次內容變更 +1；<b>content_sha</b> 供衝突偵測。</li>
+          <li><b>history</b>（上限 20）記錄 {version, content_sha, timestamp, action, rationale}。</li>
+          <li>runner 明確記錄 <code>actual_used_skill_ids</code>，不靠事後推斷。</li>
+        </ul>
+      </div>
+    </div>
 
-  <h3>Skill 上架驗證（doc「Skill 上架流程」）</h3>
-  {% if publish %}
-  <p class="mut">Registry 上架時檢查：欄位完整（skill_id/name/description）、skill_id slug 格式、唯一性（同 id 不同 name 衝突）。</p>
-  <table>
-    <tr><th>SKILL.md</th><th>結果</th><th>skill_id / 錯誤</th></tr>
-    {% for r in publish.results %}
-    <tr><td><code>{{ r.path }}</code></td>
-      <td class="{{ 'ok' if r.ok else 'no' }}">{{ '通過' if r.ok else '擋下' }}</td>
-      <td>{{ r.skill_id if r.ok else (r.errors | join('; ')) }}</td></tr>
-    {% endfor %}
-  </table>
-  <p class="mut">通過 {{ publish.passed }} / 失敗 {{ publish.failed }}。</p>
-  {% else %}
-  <p class="mut">（執行 <code>python -m refiner.pipeline publish</code> 後本區塊會顯示各 SKILL.md 的上架驗證結果。）</p>
-  {% endif %}
+    <h3>Skill 上架驗證</h3>
+    {% if publish %}
+    <p class="mut">上架檢查：欄位完整（skill_id/name/description）、skill_id slug 格式、唯一性（同 id 不同 name → 衝突）。</p>
+    <table>
+      <tr><th>SKILL.md</th><th>結果</th><th>skill_id / 錯誤</th></tr>
+      {% for r in publish.results %}
+      <tr><td><code>{{ r.path }}</code></td>
+        <td class="{{ 'ok' if r.ok else 'no' }}">{{ '✓ 通過' if r.ok else '✗ 擋下' }}</td>
+        <td>{{ r.skill_id if r.ok else (r.errors | join('; ')) }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="mut">通過 {{ publish.passed }} / 失敗 {{ publish.failed }}。</p>
+    {% else %}
+    <p class="mut">（執行 <code>python -m refiner.pipeline publish</code> 後顯示上架結果。）</p>
+    {% endif %}
 
-  <h3>實際使用的 skill_id（actual_used_skill_ids）</h3>
-  <p class="mut">分析 log 找出實際被讀取的 SKILL.md → 取出其 skill_id → 與任務結果對齊（doc「任務執行流程」step 5-8）。</p>
-  <table>
-    <tr><th>變體</th><th>actual_used_skill_ids</th></tr>
-    {% for a in report.variant_aggregate %}
-    <tr><td><code>{{ a.variant }}</code></td><td>{{ a.actual_used_skill_ids | join(', ') }}</td></tr>
-    {% endfor %}
-  </table>
-</div>
-</section>
-
-<section id="s-score">
-<h2>★ 評分流程詳解（Scoring，一步步）</h2>
-<div class="card">
-  <p>每個 <b>(變體 × task)</b> 會產生一個 session。評分先<b>依任務類型分流</b>：
-  <b>coding</b> 走「pytest 硬指標 + LLM judge 軟指標」為主、再用通用效率分微調；
-  <b>general（任何場景）</b> 走「通用完成度 judge × 效率」。最後把同一變體跨多個 task 的綜合分
-  取平均，決定<b>勝出變體</b>。程式在 <code>refiner/evaluator.py</code> 與 <code>refiner/generic_metrics.py</code>。</p>
-  <div class="flow">一個 session（變體 v × task t）
-   │
-   ├─▶ 通用指標（任何場景都算）
-   │     num_turns / elapsed / tool 次數·錯誤率 / 輸出長度
-   │     → cohort min-max 反向正規化 → efficiency_score ∈ [0,1]
-   │
-   ▼ resolve_task_type(session)   # 標籤優先，否則有無測試偵測
- ┌───────────────┴────────────────┐
- coding                            general（場景無關）
-   │ pytest pass_rate（硬 60%）       │ 通用 completion judge
-   │ + LLM judge 四維（軟 40%）       │   （任務完成度）
-   │ = base                          │
-   ▼ 效率微調 ±5%                    ▼ 效率加成 ≤40%
- score = base × (0.95+0.05·eff)   score = completion × (0.6+0.4·eff)
- └───────────────┬────────────────┘
-   ▼ 聚合：同一變體跨 task 取 avg_score → 取最高者為 winner</div>
-</div>
-
-<div class="card">
-  <h3>通用（場景無關）評分：不依賴 pytest 也能比較 skill</h3>
-  <p>對應 <code>refiner/generic_metrics.py</code>。以下四類指標<b>任何任務都能算</b>，全部從 session 既有
-  欄位取得，不需額外資料源：</p>
-  <table>
-    <tr><th>指標</th><th>來源</th><th>方向</th><th>權重</th></tr>
-    <tr><td><code>num_turns</code></td><td>len(turns)：對話輪數</td><td>越少越好</td><td>0.35</td></tr>
-    <tr><td><code>elapsed_sec</code></td><td>runner_meta 的 ended−started：執行時間</td><td>越少越好</td><td>0.25</td></tr>
-    <tr><td><code>num_tool_calls</code></td><td>所有 turn 的工具呼叫總數</td><td>越少越好</td><td>0.15</td></tr>
-    <tr><td><code>tool_error_rate</code></td><td>有錯誤的 tool_results 佔比</td><td>越低越好</td><td>0.15</td></tr>
-    <tr><td><code>response_chars</code></td><td>回覆總字數（代理 token 消耗）</td><td>越少越好</td><td>0.10</td></tr>
-  </table>
-  <ul>
-    <li><b>正規化</b>：cohort <b>明確按 (goal, task) 分組</b>——效率只在「同 goal、同 task 的變體群」內
-      做 min-max <b>反向</b>正規化（不跨 task／跨 goal 比較，避免難易度不同互相污染）
-      → 該群最小值得 1.0、最大值得 0.0；全相等或只有一個變體 → 1.0（無區別）。
-      加權平均得 <code>efficiency_score ∈ [0,1]</code>。（對照表每列標有 <code>cohort_key</code>／<code>cohort_size</code>。）</li>
-    <li><b>缺值處理</b>：某項在 cohort 全缺（如 mock 無真實時間）→ 該項不計入，權重按剩餘項重分配，
-      並在 <code>skipped_metrics</code> 標註。</li>
-    <li><b>防呆</b>：效率「越少越好」，單獨用會獎勵擺爛。故通用分一定是
-      <code>完成度 judge × 效率</code>——先確認有完成，再在完成前提下比效率。</li>
-  </ul>
-  <div class="callout"><b>通用有效性 judge</b>（<code>prompts.GENERIC_JUDGE_SYSTEM</code>）不假設 coding，
-  只評 <code>task_completion / response_quality</code>；明確要求「做得少或放棄 → task_completion 要低」，
-  避免短 trajectory 被誤判為好。此 LLM judge 現在是<b>後備</b>——優先用下方規則式 detector。</div>
-</div>
-
-<div class="card">
-  <h3>達標判定：規則式 completion detector（使用者行為訊號，零 LLM）</h3>
-  <p>對應 <code>refiner/completion_detector.py</code>。general 任務「有沒有達標」<b>優先用規則判斷、模糊才退 LLM</b>，
-  降低對 LLM-as-judge 的依賴。思路來自 IR／推薦系統的 <b>implicit feedback</b>：不問使用者「滿意嗎」，
-  而是看他<b>接下來做什麼</b>——從 session 裡「agent 回覆後，使用者下一輪的反應」抓訊號（純關鍵詞／正則／
-  <code>difflib</code> 文字相似度，不呼叫 LLM）。</p>
-  <table>
-    <tr><th>訊號</th><th>方向</th><th>例</th></tr>
-    <tr><td>positive / adopt（確認、採用產物）</td><td class="ok">達標 ↑</td><td>「讚，就是這個」「已套用」「thanks, lgtm」</td></tr>
-    <tr><td>continue_next（接續新任務）</td><td class="ok">達標 ↑（弱）</td><td>「接著幫我寫英文版」「next」</td></tr>
-    <tr><td>session_end（自然結束、無追問無錯誤）</td><td class="ok">達標 ↑（弱）</td><td>回覆後無 follow-up</td></tr>
-    <tr><td>negative（否定、要求重來）</td><td class="no">未達標 ↓</td><td>「不對」「重寫」「still failing」</td></tr>
-    <tr><td>coding_retry（要求繼續修）</td><td class="no">未達標 ↓</td><td>「還是失敗」「fix it」</td></tr>
-    <tr><td>reformulation（重述同一需求）</td><td class="no">未達標 ↓</td><td>下一輪 prompt 與前一輪高度重疊</td></tr>
-  </table>
-  <pre>raw = (Σ正向權重 − Σ負向權重) / Σ總權重       # ∈ [-1,1]
-completion = (raw + 1) / 2                     # ∈ [0,1]
-confidence = tanh(Σ訊號強度)                    # 訊號越多越有信心
-
-if confidence ≥ 0.5:  用規則（completion_source="rule"，零 LLM）
-else:                 fallback 到 GENERIC_JUDGE_SYSTEM（source="llm"）</pre>
-  <div class="callout warn"><b>限制</b>：行為訊號在<b>多輪真實對話</b>最有效（Phase 2 Codex log）。
-  Phase 1 headless 單輪、無使用者後續回覆 → confidence 低 → 自動退回 LLM judge。對照表 general 列標有
-  <code>completion_source</code>（rule／llm）與信心度。</div>
-</div>
-
-<div class="card">
-  <h3>Step 1（coding 專用）— 硬指標：pytest 通過率（客觀 ground truth）</h3>
-  <p>對應 <code>evaluator.py::run_pytest → _parse_pytest_output</code>。這是文件「coding 任務好判斷好壞」的核心；
-  非 coding 任務沒有這一步（改由上方通用完成度 judge 提供有效性訊號）。</p>
-  <ul>
-    <li>在該 (變體×task) 的<b>獨立 workspace</b> 跑 <code>pytest -q</code>（agent 已在此改過程式），
-      彼此不互相污染。</li>
-    <li>用 regex 從輸出抓 <code>N passed / N failed / N error</code>：
-      <br><code>total = passed + failed + errors</code>；
-      <code>pass_rate = passed / total</code>（四捨五入 3 位）。</li>
-    <li><code>all_pass = (total &gt; 0 且 passed == total)</code> → 之後決定 <code>_success</code>。</li>
-    <li>邊界：找不到測試 / timeout / 執行例外 → <code>pass_rate = 0.0</code>（視為失敗，不中斷）。</li>
-  </ul>
-  <pre>pass_rate = passed / (passed + failed + errors)
-# 例：5 passed, 0 failed  → 5/5  = 1.0
-#     3 passed, 2 failed  → 3/5  = 0.6
-#     2 passed, 3 failed  → 2/5  = 0.4</pre>
-</div>
-
-<div class="card">
-  <h3>Step 2（coding 專用）— 軟指標：LLM judge 四維加權</h3>
-  <p>對應 <code>evaluator.py::judge_session → _parse_scores</code>，system prompt 為
-  <code>prompts.JUDGE_SYSTEM</code>（沿用 SkillClaw session_judge 的四維與權重）。</p>
-  <ul>
-    <li>送給 judge 的 payload：<code>session_id / skill_name / task_id / test（硬指標結果）/
-      _trajectory（逐步軌跡）/ _summary（LLM 摘要）</code>。</li>
-    <li>呼叫 <code>LLMClient.chat(JUDGE_SYSTEM, payload, temperature=0.1, max_tokens=1200)</code>，
-      要求回一個 JSON。</li>
-    <li>四個維度各自 clamp 到 [0,1]，再依權重加總為 <code>overall_score</code>（round 3）。</li>
-    <li>容錯：JSON 解析失敗、或任一維度不是數字 → 回 <code>None</code>，該 session 略過軟指標
-      （只用硬指標）。</li>
-  </ul>
-  <table>
-    <tr><th>維度</th><th>意義</th><th>權重</th></tr>
-    <tr><td><code>task_completion</code></td><td>是否達成 coding 目標（測試通過是強證據）</td><td><b>0.55</b></td></tr>
-    <tr><td><code>response_quality</code></td><td>修正的正確性 / 完整性 / 清晰度</td><td>0.30</td></tr>
-    <tr><td><code>tool_usage</code></td><td>工具使用是否適當有效</td><td>0.10</td></tr>
-    <tr><td><code>efficiency</code></td><td>是否避免無謂重試 / 繞路</td><td>0.05</td></tr>
-  </table>
-  <pre>overall = 0.55·task_completion + 0.30·response_quality
-        + 0.10·tool_usage    + 0.05·efficiency</pre>
-</div>
-
-<div class="card">
-  <h3>Step 3 — 合成綜合分（依任務類型分流）</h3>
-  <p>對應 <code>evaluator.py::evaluate_session</code>。先 <code>resolve_task_type</code>（標籤優先，
-  否則有無測試偵測），再分流：</p>
-  <pre># coding：原 pytest+judge 為主體，效率僅 ±5% 微調（向後相容）
-base  = 0.6 × pass_rate + 0.4 × judge.overall_score
-score = base × (0.95 + 0.05 × efficiency_score)
-
-# general（場景無關）：完成度為主體，效率在已完成前提下加成 ≤40%
-score = completion × (0.6 + 0.4 × efficiency_score)</pre>
-  <ul>
-    <li>coding 退化情形：只有硬指標 → 取 pass_rate；只有軟指標 → 取 overall；皆無 → 0。</li>
-    <li><code>_success</code>：coding 用 <code>all_pass</code>；general 用 <code>completion ≥ 0.75</code>。</li>
-    <li>效率<b>中性</b>（cohort 無區別）時 efficiency=1.0：coding <code>×(0.95+0.05)=×1.0</code>，
-      分數與升級前一致 → <b>向後相容</b>。</li>
-    <li>同時把 <code>_avg_prm = score</code>，讓 summarizer / execution 排序時對齊（借 SkillClaw PRM 概念）。</li>
-  </ul>
-</div>
-
-<div class="card">
-  <h3>Step 4 — 變體聚合 → 選出 winner</h3>
-  <p>對應 <code>report.py::_variant_aggregate</code>。同一變體會跑多個 golden task，
-  取<b>跨 task 的綜合分平均</b> <code>avg_score</code>，最高者為勝出變體（對齊文件「同一批任務」語意）。
-  勝出變體的內容送進 <code>execution.py</code> 萃取共通有效做法，生成精煉版草稿。</p>
-</div>
-
-<div class="card">
-  <h3>實算範例（本頁 mock 模式的實際數字）</h3>
-  <p class="mut">離線 mock 的 judge 以 base=0.8 產生四維（見 <code>mock_llm.py</code>）：
-  overall = 0.8·0.55 + 0.8·0.30 + 0.85·0.05 + 0.8·0.10 = <b>0.803</b>。
-  真實 LLM 模式則由模型實際評分，數字會不同。</p>
-  <table>
-    <tr><th>變體</th><th>pytest pass_rate（硬）</th><th>judge overall（軟）</th><th>0.6×硬 + 0.4×軟</th><th>綜合分</th></tr>
-    <tr class="win"><td><code>v_a</code></td><td>1.0</td><td>0.803</td><td>0.6·1.0 + 0.4·0.803</td><td><b>0.921</b></td></tr>
-    <tr><td><code>v_b</code></td><td>0.6</td><td>0.803</td><td>0.6·0.6 + 0.4·0.803</td><td><b>0.681</b></td></tr>
-    <tr><td><code>v_c</code></td><td>0.4</td><td>0.803</td><td>0.6·0.4 + 0.4·0.803</td><td><b>0.561</b></td></tr>
-  </table>
-  <p class="mut">→ 三個變體軟指標相同（mock 特性），故差距主要由 <b>pytest 通過率</b>拉開；
-  <code>v_a</code> 全過勝出。真實 LLM judge 下軟指標也會分化。</p>
-  <p class="mut">上表為 coding 的 <code>base</code> 分（Step 3 前）。實際 <code>score</code> 會再乘上效率微調
-  <code>×(0.95+0.05·efficiency)</code>；因效率僅 ±5%，數字幾乎不變（例：v_a base 0.921 → 視 cohort 效率
-  約 0.91~0.92），winner 不受影響。實際數字見下方第 5 節對照表。</p>
-</div>
-
-<div class="card">
-  <h3>兩件容易混淆的事</h3>
-  <div class="callout"><b>三種 judge 來源，公式相同：</b>
-  ① 版本 A 真實 LLM（<code>JUDGE_SYSTEM</code>）② 版本 A 離線 mock（<code>mock_llm.py</code>，base=0.8）
-  ③ 版本 B 由 SkillClaw 原生 <code>session_judge</code>——都用同一組四維與權重。</div>
-  <div class="callout warn"><b>「評分閘」≠「發布閘」：</b>
-  本節的<b>綜合分</b>用來比較變體、選勝出；而 <code>verifier.py</code> 的 <b>0.75 門檻</b>是另一道
-  獨立的「精煉版能不能發布」閘（四個 check：grounded_in_evidence / preserves_existing_value /
-  specificity_and_reusability / safe_to_publish），用途不同、不要混為一談。</div>
-</div>
-</section>
-
-<section id="s5">
-<h2>5. 精煉前 / 精煉後對照表</h2>
-<div class="card">
-  <div class="kpi">
-    <div class="box"><div class="n">{{ report.goal }}</div><div class="l">目標 skill</div></div>
-    <div class="box"><div class="n">{{ report.num_variants }}</div><div class="l">變體數</div></div>
-    <div class="box"><div class="n">{{ report.num_sessions }}</div><div class="l">session 數</div></div>
-    <div class="box"><div class="n">{{ report.generated_action }}</div><div class="l">精煉動作</div></div>
-    <div class="box"><div class="n {{ 'ok' if report.accepted else 'no' }}">{{ '採用' if report.accepted else '未採用' }}</div><div class="l">驗證結果</div></div>
+    <h3>實際使用的 skill_id（actual_used_skill_ids）</h3>
+    <p class="mut">分析 log → 找出實際被讀取的 SKILL.md → 取其 skill_id → 與任務結果對齊。</p>
+    <table>
+      <tr><th>變體</th><th>actual_used_skill_ids</th></tr>
+      {% for a in report.variant_aggregate %}
+      <tr><td><code>{{ a.variant }}</code></td><td>{{ a.actual_used_skill_ids | join(', ') }}</td></tr>
+      {% endfor %}
+    </table>
   </div>
-  {% if report.verify %}
-  <p class="mut">驗證閘：score = <b>{{ report.verify.score }}</b> / 門檻 {{ report.verify.threshold }} → {{ report.verify.decision }}
-  {% if report.verify.checks %}（{% for k,v in report.verify.checks.items() %}{{ k }}={{ v }} {% endfor %}）{% endif %}</p>
-  {% endif %}
-  <p><b>精煉理由：</b>{{ report.rationale }}</p>
+</section>
 
-  <h3>各變體在 golden task 的表現</h3>
-  <p class="mut">分數怎麼算的一步步拆解見 <a href="#s-score">★ 評分流程詳解</a>。</p>
-  <table>
-    <tr><th>變體</th><th>task</th><th>類型</th><th>測試</th><th>pass_rate</th><th>judge</th>
-      <th>達標(來源)</th><th>輪數</th><th>時間(s)</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
-    {% for r in report.variant_scores %}
-    <tr class="{{ 'win' if report.winner and r.session_id == report.winner.session_id else '' }}">
-      <td><code>{{ r.variant }}</code></td><td>{{ r.task_id }}</td><td>{{ r.task_type }}</td>
-      <td>{{ r.tests }}</td><td>{{ r.pass_rate }}</td><td>{{ r.judge_overall }}</td>
-      <td>{% if r.completion is not none %}{{ r.completion }}{% if r.completion_source %} ({{ r.completion_source }}){% endif %}{% else %}—{% endif %}</td>
-      <td>{{ r.num_turns }}</td><td>{{ r.elapsed_sec }}</td><td>{{ r.tool_error_rate }}</td>
-      <td>{{ r.efficiency_score }}</td>
-      <td><b>{{ r.score }}</b></td>
-      <td class="{{ 'ok' if r.success else 'no' }}">{{ '✓' if r.success else '✗' }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  <p class="mut">「輪數 / 時間 / tool錯誤率 / 效率」為<b>通用（場景無關）</b>指標；「測試 / pass_rate / judge」為
-  <b>coding 專用</b>。「達標(來源)」為 general 任務的完成度與其判定來源：<b>rule</b>=規則式 detector（零 LLM）、
-  <b>llm</b>=模糊時退回 LLM judge。效率 = cohort 內反向正規化後的加權分（越高越省資源）。</p>
-  {% if report.variant_aggregate %}
-  <h3>各變體跨 task 平均（winner 依此選出）</h3>
-  <table>
-    <tr><th>變體</th><th>類型</th><th>task 數</th><th>平均 pass_rate</th><th>平均輪數</th><th>平均時間(s)</th>
-      <th>平均效率</th><th>平均綜合分</th><th>全成功</th></tr>
-    {% for a in report.variant_aggregate %}
-    <tr class="{{ 'win' if report.winner and a.variant == report.winner.variant else '' }}">
-      <td><code>{{ a.variant }}</code></td><td>{{ a.task_type }}</td><td>{{ a.num_tasks }}</td>
-      <td>{{ a.avg_pass_rate }}</td><td>{{ a.avg_num_turns }}</td><td>{{ a.avg_elapsed_sec }}</td>
-      <td>{{ a.avg_efficiency }}</td><td><b>{{ a.avg_score }}</b></td>
-      <td class="{{ 'ok' if a.all_success else 'no' }}">{{ '✓' if a.all_success else '✗' }}</td></tr>
-    {% endfor %}
-  </table>
-  {% endif %}
-  {% if report.winner %}<p>勝出變體：<span class="chip ok">{{ report.winner.variant }}</span>（跨 {{ report.winner.num_tasks }} task 平均綜合分 {{ report.winner.avg_score }}）</p>{% endif %}
+<!-- ============ 4 評分 ============ -->
+<section id="s4">
+  <div class="sechead"><span class="secno">4</span><h2>評分機制</h2></div>
+  <p class="lead">每個 (變體×task) session 先算通用效率指標，再依任務類型分流評分，最後跨 task 平均選出 winner。降低對 LLM 的依賴是核心設計。</p>
+
+  <div class="card">
+    <h3>4.1 評分分流（決策樹）</h3>
+    <figure class="fig">
+      <svg viewBox="0 0 980 340" width="100%" role="img" aria-label="評分分流決策樹">
+        <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
+        <g font-size="12.5" fill="#e7eaf0" text-anchor="middle">
+          <rect x="360" y="8" width="260" height="44" rx="9" fill="#171a21" stroke="#3a4560"/>
+          <text x="490" y="26">一個 session（變體 v × task t）</text><text x="490" y="43" fill="#9aa3b2">turns / tool / 計時</text>
+          <rect x="330" y="74" width="320" height="44" rx="9" fill="#1e222b" stroke="#3a4560"/>
+          <text x="490" y="92">通用效率指標（任何場景都算）</text><text x="490" y="109" fill="#9aa3b2">cohort 反向正規化 → efficiency ∈ [0,1]</text>
+          <rect x="392" y="140" width="196" height="34" rx="9" fill="#131a28" stroke="#24405f"/>
+          <text x="490" y="162" fill="#8ab4ff">resolve_task_type</text>
+          <!-- branch coding -->
+          <rect x="70" y="210" width="330" height="66" rx="9" fill="#10233f" stroke="#24405f"/>
+          <text x="235" y="231" fill="#8ab4ff">coding</text>
+          <text x="235" y="249" fill="#c7d0de">base = 0.6·pass_rate + 0.4·judge</text>
+          <text x="235" y="266" fill="#9aa3b2">score = base × (0.95 + 0.05·eff)</text>
+          <!-- branch general -->
+          <rect x="580" y="210" width="330" height="66" rx="9" fill="#241a33" stroke="#3d2c58"/>
+          <text x="745" y="231" fill="#c3a0f5">general（場景無關）</text>
+          <text x="745" y="249" fill="#c7d0de">completion（規則優先，模糊退 LLM）</text>
+          <text x="745" y="266" fill="#9aa3b2">score = completion × (0.6 + 0.4·eff)</text>
+          <!-- merge -->
+          <rect x="330" y="298" width="320" height="34" rx="9" fill="#132116" stroke="#235537"/>
+          <text x="490" y="320" fill="#6fdd8b">聚合：同變體跨 task 取 avg_score → winner</text>
+          <line x1="490" y1="52"  x2="490" y2="72"  stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a3)"/>
+          <line x1="490" y1="118" x2="490" y2="138" stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a3)"/>
+          <path d="M420,174 L420,192 L235,192 L235,208" fill="none" stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a3)"/>
+          <path d="M560,174 L560,192 L745,192 L745,208" fill="none" stroke="#a371f7" stroke-width="1.5" marker-end="url(#a3)"/>
+          <path d="M235,276 L235,296 L328,308" fill="none" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a3)"/>
+          <path d="M745,276 L745,296 L652,308" fill="none" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a3)"/>
+        </g>
+      </svg>
+      <figcaption>evaluator.py：通用效率 → 任務分流 → 合成 → 聚合選 winner</figcaption>
+    </figure>
+  </div>
+
+  <div class="card">
+    <h3>4.2 通用效率指標（不依賴 LLM、任何場景都能算）</h3>
+    <p class="mut">對應 <code>refiner/generic_metrics.py</code>，全部從 session 既有欄位取得。「越少越好」→ 在 cohort 內反向正規化。</p>
+    <table>
+      <tr><th>指標</th><th>來源</th><th>方向</th><th>權重</th></tr>
+      <tr><td><code>num_turns</code></td><td>對話輪數</td><td>越少越好</td><td>0.35</td></tr>
+      <tr><td><code>elapsed_sec</code></td><td>執行時間（ended−started）</td><td>越少越好</td><td>0.25</td></tr>
+      <tr><td><code>num_tool_calls</code></td><td>工具呼叫總數</td><td>越少越好</td><td>0.15</td></tr>
+      <tr><td><code>tool_error_rate</code></td><td>工具錯誤佔比</td><td>越低越好</td><td>0.15</td></tr>
+      <tr><td><code>response_chars</code></td><td>回覆總字數（≈ token 成本）</td><td>越少越好</td><td>0.10</td></tr>
+    </table>
+    <ul>
+      <li><b>cohort 分組</b>：明確按 <code>(goal, task)</code> 分桶，只在「同 goal 同 task 的變體群」內做 min-max 反向正規化
+        （不跨 task／goal 比較，避免難易度污染）。最小值→1.0、最大值→0.0；全相等或單一變體→1.0（中性）。</li>
+      <li><b>缺值</b>：某項在 cohort 全缺（如 mock 無真實時間）→ 不計入，權重按剩餘項重分配（分母只算有值的項）。</li>
+      <li><b>防呆</b>：效率「越少越好」，單獨用會獎勵擺爛 → 一定與「完成度」相乘（先確認完成，再比效率）。</li>
+    </ul>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">評分標準（單一指標怎麼從原始值變成 0..1）</h4>
+    <pre>正規化（越少越好）：norm = (cohort最大值 − 本值) / (cohort最大值 − cohort最小值)
+tool_error_rate（本身已 0..1）：norm = 1 − error_rate
+efficiency = Σ(norm_i × 權重_i) / Σ(有值項的權重)</pre>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">實算範例（同一 cohort 三個變體的 num_turns）</h4>
+    <p class="mut">假設某 (goal, task) 下三個變體的對話輪數分別為 3 / 6 / 9（cohort min=3, max=9）：</p>
+    <table>
+      <tr><th>變體</th><th>num_turns</th><th>計算</th><th>該項 norm</th></tr>
+      <tr><td><code>v_a</code></td><td>3（最少）</td><td>(9−3)/(9−3)</td><td class="ok">1.0</td></tr>
+      <tr><td><code>v_b</code></td><td>6</td><td>(9−6)/(9−3)</td><td>0.5</td></tr>
+      <tr><td><code>v_c</code></td><td>9（最多）</td><td>(9−9)/(9−3)</td><td class="no">0.0</td></tr>
+    </table>
+    <p class="mut">每個指標都這樣算出 0..1，再依上表權重加權平均，得該 session 的 <code>efficiency_score</code>。
+    若 cohort 三個變體輪數都一樣（如都 5）→ max=min → 該項一律給 1.0（無鑑別度、不懲罰）。</p>
+  </div>
+
+  <div class="card">
+    <h3>4.3 達標判定：規則式 detector（使用者行為訊號，零 LLM）＋ LLM 後備</h3>
+    <p class="mut">對應 <code>refiner/completion_detector.py</code>。思路來自 IR／推薦系統的 implicit feedback——不問「滿意嗎」，
+    看使用者<b>接下來的回覆</b>。純關鍵詞／正則／<code>difflib</code>，不呼叫 LLM。</p>
+    <div class="grid">
+      <table>
+        <tr><th>訊號</th><th>方向</th><th>權重</th><th>觸發例</th></tr>
+        <tr><td>positive（確認滿意）</td><td class="ok">達標 ↑</td><td>1.0</td><td>「就是這個」「thanks」「lgtm」</td></tr>
+        <tr><td>adopt / adopt_tool（採用產物）</td><td class="ok">達標 ↑</td><td>1.0 / 0.7</td><td>「已套用」；成功 apply_patch/write</td></tr>
+        <tr><td>continue_next（接續新任務）</td><td class="ok">達標 ↑（弱）</td><td>0.6</td><td>「接著寫英文版」「next」</td></tr>
+        <tr><td>session_end（結束無追問）</td><td class="ok">達標 ↑（弱）</td><td>0.25</td><td>回覆後無 follow-up、無錯誤</td></tr>
+        <tr><td>negative（否定、要求重來）</td><td class="no">未達標 ↓</td><td>1.0</td><td>「不對」「重寫」「wrong」</td></tr>
+        <tr><td>coding_retry（要求繼續修）</td><td class="no">未達標 ↓</td><td>0.9</td><td>「還是失敗」「still failing」</td></tr>
+        <tr><td>reformulation（重述同一需求）</td><td class="no">未達標 ↓</td><td>0.8×相似度</td><td>下一輪 prompt 與前輪相似度 ≥ 0.7</td></tr>
+      </table>
+      <figure class="fig">
+        <svg viewBox="0 0 360 210" width="100%" role="img" aria-label="規則優先 fallback">
+          <defs><marker id="a4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
+          <g font-size="12" fill="#e7eaf0" text-anchor="middle">
+            <rect x="95" y="8" width="170" height="34" rx="8" fill="#171a21" stroke="#3a4560"/><text x="180" y="29">detect_completion</text>
+            <path d="M180,42 L180,64" stroke="#5b9dff" stroke-width="1.5" marker-end="url(#a4)"/>
+            <rect x="110" y="66" width="140" height="30" rx="8" fill="#131a28" stroke="#24405f"/><text x="180" y="85">confidence ≥ 0.5 ?</text>
+            <rect x="8"   y="140" width="150" height="52" rx="8" fill="#0f2a1a" stroke="#235537"/><text x="83" y="161" fill="#6fdd8b">用規則 (rule)</text><text x="83" y="179" fill="#9aa3b2">零 LLM</text>
+            <rect x="202" y="140" width="150" height="52" rx="8" fill="#2c2410" stroke="#574718"/><text x="277" y="161" fill="#e3c169">退回 LLM judge</text><text x="277" y="179" fill="#9aa3b2">GENERIC_JUDGE</text>
+            <path d="M150,96 L83,138" fill="none" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a4)"/><text x="95" y="120" fill="#6fdd8b">是</text>
+            <path d="M210,96 L277,138" fill="none" stroke="#e3c169" stroke-width="1.5" marker-end="url(#a4)"/><text x="270" y="120" fill="#e3c169">否</text>
+          </g>
+        </svg>
+        <figcaption>規則優先，模糊才呼叫 LLM</figcaption>
+      </figure>
+    </div>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">評分標準（訊號 → completion / confidence）</h4>
+    <pre>pos = Σ正向訊號權重     neg = Σ負向訊號權重
+raw = (pos − neg) / (pos + neg)        # ∈ [−1, 1]
+completion = (raw + 1) / 2             # ∈ [0, 1]，≥0.5 判定「達標」
+confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</pre>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">實算範例</h4>
+    <table>
+      <tr><th>使用者後續回覆</th><th>命中訊號</th><th>pos / neg</th><th>completion</th><th>confidence</th><th>判定</th></tr>
+      <tr><td>「讚，就是這個，謝謝」</td><td>positive(1.0)</td><td>1.0 / 0</td><td class="ok">1.0</td><td>tanh(1.0)=0.76 ≥0.5 → 用規則</td><td class="ok">達標</td></tr>
+      <tr><td>「不對，這不是我要的，重寫」+「還是不行」</td><td>negative×2(2.0)</td><td>0 / 2.0</td><td class="no">0.0</td><td>tanh(2.0)=0.96 → 用規則</td><td class="no">未達標</td></tr>
+      <tr><td>「接著幫我寫英文版」→「OK」</td><td>continue_next(0.6)+positive(1.0)</td><td>1.6 / 0</td><td class="ok">1.0</td><td>tanh(1.6)=0.92 → 用規則</td><td class="ok">達標</td></tr>
+      <tr><td>單輪、無使用者後續回覆</td><td>（無訊號）</td><td>0 / 0</td><td>0.5</td><td class="mid">0.0 &lt; 0.5 → 退回 LLM</td><td>交給 judge</td></tr>
+    </table>
+    <div class="callout warn"><b>限制</b>：行為訊號在<b>多輪真實對話</b>最有效（Phase 2）。Phase 1 headless 單輪、無後續回覆 →
+    confidence=0 → 自動退回 LLM judge（末列）。對照表 general 列標有 <code>completion_source</code>（rule／llm）。</div>
+  </div>
+
+  <div class="card">
+    <h3>4.4 coding 專用：pytest 硬指標 + 四維 LLM judge 軟指標</h3>
+
+    <h4 style="margin:6px 0 6px;color:#cdd6e6">硬指標（客觀 ground truth）— <code>run_pytest</code></h4>
+    <p class="mut">在該 (變體×task) 的獨立 workspace 跑 <code>pytest -q</code>，用 regex 抓 <code>N passed / N failed / N error</code>：</p>
+    <table>
+      <tr><th>情境</th><th>passed/total</th><th>pass_rate</th><th>all_pass（決定成功）</th></tr>
+      <tr><td>全部通過</td><td>5 / 5</td><td class="ok">1.0</td><td class="ok">✓</td></tr>
+      <tr><td>部分通過</td><td>3 / 5</td><td>0.6</td><td class="no">✗</td></tr>
+      <tr><td>多數失敗</td><td>2 / 5</td><td>0.4</td><td class="no">✗</td></tr>
+      <tr><td>找不到測試 / timeout / 例外</td><td>0 / 0</td><td class="no">0.0</td><td class="no">✗</td></tr>
+    </table>
+    <p class="mut"><code>total = passed + failed + errors</code>；<code>all_pass = (total&gt;0 且 passed==total)</code>，
+    是 coding 任務 <code>_success</code> 的判定依據。</p>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">軟指標（LLM judge）— <code>JUDGE_SYSTEM</code>，四維加權</h4>
+    <table>
+      <tr><th>維度</th><th>評什麼</th><th>權重</th><th>1.0 / 0.5 / 0.0 例</th></tr>
+      <tr><td><code>task_completion</code></td><td>是否達成 coding 目標（測試通過是強證據）</td><td><b>0.55</b></td><td>全過 / 部分過 / 全錯</td></tr>
+      <tr><td><code>response_quality</code></td><td>修正的正確性、完整性、清晰度</td><td>0.30</td><td>乾淨最小修 / 可用但雜 / 誤導</td></tr>
+      <tr><td><code>tool_usage</code></td><td>工具使用是否適當有效</td><td>0.10</td><td>精準 / 尚可 / 亂用</td></tr>
+      <tr><td><code>efficiency</code></td><td>是否避免無謂重試／繞路</td><td>0.05</td><td>直達 / 小繞 / 鬼打牆</td></tr>
+    </table>
+    <pre>judge.overall = 0.55·task_completion + 0.30·response_quality
+              + 0.10·tool_usage    + 0.05·efficiency   （各維 clamp 到 [0,1]）</pre>
+    <p class="mut">實算（本頁 mock：四維固定 tc=0.8, rq=0.8, ef=0.85, tu=0.8）：
+    overall = 0.55·0.8 + 0.30·0.8 + 0.10·0.8 + 0.05·0.85 = <b>0.803</b>。
+    真實 LLM 模式下四維由模型實際評分、會分化。解析失敗或任一維非數字 → 回 None（該 session 只用硬指標）。</p>
+  </div>
+
+  <div class="card">
+    <h3>4.5 合成綜合分（依任務類型）＋ 實算範例</h3>
+    <pre># coding：原 pytest+judge 為主體，效率僅 ±5% 微調（向後相容）
+base  = 0.6 × pass_rate + 0.4 × judge.overall
+score = base × (0.95 + 0.05 × efficiency)
+
+# general：完成度為主體，效率在已完成前提下加成 ≤40%
+score = completion × (0.6 + 0.4 × efficiency)</pre>
+    <h4 style="margin:6px 0 6px;color:#cdd6e6">coding 實算（本頁 mock，task_001）</h4>
+    <p class="mut">mock judge overall 固定 0.803；<code>base = 0.6·pass_rate + 0.4·0.803</code>，再乘效率微調
+    <code>×(0.95 + 0.05·eff)</code>。數字與第 5 節對照表一致：</p>
+    <table>
+      <tr><th>變體</th><th>pass_rate</th><th>judge</th><th>base=0.6h+0.4s</th><th>效率</th><th>×(0.95+0.05·eff)</th><th>綜合分</th></tr>
+      <tr class="win"><td><code>v_a</code></td><td>1.0</td><td>0.803</td><td>0.921</td><td>0.785</td><td>×0.989</td><td><b>0.911</b></td></tr>
+      <tr><td><code>v_b</code></td><td>0.6</td><td>0.803</td><td>0.681</td><td>0.65</td><td>×0.983</td><td><b>0.669</b></td></tr>
+      <tr><td><code>v_c</code></td><td>0.4</td><td>0.803</td><td>0.561</td><td>0.85</td><td>×0.993</td><td><b>0.557</b></td></tr>
+    </table>
+    <p class="mut">效率僅 ±5% 微調（乘數落在 0.95~1.0），不足以翻轉 pass_rate 拉開的差距 → v_a 穩定勝出。這就是「向後相容」：效率中性時乘數≈1，分數等同純 pytest+judge。</p>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">general 實算（示意）</h4>
+    <p class="mut">general 沒有 pytest，改以 completion（規則或 LLM）為主體，效率加成最多 40%：</p>
+    <table>
+      <tr><th>情境</th><th>completion</th><th>效率</th><th>completion×(0.6+0.4·eff)</th><th>綜合分</th><th>_success（≥0.75?）</th></tr>
+      <tr><td>使用者確認滿意、又快</td><td>1.0</td><td>0.9</td><td>1.0×(0.6+0.36)</td><td class="ok"><b>0.96</b></td><td class="ok">✓</td></tr>
+      <tr><td>有完成但囉唆</td><td>1.0</td><td>0.3</td><td>1.0×(0.6+0.12)</td><td><b>0.72</b></td><td class="no">✗</td></tr>
+      <tr><td>擺爛（使用者說不對）、但很快</td><td>0.0</td><td>1.0</td><td>0.0×(0.6+0.4)</td><td class="no"><b>0.0</b></td><td class="no">✗</td></tr>
+    </table>
+    <p class="mut"><b>關鍵</b>：末列證明「防呆」有效——即使效率滿分，completion=0（擺爛）→ 綜合分仍為 0，不會因為「快」而勝出。
+    <code>_success</code>：coding 用 all_pass；general 用 completion ≥ 0.75。</p>
+  </div>
+
+  <div class="card">
+    <h3>4.6 兩個容易混淆的點</h3>
+    <div class="callout"><b>三種 judge 來源，公式相同：</b>① 版本 A 真實 LLM（<code>JUDGE_SYSTEM</code>）
+    ② 版本 A 離線 mock（base=0.8）③ 版本 B SkillClaw 原生 <code>session_judge</code>——同一組四維權重。</div>
+    <div class="callout warn"><b>「評分閘」≠「發布閘」：</b>綜合分用來<b>比較變體選 winner</b>；
+    <code>verifier.py</code> 的 <b>0.75 門檻</b>是另一道獨立的「精煉版能否發布」閘
+    （grounded / preserves value / specificity / safe 四 check）。</div>
+  </div>
+</section>
+
+<!-- ============ 5 對照表 ============ -->
+<section id="s5">
+  <div class="sechead"><span class="secno">5</span><h2>精煉前 / 精煉後對照表</h2></div>
+  <p class="lead">左側是各變體實測分數（綜合分以長條視覺化），右側是精煉前→後的 skill 內容與 diff。</p>
+  <div class="card">
+    {% if report.verify %}
+    <div class="callout {{ 'good' if report.accepted else 'warn' }}">發布閘：score = <b>{{ report.verify.score }}</b> / 門檻 {{ report.verify.threshold }}
+      → {{ report.verify.decision }}{% if report.verify.checks %}（{% for k,v in report.verify.checks.items() %}{{ k }}={{ v }} {% endfor %}）{% endif %}</div>
+    {% endif %}
+    <p><b>精煉理由：</b>{{ report.rationale }}</p>
+
+    <h3>各變體逐 task 表現</h3>
+    <table>
+      <tr><th>變體</th><th>task</th><th>類型</th><th>pass_rate</th><th>judge</th><th>達標(來源)</th>
+        <th>輪數</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
+      {% for r in report.variant_scores %}
+      <tr class="{{ 'win' if report.winner and r.session_id == report.winner.session_id else '' }}">
+        <td><code>{{ r.variant }}</code></td><td>{{ r.task_id }}</td>
+        <td><span class="badge b-{{ r.task_type }}">{{ r.task_type }}</span></td>
+        <td>{{ r.pass_rate if r.pass_rate is not none else '—' }}</td>
+        <td>{{ r.judge_overall if r.judge_overall is not none else '—' }}</td>
+        <td>{% if r.completion is not none %}{{ r.completion }}{% if r.completion_source %} <span class="badge b-{{ r.completion_source }}">{{ r.completion_source }}</span>{% endif %}{% else %}—{% endif %}</td>
+        <td>{{ r.num_turns }}</td><td>{{ r.tool_error_rate }}</td><td>{{ r.efficiency_score }}</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:{{ ((r.score or 0)*100)|round|int }}%"></div></div><span class="bar-n">{{ r.score }}</span></div></td>
+        <td class="{{ 'ok' if r.success else 'no' }}">{{ '✓' if r.success else '✗' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p class="mut">「輪數/tool錯誤率/效率」為<b>通用</b>指標；「pass_rate/judge」為 <b>coding 專用</b>；
+    「達標(來源)」為 general 完成度＋判定來源（<span class="badge b-rule">rule</span>=零 LLM、<span class="badge b-llm">llm</span>=後備）。</p>
+
+    {% if report.variant_aggregate %}
+    <h3>各變體跨 task 平均（winner 依此選出）</h3>
+    <table>
+      <tr><th>變體</th><th>task 數</th><th>平均 pass_rate</th><th>平均輪數</th><th>平均效率</th><th>平均綜合分</th><th>全成功</th></tr>
+      {% for a in report.variant_aggregate %}
+      <tr class="{{ 'win' if report.winner and a.variant == report.winner.variant else '' }}">
+        <td><code>{{ a.variant }}</code></td><td>{{ a.num_tasks }}</td>
+        <td>{{ a.avg_pass_rate }}</td><td>{{ a.avg_num_turns }}</td><td>{{ a.avg_efficiency }}</td>
+        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:{{ ((a.avg_score or 0)*100)|round|int }}%"></div></div><span class="bar-n">{{ a.avg_score }}</span></div></td>
+        <td class="{{ 'ok' if a.all_success else 'no' }}">{{ '✓' if a.all_success else '✗' }}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% if report.winner %}<p>勝出變體：<span class="chip ok">{{ report.winner.variant }}</span>（跨 {{ report.winner.num_tasks }} task 平均綜合分 {{ report.winner.avg_score }}）→ 送入 execution 萃取做法。</p>{% endif %}
+  </div>
 
   <div class="grid">
     <div class="card">
       <h3>Before（精煉前）</h3>
-      <p class="mut">{{ before.skill_id }}</p>
-      <p><b>{{ before.name }}</b></p>
+      <p class="mut">{{ before.skill_id }} · <b>{{ before.name }}</b></p>
       <p class="mut">{{ before.description }}</p>
       <pre>{{ before.content }}</pre>
     </div>
     <div class="card">
       <h3>After（精煉後{% if after %} · v{{ after.version }}{% endif %}）</h3>
       {% if after %}
-      <p class="mut">{{ after.skill_id }}</p>
-      <p><b>{{ after.name }}</b></p>
+      <p class="mut">{{ after.skill_id }} · <b>{{ after.name }}</b></p>
       <p class="mut">{{ after.description }}</p>
       <pre>{{ after.content }}</pre>
-      {% else %}
-      <p class="mut">（未產生採用的精煉版——見 skip / reject 理由）</p>
-      {% endif %}
+      {% else %}<p class="mut">（未產生採用的精煉版——見 skip / reject 理由）</p>{% endif %}
     </div>
   </div>
-
   {% if content_diff %}
-  <h3>內容 diff（before → after）</h3>
-  <pre class="diff">{% for d in content_diff %}<span class="{{ d.kind }}">{{ d.text }}</span>{% endfor %}</pre>
+  <div class="card">
+    <h3>內容 diff（before → after）</h3>
+    <pre class="diff">{% for d in content_diff %}<span class="{{ d.kind }}">{{ d.text }}</span>{% endfor %}</pre>
+  </div>
   {% endif %}
-</div>
 </section>
 
+<!-- ============ 6 版本 A vs B ============ -->
 <section id="s6">
-<h2>6. 版本 A（自建）vs 版本 B（SkillClaw）</h2>
-<div class="card">
-  <table>
-    <tr><th></th><th>版本 A — 精簡自建</th><th>版本 B — 直接跑 SkillClaw</th></tr>
-    <tr><td>定位</td><td>個人 MVP、可離線、可讀、好控制</td><td>驗證 A 正確性、未來擴集團規模</td></tr>
-    <tr><td>依賴</td><td>anthropic/openai + yaml + jinja2</td><td>evolve_server + OpenAI-compatible endpoint</td></tr>
-    <tr><td>資料流</td><td>logs/ JSON in → output/ 草稿+對照表</td><td>logs → SkillClaw session dict → workflow.run_once</td></tr>
-    <tr><td>評分</td><td>pytest（硬）+ LLM judge（軟）</td><td>PRM / session_judge / verifier</td></tr>
-    <tr><td>擴展</td><td>換評分 / golden dataset 即可</td><td>內建 sharing / OSS / dashboard</td></tr>
-  </table>
-  <p class="mut">轉接腳本：<code>third_party/adapt_to_skillclaw.py</code> 把本專案 logs 餵進 SkillClaw workflow（SkillClaw 以 submodule 置於 <code>third_party/skillclaw/</code>）。</p>
-</div>
+  <div class="sechead"><span class="secno">6</span><h2>與 SkillClaw 的關係：沿用什麼、差異在哪</h2></div>
+  <p class="lead">本專案借用 SkillClaw 的「精煉引擎」後段骨架，但在前端（實驗設計）與評分（去 LLM）兩頭做了它沒有的延伸。本節先講設計差異，再附版本 A／B 實跑對照。</p>
 
-{% if skillclaw %}
-<div class="card">
-  <h3>實跑對照（同一批 logs，各自精煉）</h3>
-  <p class="mut">LLM：{{ skillclaw.model }}{% if skillclaw.model == 'mock' %}（離線模擬——OpenAI key 401，改用介面相容的 Mock 驅動 SkillClaw 原生階段）{% endif %}
-  {% if skillclaw.error %}<span class="no"> · 版本 B 執行錯誤：{{ skillclaw.error }}</span>{% endif %}</p>
-  <table>
-    <tr><th>維度</th><th>版本 A（自建）</th><th>版本 B（SkillClaw）</th></tr>
-    <tr><td>精煉動作</td><td>{{ report.generated_action }}</td><td>{{ skillclaw.action }}</td></tr>
-    <tr><td>是否採用</td>
-      <td class="{{ 'ok' if report.accepted else 'no' }}">{{ '採用' if report.accepted else '未採用' }}</td>
-      <td class="{{ 'ok' if skillclaw.accepted else 'no' }}">{{ '採用' if skillclaw.accepted else '未採用' }}</td></tr>
-    <tr><td>驗證閘分數</td>
-      <td>{{ report.verify.score if report.verify else '—' }}</td>
-      <td>{{ skillclaw.verify.score if skillclaw.verify else '—' }}</td></tr>
-    <tr><td>精煉後 description</td>
-      <td>{{ after.description if after else '—' }}</td>
-      <td>{{ skillclaw.refined.description if skillclaw.refined else '—' }}</td></tr>
-  </table>
+  <div class="card">
+    <h3>6.1 沿用的核心（後段精煉流程幾乎一致）</h3>
+    <figure class="fig">
+      <svg viewBox="0 0 900 96" width="100%" role="img" aria-label="共用的後段流程">
+        <defs><marker id="a6" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6fdd8b"/></marker></defs>
+        <g font-size="12" fill="#e7eaf0" text-anchor="middle">
+          <rect x="6"   y="32" width="150" height="40" rx="8" fill="#132116" stroke="#235537"/><text x="81"  y="56">summarize</text>
+          <rect x="186" y="32" width="150" height="40" rx="8" fill="#132116" stroke="#235537"/><text x="261" y="56">aggregate（依 skill）</text>
+          <rect x="366" y="32" width="168" height="40" rx="8" fill="#132116" stroke="#235537"/><text x="450" y="52">execution</text><text x="450" y="67" fill="#9aa3b2" font-size="10">improve/create/merge</text>
+          <rect x="564" y="32" width="150" height="40" rx="8" fill="#132116" stroke="#235537"/><text x="639" y="52">verify 閘</text><text x="639" y="67" fill="#9aa3b2" font-size="10">≥ 0.75</text>
+          <rect x="744" y="32" width="150" height="40" rx="8" fill="#132116" stroke="#235537"/><text x="819" y="56">registry（版本）</text>
+          <line x1="156" y1="52" x2="184" y2="52" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a6)"/>
+          <line x1="336" y1="52" x2="364" y2="52" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a6)"/>
+          <line x1="534" y1="52" x2="562" y2="52" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a6)"/>
+          <line x1="714" y1="52" x2="742" y2="52" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a6)"/>
+        </g>
+      </svg>
+      <figcaption>這條後段流程、四維 judge 權重、0.75 verify 閘、skill_id=SHA256(name)[:12] 皆沿用 SkillClaw 的設計與 prompt</figcaption>
+    </figure>
+  </div>
 
-  {% if skillclaw.judge_scores %}
-  <h3>版本 B — SkillClaw session_judge 對各變體評分</h3>
-  <table>
-    <tr><th>變體</th><th>pytest pass_rate</th><th>judge overall</th><th>task_completion</th><th>response_quality</th><th>efficiency</th><th>tool_usage</th></tr>
-    {% for j in skillclaw.judge_scores %}
-    <tr><td><code>{{ j.variant_label }}</code></td><td>{{ j.pass_rate }}</td><td><b>{{ j.overall_score }}</b></td>
-      <td>{{ j.task_completion }}</td><td>{{ j.response_quality }}</td><td>{{ j.efficiency }}</td><td>{{ j.tool_usage }}</td></tr>
-    {% endfor %}
-  </table>
-  <p class="mut">對照：版本 A 的綜合分（pytest 硬 60% + judge 軟 40%）見第 5 節；兩版對同一批變體的排序一致（v_a &gt; v_b &gt; v_c）可互相佐證。</p>
+  <div class="card">
+    <h3>6.2 關鍵差異（本專案的延伸）</h3>
+    <table>
+      <tr><th>面向</th><th>SkillClaw 原生</th><th>本專案（版本 A）</th></tr>
+      <tr>
+        <td>session 來源</td>
+        <td>被動：client proxy 攔截 <code>/v1/chat/completions</code>，錄下使用者<b>真實日常</b>對話，背景非同步 evolve</td>
+        <td><b>主動實驗驅動</b>：手寫多個 skill 變體 × golden task，由 runner 跑出受控 session</td>
+      </tr>
+      <tr>
+        <td>選優機制</td>
+        <td>無「多變體 PK」；拿同一 skill 的歷史 session 直接 evolve</td>
+        <td><b>變體對照</b>：<code>_variant_aggregate</code> 跨 task 平均選出 winner，才送進 execution</td>
+      </tr>
+      <tr>
+        <td>評分 / 達標</td>
+        <td>幾乎全靠模型：PRM（per-turn majority vote）+ session_judge（LLM 四維）+ benchmark</td>
+        <td><b>多層去 LLM</b>：pytest 硬指標 + 通用效率（輪數/時間/成本）+ 規則式行為 detector，<b>LLM 只當後備</b></td>
+      </tr>
+      <tr>
+        <td>合併衝突</td>
+        <td>主動：多來源撞名 → <code>_detect_conflict</code>(SHA) + <code>execute_merge</code>(LLM 合併)</td>
+        <td>有能力（execution 含 merge prompt），但 MVP 單一 goal <b>尚未觸發</b></td>
+      </tr>
+      <tr>
+        <td>發布 / 分享</td>
+        <td>重架構：<code>publish_mode</code>(direct/review/validated) + Nacos/OSS 上架 + 客戶端投票 + 集團 sharing</td>
+        <td>精簡：本機 <code>registry.json</code> + 上架驗證（欄位/唯一性），<b>去掉 proxy/OSS/dashboard/Nacos</b></td>
+      </tr>
+      <tr>
+        <td>執行環境</td>
+        <td>常駐 client proxy + evolve server + 共享儲存</td>
+        <td>單機、可離線、以檔案為主（logs/ → output/）</td>
+      </tr>
+    </table>
+    <div class="callout"><b>一句話：</b>SkillClaw =「從既有真實 log <b>被動 evolve</b>、靠 LLM 評判、面向<b>集團分享</b>」；
+    本專案版本 A =「<b>主動造變體實驗</b>、盡量用<b>客觀/行為訊號</b>評判、<b>個人版可離線</b>」。保留其精煉引擎骨架，
+    在前端（實驗設計）與評分（去 LLM）兩頭延伸。</div>
+  </div>
+
+  <h3>6.3 版本 A（自建）vs 版本 B（直接跑 SkillClaw）· 實作定位</h3>
+  <div class="card">
+    <table>
+      <tr><th></th><th>版本 A — 精簡自建</th><th>版本 B — 直接跑 SkillClaw</th></tr>
+      <tr><td>定位</td><td>個人 MVP、可離線、可讀、好控制</td><td>驗證 A、未來擴集團規模</td></tr>
+      <tr><td>依賴</td><td>anthropic/openai + yaml + jinja2</td><td>evolve_server + OpenAI-compatible endpoint</td></tr>
+      <tr><td>評分</td><td>pytest + LLM judge + 通用效率 + 行為 detector</td><td>PRM / session_judge / verifier</td></tr>
+      <tr><td>擴展</td><td>換評分 / golden dataset 即可</td><td>內建 sharing / OSS / dashboard</td></tr>
+    </table>
+    <p class="mut">轉接：<code>third_party/adapt_to_skillclaw.py</code>（SkillClaw 以 submodule 置於 <code>third_party/skillclaw/</code>）。</p>
+  </div>
+
+  {% if skillclaw %}
+  <div class="card">
+    <h3>實跑對照（同一批 logs，各自精煉）</h3>
+    <p class="mut">版本 B LLM：{{ skillclaw.model }}{% if skillclaw.model == 'mock' %}（離線模擬——注入介面相容 Mock 驅動 SkillClaw 原生階段）{% endif %}
+    {% if skillclaw.error %}<span class="no"> · 錯誤：{{ skillclaw.error }}</span>{% endif %}</p>
+    <table>
+      <tr><th>維度</th><th>版本 A</th><th>版本 B</th></tr>
+      <tr><td>精煉動作</td><td>{{ report.generated_action }}</td><td>{{ skillclaw.action }}</td></tr>
+      <tr><td>是否採用</td>
+        <td class="{{ 'ok' if report.accepted else 'no' }}">{{ '採用' if report.accepted else '未採用' }}</td>
+        <td class="{{ 'ok' if skillclaw.accepted else 'no' }}">{{ '採用' if skillclaw.accepted else '未採用' }}</td></tr>
+      <tr><td>驗證閘分數</td><td>{{ report.verify.score if report.verify else '—' }}</td><td>{{ skillclaw.verify.score if skillclaw.verify else '—' }}</td></tr>
+    </table>
+    {% if skillclaw.judge_scores %}
+    <h3>版本 B — SkillClaw session_judge 對各變體評分</h3>
+    <table>
+      <tr><th>變體</th><th>pass_rate</th><th>judge overall</th><th>completion</th><th>quality</th><th>efficiency</th><th>tool</th></tr>
+      {% for j in skillclaw.judge_scores %}
+      <tr><td><code>{{ j.variant_label }}</code></td><td>{{ j.pass_rate }}</td><td><b>{{ j.overall_score }}</b></td>
+        <td>{{ j.task_completion }}</td><td>{{ j.response_quality }}</td><td>{{ j.efficiency }}</td><td>{{ j.tool_usage }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="mut">兩版對同一批變體的排序一致（v_a &gt; v_b &gt; v_c）→ 互相佐證。</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="callout warn">版本 B 尚未實跑。執行 <code>python third_party/adapt_to_skillclaw.py --refine --mock</code> 後重新產生本頁。</div>
   {% endif %}
+</section>
 
-  {% if skillclaw.refined %}
+<!-- ============ 7 陷阱 ============ -->
+<section id="s7">
+  <div class="sechead"><span class="secno">7</span><h2>已知陷阱與擴展路徑</h2></div>
+  <p class="lead">文件點出的三個陷阱各有對策；評分層與資料源都設計成可從個人 MVP 擴展到集團規模。</p>
   <div class="grid">
     <div class="card">
-      <h3>版本 B 精煉後 skill</h3>
-      <p class="mut">{{ skillclaw.refined.name }}</p>
-      <pre>{{ skillclaw.refined.content }}</pre>
+      <h3>三個陷阱 → 對策</h3>
+      <ul>
+        <li><b>log 沒記錄用哪個 skill</b> → 上架綁 <code>skill_id</code>，log 反查 <code>actual_used_skill_ids</code>。</li>
+        <li><b>task_complete ≠ 成功</b> → pytest 通過率 + judge + 行為 detector 當成功訊號。</li>
+        <li><b>重複 pattern ≠ 有效</b> → verifier 四分數閘（≥0.75）保守把關。</li>
+      </ul>
     </div>
     <div class="card">
-      <h3>版本 B 內容 diff（baseline → refined）</h3>
-      {% if skillclaw._diff %}
-      <pre class="diff">{% for d in skillclaw._diff %}<span class="{{ d.kind }}">{{ d.text }}</span>{% endfor %}</pre>
-      {% else %}<p class="mut">（無 diff 可顯示）</p>{% endif %}
+      <h3>個人 → 集團 擴展</h3>
+      <ul>
+        <li><b>資料源</b>：個人實驗 log → 集團 Codex rollout（Phase 2 normalizer 已備）。</li>
+        <li><b>評分</b>：coding pytest → 各 BU golden dataset + 對應 judge／checker；通用效率與行為訊號跨場景通用。</li>
+        <li><b>分享</b>：本機 registry JSON → SkillClaw sharing / OSS / dashboard（版本 B）。</li>
+      </ul>
     </div>
   </div>
-  {% endif %}
-</div>
-{% else %}
-<div class="callout warn">版本 B 尚未實跑。執行
-  <code>python third_party/adapt_to_skillclaw.py --refine</code>
-  （或加 <code>--mock</code> 離線）後重新產生本頁即可看到實跑對照。</div>
-{% endif %}
-</section>
-
-<section id="s7">
-<h2>7. 三個已知陷阱與對策 · 可擴展性</h2>
-<div class="grid">
-  <div class="card">
-    <h3>陷阱與對策</h3>
-    <ul>
-      <li><b>log 沒記錄用了哪個 skill</b> → 上架時綁 <code>skill_id</code>；分析 log 找出實際讀取的 SKILL.md 取其 skill_id，記為 <code>actual_used_skill_ids</code> 與結果對齊。</li>
-      <li><b>task_complete ≠ 成功</b> → 用 pytest 通過率 + LLM judge 當成功訊號，不只看是否結束。</li>
-      <li><b>重複 pattern ≠ 有效</b> → verifier 四分數閘（grounded / preserves value / specificity / safe，≥0.75）保守把關。</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3>個人 → 集團 擴展路徑</h3>
-    <ul>
-      <li>資料源：個人實驗 log → 集團 Codex rollout（Phase 2 normalizer 已備）。</li>
-      <li>評分：coding pytest → 各 BU 任務的 golden dataset + 對應 judge。</li>
-      <li>分享：本機 registry JSON → SkillClaw sharing / OSS / dashboard（版本 B）。</li>
-    </ul>
-  </div>
-</div>
 </section>
 
 </main>
 <footer class="wrap">
-  Skill 精煉機制 · 版本 A（自建 pipeline）· 本頁由 <code>refiner/html_report.py</code> 自動產生。
-  對照表資料來源：<code>output/before_after.json</code>。基礎參考：AMAP-ML/SkillClaw。
+  Skill 精煉機制 · 版本 A（自建 pipeline）· 本頁由 <code>refiner/html_report.py</code> 自動產生（單一檔、內嵌 SVG/CSS、離線可開）。
+  資料來源：<code>output/before_after.json</code> · <code>skillclaw_result</code> · <code>publish_result.json</code>。基礎參考：AMAP-ML/SkillClaw。
 </footer>
 </body>
 </html>

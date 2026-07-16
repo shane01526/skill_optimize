@@ -46,7 +46,7 @@
     "completion_confidence": 0.762,
     "score": 0.96,
     "success": true,
-    "avg_score": 0.883,
+    "avg_score": 0.882,
     "num_tasks": 4
   },
   "variant_aggregate": [
@@ -58,9 +58,9 @@
       ],
       "task_type": "coding,general",
       "num_tasks": 4,
-      "avg_score": 0.883,
+      "avg_score": 0.882,
       "avg_pass_rate": 0.5,
-      "avg_efficiency": 0.82,
+      "avg_efficiency": 0.799,
       "avg_num_turns": 1.25,
       "avg_elapsed_sec": 0.001,
       "all_success": true
@@ -172,13 +172,13 @@
       "tool_error_rate": 0.0,
       "response_chars": 74,
       "elapsed_sec": 0.002,
-      "efficiency_score": 0.744,
+      "efficiency_score": 0.66,
       "cohort_key": "coding-debug::task_001",
       "cohort_size": 3,
       "completion": null,
       "completion_source": null,
       "completion_confidence": null,
-      "score": 0.909,
+      "score": 0.906,
       "success": true
     },
     {
@@ -311,7 +311,7 @@
       "num_tool_calls": 1,
       "tool_error_rate": 0.0,
       "response_chars": 76,
-      "elapsed_sec": 0.003,
+      "elapsed_sec": 0.002,
       "efficiency_score": 0.65,
       "cohort_key": "coding-debug::task_001",
       "cohort_size": 3,
@@ -443,7 +443,7 @@
   "after": {
     "skill_id": "coding-debug",
     "name": "coding-debug",
-    "version": 10,
+    "version": 12,
     "description": "Use for debugging failing tests.",
     "content": "# Coding Debug\n\nWhen tests fail, look at the error and fix the code.\n\n## 精煉補充（[MOCK] 由勝出變體證據萃取）\n- 先重現失敗測試，再定位最小修改點。\n- 修完只跑相關測試快速回饋，全綠後再跑完整套件。\n"
   },
