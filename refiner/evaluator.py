@@ -13,7 +13,7 @@ import subprocess
 import sys
 from typing import Any, Optional
 
-from . import generic_metrics
+from . import completion_detector, generic_metrics
 from .llm import LLMClient
 from .prompts import GENERIC_JUDGE_SYSTEM, JUDGE_SYSTEM
 from .skillmd import extract_json_object
@@ -29,6 +29,8 @@ SOFT_WEIGHT = 0.4
 GENERIC_EFF_BONUS = 0.4        # generic_score = completion × (0.6 + 0.4·eff)
 # coding：原綜合分為主，效率僅 ±CODING_EFF_TWEAK 微調（向後相容）。
 CODING_EFF_TWEAK = 0.05        # score = coding × (0.95 + 0.05·eff)
+# general 達標：規則式 detector 信心 ≥ 此門檻就用規則，否則 fallback 到 LLM judge。
+CONFIDENCE_THRESHOLD = 0.5
 
 
 # ------------------------------------------------------------------ #
@@ -227,11 +229,24 @@ def evaluate_session(
         session["_success"] = bool(test.get("all_pass")) if test else (score >= 0.75)
         session["_metrics"]["base_coding_score"] = round(base, 3)
     else:  # general
-        completion = generic_completion_score(llm, session) if use_judge else 0.5
+        # 達標 gate：規則式 detector（使用者行為訊號，零 LLM）優先，模糊才退 LLM。
+        det = completion_detector.detect_completion(session)
+        if det["confidence"] >= CONFIDENCE_THRESHOLD:
+            completion = det["completion"]
+            source = "rule"
+        elif use_judge:
+            completion = generic_completion_score(llm, session)
+            source = "llm"
+        else:
+            completion = 0.5
+            source = "none"
         # 完成度為主體，效率在已完成前提下加成
         score = round(completion * (1.0 - GENERIC_EFF_BONUS + GENERIC_EFF_BONUS * efficiency), 3)
         session["_success"] = completion >= 0.75
         session["_metrics"]["completion"] = round(completion, 3)
+        session["_metrics"]["completion_source"] = source
+        session["_metrics"]["completion_confidence"] = det["confidence"]
+        session["_metrics"]["completion_signals"] = det["signals"]
 
     session["_score"] = score
     session["_metrics"]["task_type"] = task_type

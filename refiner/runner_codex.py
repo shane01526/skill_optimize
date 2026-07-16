@@ -38,6 +38,48 @@ def _read_task_prompt(task_dir: str) -> str:
     return "Fix the failing tests in this directory."
 
 
+def _load_conversation(task_dir: str, variant_label: str):
+    """讀 task 的 conversation.json（多輪對話腳本）當 turns。
+
+    格式支援兩種：
+      1. {"default": [turns...], "<variant>": [turns...]}  # 可依變體給不同後續回覆
+      2. [turns...]                                          # 所有變體共用
+    每個 turn 至少含 prompt_text / response_text；缺 tool_calls/results 會補空。
+    找不到檔或格式不符 → 回 None（退回原本的單輪執行）。
+    """
+    path = os.path.join(task_dir, "conversation.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    if isinstance(data, dict):
+        raw_turns = data.get(variant_label) or data.get("default")
+    elif isinstance(data, list):
+        raw_turns = data
+    else:
+        raw_turns = None
+    if not isinstance(raw_turns, list) or not raw_turns:
+        return None
+
+    turns = []
+    for t in raw_turns:
+        if not isinstance(t, dict):
+            continue
+        turns.append(
+            {
+                "prompt_text": str(t.get("prompt_text") or ""),
+                "response_text": str(t.get("response_text") or ""),
+                "tool_calls": t.get("tool_calls") or [],
+                "tool_results": t.get("tool_results") or [],
+            }
+        )
+    return turns or None
+
+
 def _read_task_type(task_dir: str) -> str:
     """讀 task.json 的 task_type（標籤優先）；否則以有無 test_*.py 偵測回退。"""
     task_json = os.path.join(task_dir, "task.json")
@@ -105,9 +147,17 @@ def run_variant_on_task(
     if mode == "auto":
         chosen = "codex" if codex_available() else "mock"
 
+    # 多輪對話任務：若 task 附 conversation.json，直接用預寫腳本當 turns（可重現、供
+    # completion detector 判定），不再合成單輪。codex 模式仍實跑（腳本僅供離線 demo）。
+    convo_turns = None
+    if chosen in ("mock", "api"):
+        convo_turns = _load_conversation(task_dir, variant_label)
+
     # 通用計時：三種模式都記 started/ended（供 generic_metrics 算 elapsed_sec）
     started = time.time()
-    if chosen == "codex":
+    if convo_turns is not None:
+        turns, meta = convo_turns, {"source": "conversation.json", "variant": variant_label}
+    elif chosen == "codex":
         turns, meta = _run_codex(instruction, ws, timeout)
     elif chosen == "api":
         turns, meta = _run_llm_agent(instruction, ws, llm)

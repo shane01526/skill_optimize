@@ -41,6 +41,8 @@ def _variant_scores(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "cohort_key": m.get("cohort_key"),
                 "cohort_size": m.get("cohort_size"),
                 "completion": m.get("completion"),
+                "completion_source": m.get("completion_source"),
+                "completion_confidence": m.get("completion_confidence"),
                 "score": s.get("_score"),
                 "success": s.get("_success"),
             }

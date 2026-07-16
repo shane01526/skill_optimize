@@ -13,8 +13,8 @@
   "runner_meta": {
     "strength": 0.571,
     "applied_file": "output/workspaces/task_002__v_b/fizzbuzz.py",
-    "started_at": 1784017061.743746,
-    "ended_at": 1784017061.745766
+    "started_at": 1784169502.628645,
+    "ended_at": 1784169502.630469
   },
   "workspace": "output/workspaces/task_002__v_b",
   "turns": [
@@ -45,6 +45,6 @@
     "total": 5,
     "pass_rate": 0.6,
     "all_pass": false,
-    "raw": "...FF                                                                    [100%]\n================================== FAILURES ===================================\n_________________________________ test_number _________________________________\n\n    def test_number():\n>       assert fizzbuzz(7) == \"7\"\nE       AssertionError: assert 7 == '7'\nE        +  where 7 = fizzbuzz(7)\n\ntest_fizzbuzz.py:17: AssertionError\n_______________________________ test_number_two _______________________________\n\n    def test_number_two():\n>       assert fizzbuzz(1) == \"1\"\nE       AssertionError: assert 1 == '1'\nE        +  where 1 = fizzbuzz(1)\n\ntest_fizzbuzz.py:21: AssertionError\n=========================== short test summary info ===========================\nFAILED test_fizzbuzz.py::test_number - AssertionError: assert 7 == '7'\nFAILED test_fizzbuzz.py::test_number_two - AssertionError: assert 1 == '1'\n2 failed, 3 passed in 0.13s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
+    "raw": "...FF                                                                    [100%]\n================================== FAILURES ===================================\n_________________________________ test_number _________________________________\n\n    def test_number():\n>       assert fizzbuzz(7) == \"7\"\nE       AssertionError: assert 7 == '7'\nE        +  where 7 = fizzbuzz(7)\n\ntest_fizzbuzz.py:17: AssertionError\n_______________________________ test_number_two _______________________________\n\n    def test_number_two():\n>       assert fizzbuzz(1) == \"1\"\nE       AssertionError: assert 1 == '1'\nE        +  where 1 = fizzbuzz(1)\n\ntest_fizzbuzz.py:21: AssertionError\n=========================== short test summary info ===========================\nFAILED test_fizzbuzz.py::test_number - AssertionError: assert 7 == '7'\nFAILED test_fizzbuzz.py::test_number_two - AssertionError: assert 1 == '1'\n2 failed, 3 passed in 0.07s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
   }
 }

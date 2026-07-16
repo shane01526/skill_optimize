@@ -1,0 +1,47 @@
+{
+  "session_id": "task_004::v_b",
+  "skill_id": "coding-debug",
+  "skill_name": "coding-debug",
+  "variant_label": "v_b",
+  "task_id": "task_004",
+  "task_type": "general",
+  "variant_path": "skills/coding-debug/v_b/SKILL.md",
+  "selected_skill_ids": [
+    "coding-debug"
+  ],
+  "runner_mode": "mock",
+  "runner_meta": {
+    "source": "conversation.json",
+    "variant": "v_b",
+    "started_at": 1784169504.9310505,
+    "ended_at": 1784169504.9310515
+  },
+  "workspace": "output/workspaces/task_004__v_b",
+  "turns": [
+    {
+      "prompt_text": "幫我寫一段給 BU 同事的功能發布公告",
+      "response_text": "（依變體 B 指引產出公告，但有點長）",
+      "tool_calls": [],
+      "tool_results": []
+    },
+    {
+      "prompt_text": "接著幫我也寫一版英文的",
+      "response_text": "（產出英文版）",
+      "tool_calls": [],
+      "tool_results": []
+    },
+    {
+      "prompt_text": "可以，這版本 OK",
+      "response_text": "",
+      "tool_calls": [],
+      "tool_results": []
+    }
+  ],
+  "test": {
+    "passed": 0,
+    "total": 0,
+    "pass_rate": 0.0,
+    "all_pass": false,
+    "raw": "\nno tests ran in 0.01s\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages\\pytest_asyncio\\plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n"
+  }
+}

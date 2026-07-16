@@ -79,13 +79,22 @@ python -m refiner.pipeline publish        # 掃 skills/<goal>/*/SKILL.md 逐一�
 
 - **通用（任何場景）** `refiner/generic_metrics.py`：從 session 既有欄位算
   `num_turns / elapsed_sec / num_tool_calls / tool_error_rate / response_chars`，
-  以 cohort（同 goal 變體群）min-max 反向正規化成 `efficiency_score`。
-  通用綜合分 = `completion(通用 judge) × (0.6 + 0.4·efficiency)`——先確認有完成再比效率，避免獎勵擺爛。
+  以 cohort（同 (goal, task) 變體群）min-max 反向正規化成 `efficiency_score`。
+  通用綜合分 = `completion × (0.6 + 0.4·efficiency)`——先確認有完成再比效率，避免獎勵擺爛。
 - **coding 專用**：保留原本 `pytest 通過率(硬) + 四維 LLM judge(軟)` 綜合分為主體，
   再乘 `×(0.95 + 0.05·efficiency)` 做效率微調（向後相容）。
 
+### 達標判定（降低 LLM 依賴）`refiner/completion_detector.py`
+
+general 任務「有沒有達標」**優先用規則式 detector（零 LLM）判斷，模糊才退回 LLM judge**。
+思路來自 IR／推薦系統的 implicit feedback——不問「滿意嗎」，而是看使用者**接下來的回覆**：
+正向確認／採用產物／接續新任務 → 達標；否定／要求重來／重述同一需求 → 未達標
+（純關鍵詞／正則／`difflib` 相似度）。`confidence ≥ 0.5` 用規則，否則 fallback LLM。
+行為訊號在**多輪真實對話**（Phase 2）最有效；單輪 headless session 信心低 → 自動退回 LLM。
+
 完整一步步拆解見 `docs/skill_refinement.html` 的「★ 評分流程詳解」。
-`golden/tasks/task_003/` 為非 coding 範例（`task.json: {"task_type":"general"}`，無測試）。
+範例任務：`task_003`（general，無測試）、`task_004`（general 多輪對話，附 `conversation.json`，
+達標由使用者行為訊號判定）。
 
 ---
 

@@ -1,0 +1,4 @@
+{
+  "task_type": "general",
+  "note": "多輪對話任務：達標由『使用者後續回覆』的規則式 completion detector 判定（零 LLM）。conversation.json 依變體給不同後續回饋以示範差異。"
+}

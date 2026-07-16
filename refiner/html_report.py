@@ -265,7 +265,33 @@ description: ...
   </ul>
   <div class="callout"><b>通用有效性 judge</b>（<code>prompts.GENERIC_JUDGE_SYSTEM</code>）不假設 coding，
   只評 <code>task_completion / response_quality</code>；明確要求「做得少或放棄 → task_completion 要低」，
-  避免短 trajectory 被誤判為好。</div>
+  避免短 trajectory 被誤判為好。此 LLM judge 現在是<b>後備</b>——優先用下方規則式 detector。</div>
+</div>
+
+<div class="card">
+  <h3>達標判定：規則式 completion detector（使用者行為訊號，零 LLM）</h3>
+  <p>對應 <code>refiner/completion_detector.py</code>。general 任務「有沒有達標」<b>優先用規則判斷、模糊才退 LLM</b>，
+  降低對 LLM-as-judge 的依賴。思路來自 IR／推薦系統的 <b>implicit feedback</b>：不問使用者「滿意嗎」，
+  而是看他<b>接下來做什麼</b>——從 session 裡「agent 回覆後，使用者下一輪的反應」抓訊號（純關鍵詞／正則／
+  <code>difflib</code> 文字相似度，不呼叫 LLM）。</p>
+  <table>
+    <tr><th>訊號</th><th>方向</th><th>例</th></tr>
+    <tr><td>positive / adopt（確認、採用產物）</td><td class="ok">達標 ↑</td><td>「讚，就是這個」「已套用」「thanks, lgtm」</td></tr>
+    <tr><td>continue_next（接續新任務）</td><td class="ok">達標 ↑（弱）</td><td>「接著幫我寫英文版」「next」</td></tr>
+    <tr><td>session_end（自然結束、無追問無錯誤）</td><td class="ok">達標 ↑（弱）</td><td>回覆後無 follow-up</td></tr>
+    <tr><td>negative（否定、要求重來）</td><td class="no">未達標 ↓</td><td>「不對」「重寫」「still failing」</td></tr>
+    <tr><td>coding_retry（要求繼續修）</td><td class="no">未達標 ↓</td><td>「還是失敗」「fix it」</td></tr>
+    <tr><td>reformulation（重述同一需求）</td><td class="no">未達標 ↓</td><td>下一輪 prompt 與前一輪高度重疊</td></tr>
+  </table>
+  <pre>raw = (Σ正向權重 − Σ負向權重) / Σ總權重       # ∈ [-1,1]
+completion = (raw + 1) / 2                     # ∈ [0,1]
+confidence = tanh(Σ訊號強度)                    # 訊號越多越有信心
+
+if confidence ≥ 0.5:  用規則（completion_source="rule"，零 LLM）
+else:                 fallback 到 GENERIC_JUDGE_SYSTEM（source="llm"）</pre>
+  <div class="callout warn"><b>限制</b>：行為訊號在<b>多輪真實對話</b>最有效（Phase 2 Codex log）。
+  Phase 1 headless 單輪、無使用者後續回覆 → confidence 低 → 自動退回 LLM judge。對照表 general 列標有
+  <code>completion_source</code>（rule／llm）與信心度。</div>
 </div>
 
 <div class="card">
@@ -387,11 +413,12 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
   <p class="mut">分數怎麼算的一步步拆解見 <a href="#s-score">★ 評分流程詳解</a>。</p>
   <table>
     <tr><th>變體</th><th>task</th><th>類型</th><th>測試</th><th>pass_rate</th><th>judge</th>
-      <th>輪數</th><th>時間(s)</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
+      <th>達標(來源)</th><th>輪數</th><th>時間(s)</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
     {% for r in report.variant_scores %}
     <tr class="{{ 'win' if report.winner and r.session_id == report.winner.session_id else '' }}">
       <td><code>{{ r.variant }}</code></td><td>{{ r.task_id }}</td><td>{{ r.task_type }}</td>
       <td>{{ r.tests }}</td><td>{{ r.pass_rate }}</td><td>{{ r.judge_overall }}</td>
+      <td>{% if r.completion is not none %}{{ r.completion }}{% if r.completion_source %} ({{ r.completion_source }}){% endif %}{% else %}—{% endif %}</td>
       <td>{{ r.num_turns }}</td><td>{{ r.elapsed_sec }}</td><td>{{ r.tool_error_rate }}</td>
       <td>{{ r.efficiency_score }}</td>
       <td><b>{{ r.score }}</b></td>
@@ -400,7 +427,8 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
     {% endfor %}
   </table>
   <p class="mut">「輪數 / 時間 / tool錯誤率 / 效率」為<b>通用（場景無關）</b>指標；「測試 / pass_rate / judge」為
-  <b>coding 專用</b>。效率 = cohort 內反向正規化後的加權分（越高越省資源）。</p>
+  <b>coding 專用</b>。「達標(來源)」為 general 任務的完成度與其判定來源：<b>rule</b>=規則式 detector（零 LLM）、
+  <b>llm</b>=模糊時退回 LLM judge。效率 = cohort 內反向正規化後的加權分（越高越省資源）。</p>
   {% if report.variant_aggregate %}
   <h3>各變體跨 task 平均（winner 依此選出）</h3>
   <table>

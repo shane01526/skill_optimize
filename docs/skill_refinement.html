@@ -170,28 +170,7 @@ description: ...
 
   <h3>Skill 上架驗證（doc「Skill 上架流程」）</h3>
   
-  <p class="mut">Registry 上架時檢查：欄位完整（skill_id/name/description）、skill_id slug 格式、唯一性（同 id 不同 name 衝突）。</p>
-  <table>
-    <tr><th>SKILL.md</th><th>結果</th><th>skill_id / 錯誤</th></tr>
-    
-    <tr><td><code>skills\coding-debug\baseline\SKILL.md</code></td>
-      <td class="ok">通過</td>
-      <td>coding-debug</td></tr>
-    
-    <tr><td><code>skills\coding-debug\v_a\SKILL.md</code></td>
-      <td class="ok">通過</td>
-      <td>coding-debug</td></tr>
-    
-    <tr><td><code>skills\coding-debug\v_b\SKILL.md</code></td>
-      <td class="ok">通過</td>
-      <td>coding-debug</td></tr>
-    
-    <tr><td><code>skills\coding-debug\v_c\SKILL.md</code></td>
-      <td class="ok">通過</td>
-      <td>coding-debug</td></tr>
-    
-  </table>
-  <p class="mut">通過 4 / 失敗 0。</p>
+  <p class="mut">（執行 <code>python -m refiner.pipeline publish</code> 後本區塊會顯示各 SKILL.md 的上架驗證結果。）</p>
   
 
   <h3>實際使用的 skill_id（actual_used_skill_ids）</h3>
@@ -258,7 +237,33 @@ description: ...
   </ul>
   <div class="callout"><b>通用有效性 judge</b>（<code>prompts.GENERIC_JUDGE_SYSTEM</code>）不假設 coding，
   只評 <code>task_completion / response_quality</code>；明確要求「做得少或放棄 → task_completion 要低」，
-  避免短 trajectory 被誤判為好。</div>
+  避免短 trajectory 被誤判為好。此 LLM judge 現在是<b>後備</b>——優先用下方規則式 detector。</div>
+</div>
+
+<div class="card">
+  <h3>達標判定：規則式 completion detector（使用者行為訊號，零 LLM）</h3>
+  <p>對應 <code>refiner/completion_detector.py</code>。general 任務「有沒有達標」<b>優先用規則判斷、模糊才退 LLM</b>，
+  降低對 LLM-as-judge 的依賴。思路來自 IR／推薦系統的 <b>implicit feedback</b>：不問使用者「滿意嗎」，
+  而是看他<b>接下來做什麼</b>——從 session 裡「agent 回覆後，使用者下一輪的反應」抓訊號（純關鍵詞／正則／
+  <code>difflib</code> 文字相似度，不呼叫 LLM）。</p>
+  <table>
+    <tr><th>訊號</th><th>方向</th><th>例</th></tr>
+    <tr><td>positive / adopt（確認、採用產物）</td><td class="ok">達標 ↑</td><td>「讚，就是這個」「已套用」「thanks, lgtm」</td></tr>
+    <tr><td>continue_next（接續新任務）</td><td class="ok">達標 ↑（弱）</td><td>「接著幫我寫英文版」「next」</td></tr>
+    <tr><td>session_end（自然結束、無追問無錯誤）</td><td class="ok">達標 ↑（弱）</td><td>回覆後無 follow-up</td></tr>
+    <tr><td>negative（否定、要求重來）</td><td class="no">未達標 ↓</td><td>「不對」「重寫」「still failing」</td></tr>
+    <tr><td>coding_retry（要求繼續修）</td><td class="no">未達標 ↓</td><td>「還是失敗」「fix it」</td></tr>
+    <tr><td>reformulation（重述同一需求）</td><td class="no">未達標 ↓</td><td>下一輪 prompt 與前一輪高度重疊</td></tr>
+  </table>
+  <pre>raw = (Σ正向權重 − Σ負向權重) / Σ總權重       # ∈ [-1,1]
+completion = (raw + 1) / 2                     # ∈ [0,1]
+confidence = tanh(Σ訊號強度)                    # 訊號越多越有信心
+
+if confidence ≥ 0.5:  用規則（completion_source="rule"，零 LLM）
+else:                 fallback 到 GENERIC_JUDGE_SYSTEM（source="llm"）</pre>
+  <div class="callout warn"><b>限制</b>：行為訊號在<b>多輪真實對話</b>最有效（Phase 2 Codex log）。
+  Phase 1 headless 單輪、無使用者後續回覆 → confidence 低 → 自動退回 LLM judge。對照表 general 列標有
+  <code>completion_source</code>（rule／llm）與信心度。</div>
 </div>
 
 <div class="card">
@@ -366,7 +371,7 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
   <div class="kpi">
     <div class="box"><div class="n">coding-debug</div><div class="l">目標 skill</div></div>
     <div class="box"><div class="n">1</div><div class="l">變體數</div></div>
-    <div class="box"><div class="n">9</div><div class="l">session 數</div></div>
+    <div class="box"><div class="n">12</div><div class="l">session 數</div></div>
     <div class="box"><div class="n">improve_skill</div><div class="l">精煉動作</div></div>
     <div class="box"><div class="n ok">採用</div><div class="l">驗證結果</div></div>
   </div>
@@ -380,29 +385,52 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
   <p class="mut">分數怎麼算的一步步拆解見 <a href="#s-score">★ 評分流程詳解</a>。</p>
   <table>
     <tr><th>變體</th><th>task</th><th>類型</th><th>測試</th><th>pass_rate</th><th>judge</th>
-      <th>輪數</th><th>時間(s)</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
+      <th>達標(來源)</th><th>輪數</th><th>時間(s)</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
     
     <tr class="win">
+      <td><code>v_a</code></td><td>task_004</td><td>general</td>
+      <td>0/0</td><td>0.0</td><td>None</td>
+      <td>1.0 (rule)</td>
+      <td>2</td><td>0.0</td><td>0.0</td>
+      <td>0.9</td>
+      <td><b>0.96</b></td>
+      <td class="ok">✓</td>
+    </tr>
+    
+    <tr class="">
       <td><code>v_a</code></td><td>task_001</td><td>coding</td>
       <td>5/5</td><td>1.0</td><td>0.803</td>
-      <td>1</td><td>0.002</td><td>0.0</td>
-      <td>0.66</td>
-      <td><b>0.906</b></td>
+      <td>—</td>
+      <td>1</td><td>0.001</td><td>0.0</td>
+      <td>0.785</td>
+      <td><b>0.911</b></td>
       <td class="ok">✓</td>
     </tr>
     
     <tr class="">
       <td><code>v_a</code></td><td>task_002</td><td>coding</td>
       <td>5/5</td><td>1.0</td><td>0.803</td>
-      <td>1</td><td>0.003</td><td>0.0</td>
+      <td>—</td>
+      <td>1</td><td>0.001</td><td>0.0</td>
       <td>0.66</td>
       <td><b>0.906</b></td>
       <td class="ok">✓</td>
     </tr>
     
     <tr class="">
+      <td><code>v_b</code></td><td>task_004</td><td>general</td>
+      <td>0/0</td><td>0.0</td><td>None</td>
+      <td>1.0 (rule)</td>
+      <td>3</td><td>0.0</td><td>0.0</td>
+      <td>0.65</td>
+      <td><b>0.86</b></td>
+      <td class="ok">✓</td>
+    </tr>
+    
+    <tr class="">
       <td><code>v_a</code></td><td>task_003</td><td>general</td>
       <td>0/0</td><td>0.0</td><td>None</td>
+      <td>0.8 (llm)</td>
       <td>1</td><td>0.0</td><td>1.0</td>
       <td>0.85</td>
       <td><b>0.752</b></td>
@@ -412,6 +440,7 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
     <tr class="">
       <td><code>v_c</code></td><td>task_003</td><td>general</td>
       <td>0/0</td><td>0.0</td><td>None</td>
+      <td>0.8 (llm)</td>
       <td>1</td><td>0.0</td><td>1.0</td>
       <td>0.85</td>
       <td><b>0.752</b></td>
@@ -421,6 +450,7 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
     <tr class="">
       <td><code>v_b</code></td><td>task_003</td><td>general</td>
       <td>0/0</td><td>0.0</td><td>None</td>
+      <td>0.8 (llm)</td>
       <td>1</td><td>0.0</td><td>1.0</td>
       <td>0.75</td>
       <td><b>0.72</b></td>
@@ -428,18 +458,20 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
     </tr>
     
     <tr class="">
-      <td><code>v_b</code></td><td>task_002</td><td>coding</td>
+      <td><code>v_b</code></td><td>task_001</td><td>coding</td>
       <td>3/5</td><td>0.6</td><td>0.803</td>
+      <td>—</td>
       <td>1</td><td>0.002</td><td>0.0</td>
-      <td>0.733</td>
-      <td><b>0.672</b></td>
+      <td>0.65</td>
+      <td><b>0.669</b></td>
       <td class="no">✗</td>
     </tr>
     
     <tr class="">
-      <td><code>v_b</code></td><td>task_001</td><td>coding</td>
+      <td><code>v_b</code></td><td>task_002</td><td>coding</td>
       <td>3/5</td><td>0.6</td><td>0.803</td>
-      <td>1</td><td>0.002</td><td>0.0</td>
+      <td>—</td>
+      <td>1</td><td>0.001</td><td>0.0</td>
       <td>0.65</td>
       <td><b>0.669</b></td>
       <td class="no">✗</td>
@@ -448,6 +480,7 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
     <tr class="">
       <td><code>v_c</code></td><td>task_001</td><td>coding</td>
       <td>2/5</td><td>0.4</td><td>0.803</td>
+      <td>—</td>
       <td>1</td><td>0.0</td><td>1.0</td>
       <td>0.85</td>
       <td><b>0.557</b></td>
@@ -457,15 +490,27 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
     <tr class="">
       <td><code>v_c</code></td><td>task_002</td><td>coding</td>
       <td>2/5</td><td>0.4</td><td>0.803</td>
+      <td>—</td>
       <td>1</td><td>0.0</td><td>1.0</td>
       <td>0.85</td>
       <td><b>0.557</b></td>
       <td class="no">✗</td>
     </tr>
     
+    <tr class="">
+      <td><code>v_c</code></td><td>task_004</td><td>general</td>
+      <td>0/0</td><td>0.0</td><td>None</td>
+      <td>0.0 (rule)</td>
+      <td>3</td><td>0.0</td><td>0.0</td>
+      <td>0.65</td>
+      <td><b>0.0</b></td>
+      <td class="no">✗</td>
+    </tr>
+    
   </table>
   <p class="mut">「輪數 / 時間 / tool錯誤率 / 效率」為<b>通用（場景無關）</b>指標；「測試 / pass_rate / judge」為
-  <b>coding 專用</b>。效率 = cohort 內反向正規化後的加權分（越高越省資源）。</p>
+  <b>coding 專用</b>。「達標(來源)」為 general 任務的完成度與其判定來源：<b>rule</b>=規則式 detector（零 LLM）、
+  <b>llm</b>=模糊時退回 LLM judge。效率 = cohort 內反向正規化後的加權分（越高越省資源）。</p>
   
   <h3>各變體跨 task 平均（winner 依此選出）</h3>
   <table>
@@ -473,26 +518,26 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
       <th>平均效率</th><th>平均綜合分</th><th>全成功</th></tr>
     
     <tr class="win">
-      <td><code>v_a</code></td><td>coding,general</td><td>3</td>
-      <td>0.667</td><td>1.0</td><td>0.002</td>
-      <td>0.723</td><td><b>0.855</b></td>
+      <td><code>v_a</code></td><td>coding,general</td><td>4</td>
+      <td>0.5</td><td>1.25</td><td>0.001</td>
+      <td>0.799</td><td><b>0.882</b></td>
       <td class="ok">✓</td></tr>
     
     <tr class="">
-      <td><code>v_b</code></td><td>coding,general</td><td>3</td>
-      <td>0.4</td><td>1.0</td><td>0.001</td>
-      <td>0.711</td><td><b>0.687</b></td>
+      <td><code>v_b</code></td><td>coding,general</td><td>4</td>
+      <td>0.3</td><td>1.5</td><td>0.001</td>
+      <td>0.675</td><td><b>0.73</b></td>
       <td class="no">✗</td></tr>
     
     <tr class="">
-      <td><code>v_c</code></td><td>coding,general</td><td>3</td>
-      <td>0.267</td><td>1.0</td><td>0.0</td>
-      <td>0.85</td><td><b>0.622</b></td>
+      <td><code>v_c</code></td><td>coding,general</td><td>4</td>
+      <td>0.2</td><td>1.5</td><td>0.0</td>
+      <td>0.8</td><td><b>0.467</b></td>
       <td class="no">✗</td></tr>
     
   </table>
   
-  <p>勝出變體：<span class="chip ok">v_a</span>（跨 3 task 平均綜合分 0.855）</p>
+  <p>勝出變體：<span class="chip ok">v_a</span>（跨 4 task 平均綜合分 0.882）</p>
 
   <div class="grid">
     <div class="card">
@@ -505,7 +550,7 @@ score = completion × (0.6 + 0.4 × efficiency_score)</pre>
 When tests fail, look at the error and fix the code.</pre>
     </div>
     <div class="card">
-      <h3>After（精煉後 · v8）</h3>
+      <h3>After（精煉後 · v1）</h3>
       
       <p class="mut">coding-debug</p>
       <p><b>coding-debug</b></p>
@@ -544,84 +589,9 @@ When tests fail, look at the error and fix the code.
 </div>
 
 
-<div class="card">
-  <h3>實跑對照（同一批 logs，各自精煉）</h3>
-  <p class="mut">LLM：mock（離線模擬——OpenAI key 401，改用介面相容的 Mock 驅動 SkillClaw 原生階段）
-  </p>
-  <table>
-    <tr><th>維度</th><th>版本 A（自建）</th><th>版本 B（SkillClaw）</th></tr>
-    <tr><td>精煉動作</td><td>improve_skill</td><td>improve_skill</td></tr>
-    <tr><td>是否採用</td>
-      <td class="ok">採用</td>
-      <td class="ok">採用</td></tr>
-    <tr><td>驗證閘分數</td>
-      <td>0.86</td>
-      <td>0.84</td></tr>
-    <tr><td>精煉後 description</td>
-      <td>Use for debugging failing tests.</td>
-      <td>Use for debugging failing unit tests in a Python project. Reproduce first, read tests as spec, make the smallest fix.</td></tr>
-  </table>
-
-  
-  <h3>版本 B — SkillClaw session_judge 對各變體評分</h3>
-  <table>
-    <tr><th>變體</th><th>pytest pass_rate</th><th>judge overall</th><th>task_completion</th><th>response_quality</th><th>efficiency</th><th>tool_usage</th></tr>
-    
-    <tr><td><code>v_a</code></td><td>1.0</td><td><b>1.0</b></td>
-      <td>1.0</td><td>1.0</td><td>1.0</td><td>1.0</td></tr>
-    
-    <tr><td><code>v_b</code></td><td>0.6</td><td><b>0.574</b></td>
-      <td>0.571</td><td>0.571</td><td>0.621</td><td>0.571</td></tr>
-    
-    <tr><td><code>v_c</code></td><td>0.4</td><td><b>0.003</b></td>
-      <td>0.0</td><td>0.0</td><td>0.05</td><td>0.0</td></tr>
-    
-    <tr><td><code>v_a</code></td><td>1.0</td><td><b>1.0</b></td>
-      <td>1.0</td><td>1.0</td><td>1.0</td><td>1.0</td></tr>
-    
-    <tr><td><code>v_b</code></td><td>0.6</td><td><b>0.574</b></td>
-      <td>0.571</td><td>0.571</td><td>0.621</td><td>0.571</td></tr>
-    
-    <tr><td><code>v_c</code></td><td>0.4</td><td><b>0.003</b></td>
-      <td>0.0</td><td>0.0</td><td>0.05</td><td>0.0</td></tr>
-    
-    <tr><td><code>v_a</code></td><td>0.0</td><td><b>1.0</b></td>
-      <td>1.0</td><td>1.0</td><td>1.0</td><td>1.0</td></tr>
-    
-    <tr><td><code>v_b</code></td><td>0.0</td><td><b>0.574</b></td>
-      <td>0.571</td><td>0.571</td><td>0.621</td><td>0.571</td></tr>
-    
-    <tr><td><code>v_c</code></td><td>0.0</td><td><b>0.003</b></td>
-      <td>0.0</td><td>0.0</td><td>0.05</td><td>0.0</td></tr>
-    
-  </table>
-  <p class="mut">對照：版本 A 的綜合分（pytest 硬 60% + judge 軟 40%）見第 5 節；兩版對同一批變體的排序一致（v_a &gt; v_b &gt; v_c）可互相佐證。</p>
-  
-
-  
-  <div class="grid">
-    <div class="card">
-      <h3>版本 B 精煉後 skill</h3>
-      <p class="mut">coding-debug</p>
-      <pre># Coding Debug
-
-When tests fail, look at the error and fix the code.
-
-## 精煉補充（[MOCK-B] SkillClaw 由勝出變體證據萃取）
-- 先重現失敗測試以確認可重現，再定位最小修改點。
-- 把每個測試 case 當規格逐條對照，補齊缺漏分支（空輸入 / 邊界 / 需忽略的條件）。
-- 修完先跑相關測試快速回饋，全綠後再跑完整套件。
-</pre>
-    </div>
-    <div class="card">
-      <h3>版本 B 內容 diff（baseline → refined）</h3>
-      
-      <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -2,2 +2,7 @@</span><span class="ctx"> </span><span class="ctx"> When tests fail, look at the error and fix the code.</span><span class="add">+</span><span class="add">+## 精煉補充（[MOCK-B] SkillClaw 由勝出變體證據萃取）</span><span class="add">+- 先重現失敗測試以確認可重現，再定位最小修改點。</span><span class="add">+- 把每個測試 case 當規格逐條對照，補齊缺漏分支（空輸入 / 邊界 / 需忽略的條件）。</span><span class="add">+- 修完先跑相關測試快速回饋，全綠後再跑完整套件。</span></pre>
-      
-    </div>
-  </div>
-  
-</div>
+<div class="callout warn">版本 B 尚未實跑。執行
+  <code>python third_party/adapt_to_skillclaw.py --refine</code>
+  （或加 <code>--mock</code> 離線）後重新產生本頁即可看到實跑對照。</div>
 
 </section>
 

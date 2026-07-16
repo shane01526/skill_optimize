@@ -1,0 +1,20 @@
+{
+  "default": [
+    {"prompt_text": "幫我寫一段給 BU 同事的功能發布公告", "response_text": "（依 skill 指引產出公告草稿）"},
+    {"prompt_text": "好，這樣就可以了", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "幫我寫一段給 BU 同事的功能發布公告", "response_text": "（依變體 A 指引：先確認對象、重點、語氣，再產出精煉公告）"},
+    {"prompt_text": "讚，就是這個，謝謝！可以直接貼公告欄了", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "幫我寫一段給 BU 同事的功能發布公告", "response_text": "（依變體 B 指引產出公告，但有點長）"},
+    {"prompt_text": "接著幫我也寫一版英文的", "response_text": "（產出英文版）"},
+    {"prompt_text": "可以，這版本 OK", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "幫我寫一段給 BU 同事的功能發布公告", "response_text": "（依變體 C 籠統指引產出，偏離重點）"},
+    {"prompt_text": "不對，這不是我要的，太技術了，重寫一次", "response_text": "（再產出一版）"},
+    {"prompt_text": "還是不行，你沒抓到重點", "response_text": ""}
+  ]
+}
