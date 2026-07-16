@@ -1,0 +1,6 @@
+{
+  "task_type": "general",
+  "scenario": "新聞查詢與綜整",
+  "difficulty": "easy",
+  "note": "grounded：來源材料附於 sources.md（非即時查詢）。驗收點見 prompt.md。"
+}

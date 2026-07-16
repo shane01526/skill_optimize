@@ -1,0 +1,6 @@
+{
+  "task_type": "general",
+  "scenario": "新聞查詢與綜整",
+  "difficulty": "hard",
+  "note": "grounded：含衝突 + 不相關雜訊來源 + 主管問到但來源未提及的缺口。"
+}

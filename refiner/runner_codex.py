@@ -114,6 +114,97 @@ def _compose_instruction(task_prompt: str, variant: dict[str, Any]) -> str:
     )
 
 
+def _read_sources(task_dir: str) -> str:
+    """讀 general task 的 sources.md（grounded 來源材料）。"""
+    p = os.path.join(task_dir, "sources.md")
+    if os.path.exists(p):
+        with open(p, "r", encoding="utf-8") as fh:
+            return fh.read()
+    return ""
+
+
+def _compose_general_instruction(task_prompt: str, sources: str, variant: dict[str, Any]) -> str:
+    """general 任務指令：給 skill 指引 + 需求 + grounded 來源，要求依 skill 產出綜整。"""
+    return (
+        "You are an assistant. Follow the SKILL below to complete the task, "
+        "using ONLY the provided SOURCES as factual basis (do not invent facts, "
+        "do not use outside knowledge).\n\n"
+        f"===== SKILL: {variant.get('name')} =====\n"
+        f"{variant.get('content', '')}\n"
+        "===== END SKILL =====\n\n"
+        f"## Task\n{task_prompt}\n\n"
+        f"## SOURCES\n{sources}\n\n"
+        "Produce the final deliverable now (the digest / summary itself), in Traditional Chinese."
+    )
+
+
+def run_general_variant_on_task(
+    *,
+    skill_md_path: str,
+    task_dir: str,
+    task_id: str,
+    mode: str = "api",
+    llm=None,
+) -> dict[str, Any]:
+    """general 任務執行：Gemini 依 skill+來源真的產出綜整（turn 1），
+    再附上 conversation.json 的使用者後續回饋 turn（供 completion detector）。
+
+    回傳實驗紀錄（無 workspace 概念；general 不跑 pytest）。coding 路徑不受影響。
+    """
+    variant = _load_variant(skill_md_path)
+    skill_name = variant.get("name", "")
+    variant_label = os.path.basename(os.path.dirname(skill_md_path))
+    skill_id = variant.get("skill_id") or compute_skill_id(skill_name)
+    task_prompt = _read_task_prompt(task_dir)
+    sources = _read_sources(task_dir)
+    instruction = _compose_general_instruction(task_prompt, sources, variant)
+
+    started = time.time()
+    if mode == "mock":
+        from .mock_llm import default_mock_response
+
+        output = default_mock_response("info-digest summarize", instruction)
+        meta = {"provider": "mock", "model": "mock"}
+    else:  # api：真的呼叫 Gemini/LLM 產出
+        from .llm import LLMClient
+
+        client = llm or LLMClient()
+        try:
+            output = client.chat(
+                "You are a careful assistant that strictly grounds answers in the given sources.",
+                instruction, temperature=0.2, max_tokens=2048,
+            )
+        except Exception as exc:  # noqa: BLE001
+            output = f"[runner error] {exc}"
+        meta = {"provider": getattr(client, "provider", "?"), "model": getattr(client, "model", "?")}
+    ended = time.time()
+    meta.update({"started_at": started, "ended_at": ended})
+
+    # turn 1：使用者需求 → Gemini 真實產出
+    turns = [{"prompt_text": task_prompt, "response_text": output, "tool_calls": [], "tool_results": []}]
+    # turn 2+：附預寫的使用者後續回饋（供 detector；illustrative）
+    convo = _load_conversation(task_dir, variant_label)
+    if convo:
+        turns.extend(convo)
+
+    return {
+        "session_id": f"{task_id}::{variant_label}",
+        "skill_id": skill_id,
+        "skill_name": skill_name,
+        "variant_label": variant_label,
+        "task_id": task_id,
+        "task_type": "general",
+        "variant_path": skill_md_path,
+        "selected_skill_ids": [skill_id],
+        "runner_mode": mode,
+        "runner_meta": meta,
+        "sources": sources,
+        "task_prompt": task_prompt,
+        "agent_output": output,
+        "turns": turns,
+    }
+
+
 def prepare_workspace(task_dir: str, workspaces_root: str, task_id: str, variant_name: str) -> str:
     """複製 task 目錄成獨立 workspace，回傳其路徑。"""
     ws = os.path.join(workspaces_root, f"{task_id}__{variant_name}")

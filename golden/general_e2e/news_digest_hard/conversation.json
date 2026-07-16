@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這版可以嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，成交金額有誠實說『來源未提及』，也排除了餐廳那則，OK", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "可以，沒有亂編金額、雜訊也排除了，就這版", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不行，你竟然編了一個成交金額，來源根本沒有，而且還寫了餐廳的事，重寫", "response_text": ""}
+  ]
+}

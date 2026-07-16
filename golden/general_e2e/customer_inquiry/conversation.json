@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這份摘要可以嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，訴求都有、回覆重點也符合政策沒亂承諾，就用這版", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，忠實又完整，可以", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不對，你承諾了來源沒有的『3 個工作天全額退款』，跟政策不符，也漏了客戶情緒，重寫", "response_text": ""}
+  ]
+}

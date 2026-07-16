@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這版可以嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "讚，有把 1200 vs 1500 的分歧標出來，就這版", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，衝突有標清楚，可以用", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不行，你直接寫 1200 當定論，把來源衝突抹平了，重寫", "response_text": ""}
+  ]
+}

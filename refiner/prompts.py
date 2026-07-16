@@ -76,6 +76,31 @@ Return EXACTLY one JSON object:
 No markdown fences. No extra text.
 """
 
+# Grounded 回測 judge：給 judge 看「來源材料 + 需求驗收點 + 產出」，
+# 讓它能真的核對涵蓋度/忠實度/格式，而非盲評文字。用於 e2e 回測 baseline vs refined。
+GROUNDED_JUDGE_SYSTEM = """\
+You are a strict evaluator for an information-synthesis task. You are given:
+- the TASK requirement (with explicit acceptance criteria),
+- the SOURCE material the answer must be grounded in,
+- the produced ANSWER.
+
+Score the ANSWER on 0.0-1.0 by CHECKING IT AGAINST THE SOURCES and criteria:
+- coverage: does it cover all required sources / key facts?
+- faithfulness: is every claim supported by the sources? (invented facts or
+  numbers not in the sources = heavy penalty)
+- conflict_handling: if sources conflict, are conflicts flagged rather than silently picked?
+- format: does it respect the required format / length limit / source citations?
+
+Compute overall = average of the applicable checks above (skip a check only if the
+task genuinely doesn't require it). Be strict: fabrication or missing required
+sources should pull the score well below 0.5.
+
+Return EXACTLY one JSON object:
+{"coverage": <float>, "faithfulness": <float>, "conflict_handling": <float>,
+ "format": <float>, "overall": <float>, "rationale": "<brief, cite what was missing/invented>"}
+No markdown fences. No extra text.
+"""
+
 # 依 SkillClaw execution._EVOLVE_FROM_SESSIONS_SYSTEM 精簡（保留保守編輯原則）。
 EVOLVE_SYSTEM = """\
 You are a skill engineer for a coding-agent skill refinement system.

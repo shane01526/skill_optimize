@@ -1,0 +1,6 @@
+{
+  "task_type": "general",
+  "scenario": "新聞查詢與綜整",
+  "difficulty": "medium",
+  "note": "grounded：來源間有『數字衝突』，需明確標註分歧，不得擅自選邊。"
+}

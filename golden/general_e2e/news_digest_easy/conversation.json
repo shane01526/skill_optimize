@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這樣的摘要 OK 嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，三個來源都涵蓋到而且有標來源，就用這版，謝謝", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "可以，這版忠實又有標來源，OK", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不對，你漏了股價和配息，而且沒有標來源，重寫", "response_text": ""}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "task_type": "general",
+  "scenario": "客訴摘要與回覆重點",
+  "difficulty": "medium",
+  "note": "grounded：來源為多則客訴訊息，需摘要出訴求並列出回覆重點，不得外加未提及的補償承諾。"
+}

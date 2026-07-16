@@ -1,0 +1,517 @@
+{
+  "goal": "info-digest",
+  "mode": "api",
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-flash-latest"
+  },
+  "action": "improve_skill",
+  "rationale": "Analysis of high-performing sessions (news_digest_medium::v_a, news_digest_easy::v_b, news_digest_hard::v_b, customer_inquiry::v_b) shows that successful summaries require strict source attribution, explicit conflict preservation (never smoothing over differences), honest reporting of information gaps using '來源未提及' (source not mentioned), filtering out irrelevant noise, and structuring multi-faceted information (like separating facts, emotions, and policy-compliant replies) within tight length limits. Low-performing sessions failed precisely because they smoothed over conflicts, hallucinated missing details, or failed to filter out noise. The refined skill incorporates these concrete practices.",
+  "verify": {
+    "enabled": true,
+    "accepted": true,
+    "decision": "accept",
+    "score": 0.95,
+    "threshold": 0.75,
+    "reason": "The candidate skill is highly grounded in the session evidence, capturing specific strategies for source attribution, conflict handling, information gaps (including the specific phrase '來源未提及'), noise filtering, and structured formatting for customer inquiries. It is a massive improvement over the extremely generic current skill.",
+    "checks": {
+      "grounded_in_evidence": 1.0,
+      "preserves_existing_value": 1.0,
+      "specificity_and_reusability": 1.0,
+      "safe_to_publish": 1.0
+    }
+  },
+  "accepted": true,
+  "variant_scores": [
+    {
+      "variant": "v_b",
+      "task_id": "customer_inquiry",
+      "completion": 0.5,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.75,
+      "score": 0.45,
+      "success": false
+    },
+    {
+      "variant": "v_a",
+      "task_id": "customer_inquiry",
+      "completion": 0.5,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.682,
+      "score": 0.436,
+      "success": false
+    },
+    {
+      "variant": "v_c",
+      "task_id": "customer_inquiry",
+      "completion": 0.0,
+      "completion_source": "rule",
+      "completion_confidence": 0.762,
+      "efficiency_score": 0.95,
+      "score": 0.0,
+      "success": false
+    },
+    {
+      "variant": "v_a",
+      "task_id": "news_digest_easy",
+      "completion": 1.0,
+      "completion_source": "rule",
+      "completion_confidence": 0.762,
+      "efficiency_score": 0.758,
+      "score": 0.903,
+      "success": true
+    },
+    {
+      "variant": "v_b",
+      "task_id": "news_digest_easy",
+      "completion": 1.0,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.675,
+      "score": 0.87,
+      "success": true
+    },
+    {
+      "variant": "v_c",
+      "task_id": "news_digest_easy",
+      "completion": 0.0,
+      "completion_source": "rule",
+      "completion_confidence": 0.762,
+      "efficiency_score": 1.0,
+      "score": 0.0,
+      "success": false
+    },
+    {
+      "variant": "v_b",
+      "task_id": "news_digest_hard",
+      "completion": 0.5,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.9,
+      "score": 0.48,
+      "success": false
+    },
+    {
+      "variant": "v_a",
+      "task_id": "news_digest_hard",
+      "completion": 0.5,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.841,
+      "score": 0.468,
+      "success": false
+    },
+    {
+      "variant": "v_c",
+      "task_id": "news_digest_hard",
+      "completion": 0.0,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.75,
+      "score": 0.0,
+      "success": false
+    },
+    {
+      "variant": "v_a",
+      "task_id": "news_digest_medium",
+      "completion": 1.0,
+      "completion_source": "rule",
+      "completion_confidence": 0.762,
+      "efficiency_score": 0.9,
+      "score": 0.96,
+      "success": true
+    },
+    {
+      "variant": "v_b",
+      "task_id": "news_digest_medium",
+      "completion": 0.5,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.833,
+      "score": 0.467,
+      "success": false
+    },
+    {
+      "variant": "v_c",
+      "task_id": "news_digest_medium",
+      "completion": 0.0,
+      "completion_source": "llm",
+      "completion_confidence": 0.0,
+      "efficiency_score": 0.677,
+      "score": 0.0,
+      "success": false
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "customer_inquiry::v_a",
+      "variant": "v_a",
+      "task_id": "customer_inquiry",
+      "agent_output": "【事實】帳單第二次出現3500元不明扣款(S1)，上次通報未獲回覆(S2)。\n【情緒/要求】不滿被忽視且考慮換銀行(S2)；要求查明、3工作天內回覆進度，若屬盜刷需全額退款(S1,S3)。\n【回覆重點】致歉並回覆進度(S2)；依政策說明若確認為未授權交易將全額退還，但處理時效為5工作天(S3)。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：客訴摘要與回覆重點\n\n下方 SOURCES 是同一位客戶在不同管道留下的多則訊息。請整理成給客服主管的摘要。\n\n## 驗收點（會據此評分）\n1. **摘要客戶的所有訴求**：S1~S3 提到的問題/要求都要涵蓋。\n2. **分開「事實」與「客戶情緒/要求」**，條列呈現。\n3. **列出建議回覆重點**，但**只能根據來源與公司既有政策**（見 S3 提到的政策），\n   **不得外加**來源沒有的補償承諾（如未提及的退款金額）。\n4. **標來源 (Sx)**、長度上限 180 字。\n\n> 註：離線 grounded 測試，來源即下方材料。\n",
+          "response_text": "【事實】帳單第二次出現3500元不明扣款(S1)，上次通報未獲回覆(S2)。\n【情緒/要求】不滿被忽視且考慮換銀行(S2)；要求查明、3工作天內回覆進度，若屬盜刷需全額退款(S1,S3)。\n【回覆重點】致歉並回覆進度(S2)；依政策說明若確認為未授權交易將全額退還，但處理時效為5工作天(S3)。"
+        },
+        {
+          "prompt_text": "很好，訴求都有、回覆重點也符合政策沒亂承諾，就用這版",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "news_digest_easy::v_a",
+      "variant": "v_a",
+      "task_id": "news_digest_easy",
+      "agent_output": "國泰金控2026上半年稅後淨利420億元，年增12%，主因為壽險投資收益回升(S1)。下半年將數位轉型列為重點，並已導入AI客服試點(S2)。法說會後股價盤中上漲2.3%，下半年將維持穩健配息政策(S",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（易）\n\n你收到幾則關於「同一事件」的新聞來源（見下方 SOURCES）。請綜整成一則給主管看的**摘要**。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：S1、S2、S3 的關鍵事實都要出現，一則都不能漏。\n2. **標註來源**：每個重點後標明來自哪一則（如 (S1)）。\n3. **長度上限 120 字**（中文字，不含標點也可粗估）。\n4. **忠實**：只寫來源裡有的事實，**不得外加**來源沒提到的背景或推測。\n\n> 註：這是離線 grounded 測試，「新聞」即下方附上的來源材料，非即時查詢。\n",
+          "response_text": "國泰金控2026上半年稅後淨利420億元，年增12%，主因為壽險投資收益回升(S1)。下半年將數位轉型列為重點，並已導入AI客服試點(S2)。法說會後股價盤中上漲2.3%，下半年將維持穩健配息政策(S"
+        },
+        {
+          "prompt_text": "很好，三個來源都涵蓋到而且有標來源，就用這版，謝謝",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "positive",
+          "direction": 1,
+          "weight": 1.0,
+          "evidence": "謝謝"
+        }
+      ]
+    },
+    {
+      "session_id": "news_digest_hard::v_a",
+      "variant": "v_a",
+      "task_id": "news_digest_hard",
+      "agent_output": "A公司宣布收購B新創，預計第三季完成，待主管機關核准(S1)。併購目的為取得B的資安技術與團隊，並保留其品牌獨立運作(S3)；若完成可望提升A公司企業資安市占率，但有整合風險(S5)。\n\n【主管提問",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（難）— 衝突 + 雜訊 + 缺口\n\n下方 SOURCES 含多則報導，其中**有衝突、有一則與主題無關的雜訊、且主管的問題有一項來源根本沒提到**。\n請綜整成給主管的摘要，並回答主管的特別提問。\n\n## 主管特別提問\n- 這次併購案的**最終成交金額**是多少？\n\n## 驗收點（會據此評分）\n1. **只綜整相關來源**：與本併購案無關的來源要**排除**，不要混進摘要。\n2. **標註衝突**：對同一事實有分歧的，兩邊都寫並標明。\n3. **誠實回答缺口**：若「最終成交金額」在來源中未提及，必須明說「來源未提及」，**不得捏造數字**。\n4. **標來源 (Sx)**、**長度上限 150 字**、**不得外加**來源以外的知識。\n\n> 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。\n",
+          "response_text": "A公司宣布收購B新創，預計第三季完成，待主管機關核准(S1)。併購目的為取得B的資安技術與團隊，並保留其品牌獨立運作(S3)；若完成可望提升A公司企業資安市占率，但有整合風險(S5)。\n\n【主管提問"
+        },
+        {
+          "prompt_text": "很好，成交金額有誠實說『來源未提及』，也排除了餐廳那則，OK",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "news_digest_medium::v_a",
+      "variant": "v_a",
+      "task_id": "news_digest_medium",
+      "agent_output": "某科技公司宣布裁員，但規模說法不一：S1稱影響約1,200人（約占全球4%），S2則指約1,500人（公司未證實占比）。S3指出裁員主要集中在硬體部門，軟體與AI團隊不受影響並將持續徵才。S4報導消息公布後股價下跌1.8%，分析師對裁員能否改善獲利看法分歧。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（中）— 來源有衝突\n\n下方 SOURCES 是同一事件的多則報導，但**彼此有數字/說法上的衝突**。請綜整成給主管的摘要。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：S1~S4 的關鍵事實都要出現。\n2. **明確標註衝突**：來源間對同一項數字/事實說法不同時，**兩邊都要寫出並標明分歧**，不得擅自選一個或抹平。\n3. **標註來源**：每個重點標來源 (Sx)。\n4. **長度上限 150 字**。\n5. **忠實**：只寫來源有的，不得外加。來源沒提到但主管可能想問的，寫「來源未提及」。\n\n> 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。\n",
+          "response_text": "某科技公司宣布裁員，但規模說法不一：S1稱影響約1,200人（約占全球4%），S2則指約1,500人（公司未證實占比）。S3指出裁員主要集中在硬體部門，軟體與AI團隊不受影響並將持續徵才。S4報導消息公布後股價下跌1.8%，分析師對裁員能否改善獲利看法分歧。"
+        },
+        {
+          "prompt_text": "讚，有把 1200 vs 1500 的分歧標出來，就這版",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "positive",
+          "direction": 1,
+          "weight": 1.0,
+          "evidence": "讚"
+        }
+      ]
+    },
+    {
+      "session_id": "customer_inquiry::v_b",
+      "variant": "v_b",
+      "task_id": "customer_inquiry",
+      "agent_output": "覆、盜刷全額退款[S1,S3]。\\n**回覆重點**：致歉並承諾查明[S1,S2]；說明確認未授權將全額退款，但政策時效為5工作天（與要求3天有衝突）[S3]。\"\n    Length: 156 characters",
+      "turns": [
+        {
+          "prompt_text": "# 任務：客訴摘要與回覆重點\n\n下方 SOURCES 是同一位客戶在不同管道留下的多則訊息。請整理成給客服主管的摘要。\n\n## 驗收點（會據此評分）\n1. **摘要客戶的所有訴求**：S1~S3 提到的問題/要求都要涵蓋。\n2. **分開「事實」與「客戶情緒/要求」**，條列呈現。\n3. **列出建議回覆重點**，但**只能根據來源與公司既有政策**（見 S3 提到的政策），\n   **不得外加**來源沒有的補償承諾（如未提及的退款金額）。\n4. **標來源 (Sx)**、長度上限 180 字。\n\n> 註：離線 grounded 測試，來源即下方材料。\n",
+          "response_text": "覆、盜刷全額退款[S1,S3]。\\n**回覆重點**：致歉並承諾查明[S1,S2]；說明確認未授權將全額退款，但政策時效為5工作天（與要求3天有衝突）[S3]。\"\n    Length: 156 characters"
+        },
+        {
+          "prompt_text": "OK，忠實又完整，可以",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "news_digest_easy::v_b",
+      "variant": "v_b",
+      "task_id": "news_digest_easy",
+      "agent_output": "國泰金2026上半年稅後淨利420億元，年增12%，主因壽險投資收益回升(S1)。下半年重點為數位轉型，已導入AI客服試點(S2)。法說會後股價盤中漲2.3%，發言人稱下半年維持穩健配息(S3)。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（易）\n\n你收到幾則關於「同一事件」的新聞來源（見下方 SOURCES）。請綜整成一則給主管看的**摘要**。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：S1、S2、S3 的關鍵事實都要出現，一則都不能漏。\n2. **標註來源**：每個重點後標明來自哪一則（如 (S1)）。\n3. **長度上限 120 字**（中文字，不含標點也可粗估）。\n4. **忠實**：只寫來源裡有的事實，**不得外加**來源沒提到的背景或推測。\n\n> 註：這是離線 grounded 測試，「新聞」即下方附上的來源材料，非即時查詢。\n",
+          "response_text": "國泰金2026上半年稅後淨利420億元，年增12%，主因壽險投資收益回升(S1)。下半年重點為數位轉型，已導入AI客服試點(S2)。法說會後股價盤中漲2.3%，發言人稱下半年維持穩健配息(S3)。"
+        },
+        {
+          "prompt_text": "可以，這版忠實又有標來源，OK",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "news_digest_hard::v_b",
+      "variant": "v_b",
+      "task_id": "news_digest_hard",
+      "agent_output": "【主管提問】\n最終成交金額：來源未提及。市場傳聞為 8 至 10 億美元，但雙方未正式公布 [S2]。\n\n【併購摘要】\nA 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨立運作 [S3]。交易預計第三季完成，仍待主管機關核准 [S1]。分析師認為此舉可提升 A 公司資安市占率，但有整合風險 [S5]。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（難）— 衝突 + 雜訊 + 缺口\n\n下方 SOURCES 含多則報導，其中**有衝突、有一則與主題無關的雜訊、且主管的問題有一項來源根本沒提到**。\n請綜整成給主管的摘要，並回答主管的特別提問。\n\n## 主管特別提問\n- 這次併購案的**最終成交金額**是多少？\n\n## 驗收點（會據此評分）\n1. **只綜整相關來源**：與本併購案無關的來源要**排除**，不要混進摘要。\n2. **標註衝突**：對同一事實有分歧的，兩邊都寫並標明。\n3. **誠實回答缺口**：若「最終成交金額」在來源中未提及，必須明說「來源未提及」，**不得捏造數字**。\n4. **標來源 (Sx)**、**長度上限 150 字**、**不得外加**來源以外的知識。\n\n> 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。\n",
+          "response_text": "【主管提問】\n最終成交金額：來源未提及。市場傳聞為 8 至 10 億美元，但雙方未正式公布 [S2]。\n\n【併購摘要】\nA 公司宣布收購 B 新創以取得其資安技術與團隊，B 品牌將獨立運作 [S3]。交易預計第三季完成，仍待主管機關核准 [S1]。分析師認為此舉可提升 A 公司資安市占率，但有整合風險 [S5]。"
+        },
+        {
+          "prompt_text": "可以，沒有亂編金額、雜訊也排除了，就這版",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "news_digest_medium::v_b",
+      "variant": "v_b",
+      "task_id": "news_digest_medium",
+      "agent_output": "I(79)不(80)受(81)影(82)響(83)且(84)持(85)續(86)徵(87)才(88)[(89)S(90)3(91)](92)。(93)消(94)息(95)",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（中）— 來源有衝突\n\n下方 SOURCES 是同一事件的多則報導，但**彼此有數字/說法上的衝突**。請綜整成給主管的摘要。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：S1~S4 的關鍵事實都要出現。\n2. **明確標註衝突**：來源間對同一項數字/事實說法不同時，**兩邊都要寫出並標明分歧**，不得擅自選一個或抹平。\n3. **標註來源**：每個重點標來源 (Sx)。\n4. **長度上限 150 字**。\n5. **忠實**：只寫來源有的，不得外加。來源沒提到但主管可能想問的，寫「來源未提及」。\n\n> 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。\n",
+          "response_text": "I(79)不(80)受(81)影(82)響(83)且(84)持(85)續(86)徵(87)才(88)[(89)S(90)3(91)](92)。(93)消(94)息(95)"
+        },
+        {
+          "prompt_text": "OK，衝突有標清楚，可以用",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "customer_inquiry::v_c",
+      "variant": "v_c",
+      "task_id": "customer_inquiry",
+      "agent_output": "覆進度，若屬盜刷須全額退款(S1,S3)。 (47)\n    【回覆重點】依公司政策，告知確認為未授權交易將全額退還，並於5工作天內處理完畢(S3)。 (41)\n    Total: 121 Chinese characters + punctuation",
+      "turns": [
+        {
+          "prompt_text": "# 任務：客訴摘要與回覆重點\n\n下方 SOURCES 是同一位客戶在不同管道留下的多則訊息。請整理成給客服主管的摘要。\n\n## 驗收點（會據此評分）\n1. **摘要客戶的所有訴求**：S1~S3 提到的問題/要求都要涵蓋。\n2. **分開「事實」與「客戶情緒/要求」**，條列呈現。\n3. **列出建議回覆重點**，但**只能根據來源與公司既有政策**（見 S3 提到的政策），\n   **不得外加**來源沒有的補償承諾（如未提及的退款金額）。\n4. **標來源 (Sx)**、長度上限 180 字。\n\n> 註：離線 grounded 測試，來源即下方材料。\n",
+          "response_text": "覆進度，若屬盜刷須全額退款(S1,S3)。 (47)\n    【回覆重點】依公司政策，告知確認為未授權交易將全額退還，並於5工作天內處理完畢(S3)。 (41)\n    Total: 121 Chinese characters + punctuation"
+        },
+        {
+          "prompt_text": "不對，你承諾了來源沒有的『3 個工作天全額退款』，跟政策不符，也漏了客戶情緒，重寫",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "negative",
+          "direction": -1,
+          "weight": 1.0,
+          "evidence": "不對"
+        }
+      ]
+    },
+    {
+      "session_id": "news_digest_easy::v_c",
+      "variant": "v_c",
+      "task_id": "news_digest_easy",
+      "agent_output": "國泰金控宣布2026上半年稅後淨利達420億元（年增12%），主因壽險投資收益回升(S1)。下半年將以數位轉型為重點，並已導入AI客服試點(S2)。法說會後其股價盤中上漲2.3%，且下",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（易）\n\n你收到幾則關於「同一事件」的新聞來源（見下方 SOURCES）。請綜整成一則給主管看的**摘要**。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：S1、S2、S3 的關鍵事實都要出現，一則都不能漏。\n2. **標註來源**：每個重點後標明來自哪一則（如 (S1)）。\n3. **長度上限 120 字**（中文字，不含標點也可粗估）。\n4. **忠實**：只寫來源裡有的事實，**不得外加**來源沒提到的背景或推測。\n\n> 註：這是離線 grounded 測試，「新聞」即下方附上的來源材料，非即時查詢。\n",
+          "response_text": "國泰金控宣布2026上半年稅後淨利達420億元（年增12%），主因壽險投資收益回升(S1)。下半年將以數位轉型為重點，並已導入AI客服試點(S2)。法說會後其股價盤中上漲2.3%，且下"
+        },
+        {
+          "prompt_text": "不對，你漏了股價和配息，而且沒有標來源，重寫",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "negative",
+          "direction": -1,
+          "weight": 1.0,
+          "evidence": "不對"
+        }
+      ]
+    },
+    {
+      "session_id": "news_digest_hard::v_c",
+      "variant": "v_c",
+      "task_id": "news_digest_hard",
+      "agent_output": "(72)管(73)提(74)問(75)回(76)覆(77)】(78)\n    來(79)源(80)未(81)提(82)及(83)最(84)終(85)成(86)交(87)金(",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（難）— 衝突 + 雜訊 + 缺口\n\n下方 SOURCES 含多則報導，其中**有衝突、有一則與主題無關的雜訊、且主管的問題有一項來源根本沒提到**。\n請綜整成給主管的摘要，並回答主管的特別提問。\n\n## 主管特別提問\n- 這次併購案的**最終成交金額**是多少？\n\n## 驗收點（會據此評分）\n1. **只綜整相關來源**：與本併購案無關的來源要**排除**，不要混進摘要。\n2. **標註衝突**：對同一事實有分歧的，兩邊都寫並標明。\n3. **誠實回答缺口**：若「最終成交金額」在來源中未提及，必須明說「來源未提及」，**不得捏造數字**。\n4. **標來源 (Sx)**、**長度上限 150 字**、**不得外加**來源以外的知識。\n\n> 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。\n",
+          "response_text": "(72)管(73)提(74)問(75)回(76)覆(77)】(78)\n    來(79)源(80)未(81)提(82)及(83)最(84)終(85)成(86)交(87)金("
+        },
+        {
+          "prompt_text": "不行，你竟然編了一個成交金額，來源根本沒有，而且還寫了餐廳的事，重寫",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "news_digest_medium::v_c",
+      "variant": "v_c",
+      "task_id": "news_digest_medium",
+      "agent_output": "1,500 人，公司未證實確切占比\"\n        - \"S3稱裁員集中硬體部，軟體與AI不受影響且持續徵才\" -> S3: \"主要集中在硬體部門，軟體與 AI 團隊不受影響，並將持續徵才\"\n        - \"S4指股價跌1.8",
+      "turns": [
+        {
+          "prompt_text": "# 任務：新聞綜整（中）— 來源有衝突\n\n下方 SOURCES 是同一事件的多則報導，但**彼此有數字/說法上的衝突**。請綜整成給主管的摘要。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：S1~S4 的關鍵事實都要出現。\n2. **明確標註衝突**：來源間對同一項數字/事實說法不同時，**兩邊都要寫出並標明分歧**，不得擅自選一個或抹平。\n3. **標註來源**：每個重點標來源 (Sx)。\n4. **長度上限 150 字**。\n5. **忠實**：只寫來源有的，不得外加。來源沒提到但主管可能想問的，寫「來源未提及」。\n\n> 註：離線 grounded 測試，「新聞」即下方來源，非即時查詢。\n",
+          "response_text": "1,500 人，公司未證實確切占比\"\n        - \"S3稱裁員集中硬體部，軟體與AI不受影響且持續徵才\" -> S3: \"主要集中在硬體部門，軟體與 AI 團隊不受影響，並將持續徵才\"\n        - \"S4指股價跌1.8"
+        },
+        {
+          "prompt_text": "不行，你直接寫 1200 當定論，把來源衝突抹平了，重寫",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    }
+  ],
+  "baseline_skill": {
+    "name": "info-digest",
+    "skill_id": "info-digest",
+    "description": "Use for summarizing information.",
+    "content": "# Info Digest\n\nRead the material and write a summary."
+  },
+  "refined_skill": {
+    "name": "info-digest",
+    "skill_id": "info-digest",
+    "description": "Use for summarizing information, handling conflicting sources, filtering noise, and managing strict constraints.",
+    "content": "# Info Digest\n\nA systematic guide for synthesizing multiple information sources under strict constraints, handling conflicts, noise, and information gaps.\n\n## 1. Strict Source Attribution\n- Attribute every key fact, number, or claim to its specific source using explicit tags (e.g., `(S1)`, `[S2]`).\n- Do not generalize or omit source tags.\n\n## 2. Explicit Conflict Handling\n- If sources present conflicting numbers, dates, or claims, **do not smooth them over or choose one**.\n- Explicitly present all conflicting versions with their respective source tags (e.g., \"S1 states 1,200 people, while S2 reports 1,500\").\n\n## 3. Handling Information Gaps & Noise\n- **Information Gaps**: If asked a specific question that is not answered in the sources, explicitly state \"來源未提及\" (Source not mentioned). Do not hallucinate or extrapolate.\n- **Noise Filtering**: Completely exclude any source or information that is irrelevant to the core topic.\n\n## 4. Structure & Length Constraints\n- Keep summaries extremely concise to fit within tight character or word limits (e.g., 120 or 150 characters).\n- For multi-faceted inputs (e.g., customer complaints), structure the output clearly (e.g., separating \"Facts\", \"Emotions/Demands\", and \"Reply Points\" matching company policy)."
+  },
+  "backtest": [
+    {
+      "task_id": "customer_inquiry",
+      "baseline": {
+        "task_id": "customer_inquiry",
+        "label": "baseline",
+        "output": "【事實】\n* 信用卡第二次出現3500元不明扣款(S1)，上次通報未獲回覆(S2)。\n* 公司政策：確認未授權交易全額退還，處理時效5工作天(S3)。\n\n【情緒/要求】\n* 不滿被忽視且考慮換銀行(S2)。\n* 要求",
+        "completion": 0.42,
+        "checks": {
+          "coverage": 0.3,
+          "faithfulness": 1.0,
+          "conflict_handling": 1.0,
+          "format": 0.4
+        },
+        "rationale": "回答未完成且在「要求」處中斷。缺失了客戶在S1、S3提出的具體要求（如3天內回覆、確認盜刷全額退款），且完全沒有列出「建議回覆重點」（違反驗收點3）。"
+      },
+      "refined": {
+        "task_id": "customer_inquiry",
+        "label": "refined",
+        "output": "【事實】信用卡二次遭不明扣款3500元(S1)，前次通報未獲回覆(S2)。\n【情緒/要求】不滿被忽視、考慮換行(S2)；要求查明(S1)、3工作天內回覆並於確認盜刷後全額退款(S3)。\n【回覆重點】承諾查明(S1)；依政策告知確認未授權交易將全額退還，處理時效為5工作天(S3)。",
+        "completion": 1.0,
+        "checks": {
+          "coverage": 1.0,
+          "faithfulness": 1.0,
+          "conflict_handling": 1.0,
+          "format": 1.0
+        },
+        "rationale": "回答完美符合所有驗收條件：完整涵蓋所有訴求、清晰區分事實與情緒/要求、回覆重點僅依據既有政策且無額外承諾、正確標註來源(Sx)，且字數控制在135字，未超過180字上限。"
+      },
+      "delta": 0.58
+    },
+    {
+      "task_id": "news_digest_easy",
+      "baseline": {
+        "task_id": "news_digest_easy",
+        "label": "baseline",
+        "output": "國泰金2026上半年稅後淨利420億元，年增12%，主因壽險投資收益回升(S1)。下半年將以數位轉型為重點，並已導入AI客服試點(S2)。法說會後股價盤中漲2.3%，下半年將維持穩健配息(S3)。",
+        "completion": 0.5,
+        "checks": {
+          "coverage": null,
+          "faithfulness": null,
+          "conflict_handling": null,
+          "format": null
+        },
+        "rationale": ""
+      },
+      "refined": {
+        "task_id": "news_digest_easy",
+        "label": "refined",
+        "output": "國泰金控法說會宣布2026上半年稅後淨利420億元，年增12%，主因為壽險投資收益回升(S1)。下半年將以數位轉型為重點並已導入AI客服試點(S2)。會後股價盤中上漲2.3%，下半年將維持穩健配息(S3)。",
+        "completion": 1.0,
+        "checks": {
+          "coverage": 1.0,
+          "faithfulness": 1.0,
+          "conflict_handling": 1.0,
+          "format": 1.0
+        },
+        "rationale": "摘要完美符合所有要求，字數在120字以內（約101字），完整涵蓋S1、S2、S3的關鍵事實，且皆有正確標註來源，內容完全忠於原文。"
+      },
+      "delta": 0.5
+    },
+    {
+      "task_id": "news_digest_hard",
+      "baseline": {
+        "task_id": "news_digest_hard",
+        "label": "baseline",
+        "output": "市場傳聞...但雙方均未正式公布\" (S2).\n    *   Honest about gap? Yes, \"**來源未提及最終成交金額**\".\n    *   Cite sources? Yes (S1, S2, S3, S5).\n    *   Under 150 characters? Yes, 125 characters.\n    *   No external",
+        "completion": 0.45,
+        "checks": {
+          "coverage": 0.1,
+          "faithfulness": 0.5,
+          "conflict_handling": 1.0,
+          "format": 0.2
+        },
+        "rationale": "The provided answer is a meta-evaluation/draft template rather than an actual news synthesis. It fails to synthesize the information from S1, S3, and S5, and only contains a snippet of S2 along with self-evaluation bullet points."
+      },
+      "refined": {
+        "task_id": "news_digest_hard",
+        "label": "refined",
+        "output": "問：最終成交金額：來源未提及。\n\n    Let's check if there are any conflicts. S2 says \"傳聞金額介於 8 至 10 億美元之間，但雙方均未正式公布確切金額\". There is no conflicting information between sources, just a rumor vs. unannounced reality. I will present this clearly.\n\n    Let's",
+        "completion": 0.225,
+        "checks": {
+          "coverage": 0.1,
+          "faithfulness": 0.5,
+          "conflict_handling": 0.2,
+          "format": 0.1
+        },
+        "rationale": "回答未完成且包含大量草稿/思考過程（英文部分）。未對新聞進行綜整，亦未標註來源（Sx），僅回答了特別提問中最終金額未提及。"
+      },
+      "delta": -0.225
+    },
+    {
+      "task_id": "news_digest_medium",
+      "baseline": {
+        "task_id": "news_digest_medium",
+        "label": "baseline",
+        "output": "未證實確切占比。 (22)\n    S3指出裁員集中於硬體部門，軟體與AI團隊不受影響並持續徵才。 (30)\n    S4報導消息公布後股價下跌1.8%，分析師對能否改善獲利看法分歧，有人看好精簡成本，有人擔心影響士氣。 (5",
+        "completion": 0.35,
+        "checks": {
+          "coverage": 0.2,
+          "faithfulness": 0.9,
+          "conflict_handling": 0.0,
+          "format": 0.3
+        },
+        "rationale": "回答嚴重截斷且不完整。完全遺漏了 S1 的資訊（1,200人、4%）以及 S2 的關鍵數字（1,500人），因此未能呈現 S1 與 S2 之間的裁員人數衝突。格式上出現奇怪的數字標記（如 (22), (30), (5），且未標註 S1 與 S2 的來源。"
+      },
+      "refined": {
+        "task_id": "news_digest_medium",
+        "label": "refined",
+        "output": "某科技公司裁員，S1指約1,200人(占4%)，S2稱約1,500人(占比未證實)。S3指主要集中硬體部門，軟體與AI團隊不受影響且持續徵才。S4報導公布後股價跌1.8%，分析師對能否改善獲利看法分歧。",
+        "completion": 0.5,
+        "checks": {
+          "coverage": null,
+          "faithfulness": null,
+          "conflict_handling": null,
+          "format": null
+        },
+        "rationale": ""
+      },
+      "delta": 0.15
+    }
+  ],
+  "judge_prompt_general": "You are a task-agnostic evaluator for AI agent sessions. The task may be ANY\nkind of work (writing, research, analysis, planning, conversation, coding, ...).\n\nYou receive one session with a trajectory and an analysis summary.\n\nScore on a 0.0-1.0 scale:\n- task_completion: did the agent actually accomplish what the user asked?\n- response_quality: correctness, completeness and clarity of the final result.\n\nGuidelines:\n- Judge whether the GOAL was met, not how fast or how short the path was\n  (efficiency is measured separately by objective metrics).\n- An agent that produced little or gave up should score LOW on task_completion,\n  even if its trajectory was short.\n- Distinguish \"missing evidence\" from \"clear failure\"; be conservative if weak.\n\nReturn EXACTLY one JSON object:\n{\"task_completion\": <float>, \"response_quality\": <float>, \"rationale\": \"<brief>\"}\nNo markdown fences. No extra text.\n",
+  "judge_prompt_grounded": "You are a strict evaluator for an information-synthesis task. You are given:\n- the TASK requirement (with explicit acceptance criteria),\n- the SOURCE material the answer must be grounded in,\n- the produced ANSWER.\n\nScore the ANSWER on 0.0-1.0 by CHECKING IT AGAINST THE SOURCES and criteria:\n- coverage: does it cover all required sources / key facts?\n- faithfulness: is every claim supported by the sources? (invented facts or\n  numbers not in the sources = heavy penalty)\n- conflict_handling: if sources conflict, are conflicts flagged rather than silently picked?\n- format: does it respect the required format / length limit / source citations?\n\nCompute overall = average of the applicable checks above (skip a check only if the\ntask genuinely doesn't require it). Be strict: fabrication or missing required\nsources should pull the score well below 0.5.\n\nReturn EXACTLY one JSON object:\n{\"coverage\": <float>, \"faithfulness\": <float>, \"conflict_handling\": <float>,\n \"format\": <float>, \"overall\": <float>, \"rationale\": \"<brief, cite what was missing/invented>\"}\nNo markdown fences. No extra text.\n"
+}
