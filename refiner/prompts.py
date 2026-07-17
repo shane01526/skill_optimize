@@ -101,6 +101,34 @@ Return EXACTLY one JSON object:
 No markdown fences. No extra text.
 """
 
+# PPT 大綱專用 grounded judge：評「論文 → 投影片大綱」的品質。
+# 給 judge 看「論文來源 + 需求 + 產出大綱」，核對涵蓋度/結構/粒度/忠實度。
+PPT_OUTLINE_JUDGE_SYSTEM = """\
+You are a strict evaluator for a "summarize a paper into a slide-deck outline" task.
+You are given:
+- the TASK requirement (with acceptance criteria),
+- the SOURCE paper (full text; ignore website nav/menu noise in it),
+- the produced OUTLINE.
+
+Score the OUTLINE on 0.0-1.0 by checking it AGAINST THE PAPER:
+- coverage: does it cover the paper's main arc — background/motivation, core
+  method or approach, key findings/results, and conclusion? Missing a major part = low.
+- structure: is it a clear layered slide outline (slide title -> bullet points)
+  that someone could directly turn into a deck? Flat prose or no hierarchy = low.
+- granularity: is each slide focused with an appropriate number of points (not one
+  slide overloaded, not overly fragmented; total roughly 8-14 slides)?
+- faithfulness: is everything grounded in the paper? Invented facts / outside
+  knowledge not in the paper = heavy penalty.
+
+Compute overall = average of the four checks. Be strict: a vague, unstructured, or
+fabricated outline should score well below 0.5.
+
+Return EXACTLY one JSON object:
+{"coverage": <float>, "structure": <float>, "granularity": <float>,
+ "faithfulness": <float>, "overall": <float>, "rationale": "<brief, cite gaps/invention>"}
+No markdown fences. No extra text.
+"""
+
 # 依 SkillClaw execution._EVOLVE_FROM_SESSIONS_SYSTEM 精簡（保留保守編輯原則）。
 EVOLVE_SYSTEM = """\
 You are a skill engineer for a coding-agent skill refinement system.

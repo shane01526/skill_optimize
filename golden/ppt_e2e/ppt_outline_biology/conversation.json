@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這份大綱可以嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，脈絡完整、分頁清楚，直接可以做投影片，就這版", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，忠於論文沒有外加內容，可用", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不對，太粗略又沒有層次，方法和結果都沒交代清楚，重寫", "response_text": ""}
+  ]
+}

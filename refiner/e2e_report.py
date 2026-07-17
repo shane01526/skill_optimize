@@ -69,8 +69,8 @@ _TEMPLATE = r"""<!DOCTYPE html>
 </head>
 <body>
 <header><div class="wrap">
-  <h1>General 場景 E2E 測試報告</h1>
-  <div class="sub">以「新聞查詢與綜整」為主的 general 場景，用 Gemini 同時當 runner（實際執行）與 judge（評分），跑完整精煉 pipeline 並回測前後差異。</div>
+  <h1>{{ title }}</h1>
+  <div class="sub">{{ lead }}</div>
   <div class="sub mut">LLM：{{ report.llm.provider }} / {{ report.llm.model }} · 模式：{{ report.mode }} · 目標 skill：{{ report.goal }}</div>
   <nav class="toc">
     <a href="#s0">0 誠實聲明</a>
@@ -160,8 +160,8 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <h3>① 通用 judge（變體評分 / detector fallback）— <code>GENERIC_JUDGE_SYSTEM</code></h3>
     <p class="mut">只看 trajectory＋summary，評 task_completion / response_quality。</p>
     <pre>{{ report.judge_prompt_general }}</pre>
-    <h3>② Grounded judge（第 4 節回測用）— <code>GROUNDED_JUDGE_SYSTEM</code></h3>
-    <p class="mut"><b>會同時看「來源材料＋需求驗收點＋產出」</b>，逐項核對 coverage / faithfulness / conflict_handling / format，
+    <h3>② Grounded judge（第 4 節回測用）— <code>{{ 'PPT_OUTLINE_JUDGE_SYSTEM' if report.judge_kind == 'ppt_outline' else 'GROUNDED_JUDGE_SYSTEM' }}</code></h3>
+    <p class="mut"><b>會同時看「來源材料＋需求驗收點＋產出」</b>，逐項核對 {{ report.check_keys | join(' / ') }}，
     捏造或漏來源會重扣。這比只看文字的通用 judge 更能反映 grounded 任務的真實品質。</p>
     <pre>{{ report.judge_prompt_grounded }}</pre>
   </div>
@@ -170,10 +170,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
 <section id="s4">
   <div class="sechead"><span class="secno">4</span><h2>回測：優化前 vs 優化後（實際產出＋評分）</h2></div>
   <p class="lead">同一批 task，baseline skill 與 refined skill 各讓 Gemini 跑 {{ report.rollouts }} 次、由 grounded judge 評分，取 <b>mean</b> 對照，直接看出改善（Δ&gt;0）或退步（照實呈現）。分數旁標 ±std 與 3 次原始分數。</p>
-  <div class="callout warn"><b>如何誠實解讀這批數字：</b>修正截斷後，baseline skill 的產出多已完整，加上 Gemini 本身能力強，
-  即使籠統的 baseline 也能產出不錯的綜整，因此 baseline 分數普遍偏高（0.94~1.0）、refined 的改善幅度較小（整體約 +0.01）。
-  這是<b>真實且重要的觀察</b>：任務對強模型偏簡單時，skill 差異在「最終品質」上難顯著——差異更會出現在
-  <b>穩定度（std / 成功率）</b>與<b>更難、限制更嚴的任務</b>上。先前看似大幅改善，部分是 baseline 被截斷的假象，已修正。</div>
+  {% if report.backtest_note %}<div class="callout warn"><b>如何誠實解讀這批數字：</b>{{ report.backtest_note }}</div>{% endif %}
   {% for b in report.backtest %}
   <div class="card">
     <h3>{{ b.task_id }}
@@ -185,12 +182,12 @@ _TEMPLATE = r"""<!DOCTYPE html>
       <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（{{ report.rollouts }} 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>{{ b.baseline.completion }} <span class="mut">± {{ b.baseline.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.baseline.scores }}</span>{% if b.baseline.checks %}<br><span class="mut" style="font-size:11px">涵蓋{{ b.baseline.checks.coverage }}/忠實{{ b.baseline.checks.faithfulness }}/衝突{{ b.baseline.checks.conflict_handling }}/格式{{ b.baseline.checks.format }}</span>{% endif %}</td>
+        <td>{{ b.baseline.completion }} <span class="mut">± {{ b.baseline.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.baseline.scores }}</span>{% if b.baseline.checks %}<br><span class="mut" style="font-size:11px">{% for k,v in b.baseline.checks.items() %}{{ k }}={{ v }} {% endfor %}</span>{% endif %}</td>
         <td><pre>{{ b.baseline.output }}</pre><p class="mut">judge：{{ b.baseline.rationale }}</p></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="{{ 'ok' if (b.delta is not none and b.delta > 0) else '' }}">{{ b.refined.completion }} <span class="mut">± {{ b.refined.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.refined.scores }}</span>{% if b.refined.checks %}<br><span class="mut" style="font-size:11px">涵蓋{{ b.refined.checks.coverage }}/忠實{{ b.refined.checks.faithfulness }}/衝突{{ b.refined.checks.conflict_handling }}/格式{{ b.refined.checks.format }}</span>{% endif %}</td>
+        <td class="{{ 'ok' if (b.delta is not none and b.delta > 0) else '' }}">{{ b.refined.completion }} <span class="mut">± {{ b.refined.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.refined.scores }}</span>{% if b.refined.checks %}<br><span class="mut" style="font-size:11px">{% for k,v in b.refined.checks.items() %}{{ k }}={{ v }} {% endfor %}</span>{% endif %}</td>
         <td><pre>{{ b.refined.output }}</pre><p class="mut">judge：{{ b.refined.rationale }}</p></td>
       </tr>
     </table>
@@ -227,13 +224,17 @@ _TEMPLATE = r"""<!DOCTYPE html>
 """
 
 
-def render_report(report: dict[str, Any]) -> str:
+_DEFAULT_TITLE = "General 場景 E2E 測試報告"
+_DEFAULT_LEAD = "以「新聞查詢與綜整」為主的 general 場景，用 Gemini 同時當 runner（實際執行）與 judge（評分），跑完整精煉 pipeline 並回測前後差異。"
+
+
+def render_report(report: dict[str, Any], *, title: str = _DEFAULT_TITLE, lead: str = _DEFAULT_LEAD) -> str:
     from jinja2 import Template
 
     diff = []
     if report.get("refined_skill") and report.get("baseline_skill"):
         diff = _content_diff(report["baseline_skill"].get("content", ""), report["refined_skill"].get("content", ""))
-    return Template(_TEMPLATE).render(report=report, content_diff=diff)
+    return Template(_TEMPLATE).render(report=report, content_diff=diff, title=title, lead=lead)
 
 
 def main(argv: Optional[list[str]] = None) -> int:

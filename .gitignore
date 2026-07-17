@@ -8,6 +8,10 @@ __pycache__/
 .env
 gtest.py
 
+# 論文原始 HTML 素材（80MB，含 42MB 單檔）：太大不進 git。
+# pipeline 實際用的是抽取後的 golden/ppt_e2e/*/sources.md（已 committed）。
+golden/general_e2e/ppt_table_of_content_source/
+
 # logs：預設忽略，但保留下方 6 個範例 log（force-added）供 clone 後直接看對照表
 logs/*.json
 logs/*.jsonl

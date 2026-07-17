@@ -75,8 +75,22 @@ def load_baseline_skill(goal_dir: str) -> dict[str, Any]:
 # ------------------------------------------------------------------ #
 
 
-def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_id: str, label: str) -> dict[str, Any]:
-    """用給定 skill（dict，含 name/content）在 task 上真跑 Gemini 產出 + judge，回傳結果。"""
+# 各 judge 用的 check 欄位（依 judge_system 不同而異）
+_CHECK_KEYS = {
+    "grounded": ("coverage", "faithfulness", "conflict_handling", "format"),
+    "ppt_outline": ("coverage", "structure", "granularity", "faithfulness"),
+}
+
+
+def _judge_prompt(judge: str) -> str:
+    from . import prompts
+
+    return prompts.PPT_OUTLINE_JUDGE_SYSTEM if judge == "ppt_outline" else prompts.GROUNDED_JUDGE_SYSTEM
+
+
+def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_id: str, label: str,
+                       *, judge: str = "grounded") -> dict[str, Any]:
+    """用給定 skill 在 task 上真跑 Gemini 產出 + grounded judge，回傳結果。"""
     task_prompt = _read_task_prompt(task_dir)
     sources = _read_sources(task_dir)
     instruction = _compose_general_instruction(task_prompt, sources, skill)
@@ -88,26 +102,26 @@ def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, tas
     except Exception as exc:  # noqa: BLE001
         output = f"[error] {exc}"
 
-    # grounded judge：給 judge 看「來源 + 需求驗收點 + 產出」，真的核對涵蓋度/忠實度/格式
-    judge = _grounded_judge(llm, task_prompt, sources, output)
+    result = _grounded_judge(llm, task_prompt, sources, output, judge=judge)
+    keys = _CHECK_KEYS.get(judge, _CHECK_KEYS["grounded"])
     return {
         "task_id": task_id,
         "label": label,
         "output": output,
-        "completion": judge.get("overall"),
-        "checks": {k: judge.get(k) for k in ("coverage", "faithfulness", "conflict_handling", "format")},
-        "rationale": judge.get("rationale", ""),
+        "completion": result.get("overall"),
+        "checks": {k: result.get(k) for k in keys},
+        "rationale": result.get("rationale", ""),
     }
 
 
-def _grounded_judge(llm: LLMClient, task_prompt: str, sources: str, answer: str) -> dict[str, Any]:
-    """用 GROUNDED_JUDGE_SYSTEM 讓 Gemini 核對產出 vs 來源，回四個 check + overall。"""
-    from .prompts import GROUNDED_JUDGE_SYSTEM
+def _grounded_judge(llm: LLMClient, task_prompt: str, sources: str, answer: str, *, judge: str = "grounded") -> dict[str, Any]:
+    """讓 Gemini 核對產出 vs 來源，回各 check + overall。judge 決定用哪個 judge prompt 與 check 欄位。"""
     from .skillmd import extract_json_object
 
+    keys = _CHECK_KEYS.get(judge, _CHECK_KEYS["grounded"])
     payload = json.dumps({"task": task_prompt, "sources": sources, "answer": answer}, ensure_ascii=False)
     try:
-        raw = llm.chat(GROUNDED_JUDGE_SYSTEM, payload, temperature=0.1, max_tokens=1200)
+        raw = llm.chat(_judge_prompt(judge), payload, temperature=0.1, max_tokens=1200)
         parsed = extract_json_object(raw) or {}
     except Exception:  # noqa: BLE001
         parsed = {}
@@ -115,7 +129,7 @@ def _grounded_judge(llm: LLMClient, task_prompt: str, sources: str, answer: str)
     def _num(v):
         return round(max(0.0, min(1.0, float(v))), 3) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
-    checks = {k: _num(parsed.get(k)) for k in ("coverage", "faithfulness", "conflict_handling", "format")}
+    checks = {k: _num(parsed.get(k)) for k in keys}
     overall = _num(parsed.get("overall"))
     if overall is None:
         vals = [v for v in checks.values() if v is not None]
@@ -123,12 +137,13 @@ def _grounded_judge(llm: LLMClient, task_prompt: str, sources: str, answer: str)
     return {**checks, "overall": overall, "rationale": str(parsed.get("rationale") or "").strip()}
 
 
-def _backtest_skill(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_id: str, label: str) -> dict[str, Any]:
+def _backtest_skill(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_id: str, label: str,
+                    *, judge: str = "grounded") -> dict[str, Any]:
     """對單一 skill 在 task 上跑 ROLLOUTS 次 Gemini + grounded judge，聚合 mean/std。
 
     保留第 1 次的完整產出/rationale 供報告展示（代表性樣本），其餘只留分數。
     """
-    runs = [_run_skill_on_task(llm, skill, task_dir, task_id, label) for _ in range(ROLLOUTS)]
+    runs = [_run_skill_on_task(llm, skill, task_dir, task_id, label, judge=judge) for _ in range(ROLLOUTS)]
     stats = _stats([r["completion"] for r in runs])
     rep = runs[0]  # 代表性樣本（第 1 次）
     return {
@@ -143,13 +158,14 @@ def _backtest_skill(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_i
     }
 
 
-def backtest(llm: LLMClient, baseline: dict[str, Any], refined: dict[str, Any], tasks: list[str]) -> list[dict[str, Any]]:
+def backtest(llm: LLMClient, baseline: dict[str, Any], refined: dict[str, Any], tasks: list[str],
+             *, judge: str = "grounded") -> list[dict[str, Any]]:
     """對每個 task，baseline skill 與 refined skill 各跑 ROLLOUTS 次 Gemini + judge → 前後對照（mean）。"""
     rows: list[dict[str, Any]] = []
     for task_dir in tasks:
         task_id = os.path.basename(task_dir)
-        b = _backtest_skill(llm, baseline, task_dir, task_id, "baseline")
-        r = _backtest_skill(llm, refined, task_dir, task_id, "refined")
+        b = _backtest_skill(llm, baseline, task_dir, task_id, "baseline", judge=judge)
+        r = _backtest_skill(llm, refined, task_dir, task_id, "refined", judge=judge)
         delta = None
         if b["completion"] is not None and r["completion"] is not None:
             delta = round(r["completion"] - b["completion"], 3)
@@ -169,6 +185,7 @@ def run_e2e(
     *,
     mode: str = "api",
     llm: Optional[LLMClient] = None,
+    judge: str = "grounded",
 ) -> dict[str, Any]:
     llm = llm or LLMClient()
     os.makedirs(output_dir, exist_ok=True)
@@ -219,7 +236,27 @@ def run_e2e(
 
     # 4. 回測 baseline vs refined（refined 沒過閘就用 candidate 仍回測，照實呈現）
     refined_for_test = refined or baseline
-    backtest_rows = backtest(llm, baseline, refined_for_test, tasks)
+    backtest_rows = backtest(llm, baseline, refined_for_test, tasks, judge=judge)
+
+    # 依實際回測數字產生「誠實解讀」註記（不寫死結論）
+    bvals = [b["baseline"]["completion"] for b in backtest_rows if b["baseline"]["completion"] is not None]
+    rvals = [b["refined"]["completion"] for b in backtest_rows if b["refined"]["completion"] is not None]
+    b_mean = round(sum(bvals) / len(bvals), 3) if bvals else None
+    r_mean = round(sum(rvals) / len(rvals), 3) if rvals else None
+    note = None
+    if b_mean is not None and r_mean is not None:
+        d = round(r_mean - b_mean, 3)
+        note = (
+            f"回測整體 mean：baseline={b_mean}、refined={r_mean}、Δ={d:+.3f}（grounded judge，{ROLLOUTS} 次平均）。"
+        )
+        if b_mean >= 0.9:
+            note += (
+                "baseline 分數已接近上限——代表這個任務對 Gemini 這種強模型而言，"
+                "即使用籠統的 baseline skill 也能產出高品質結果，因此「最終品質」上難再由 skill 拉開差距。"
+                "這是真實且重要的觀察：skill 精煉的價值在強模型 × 偏易任務時會被稀釋，"
+                "差異更會顯現在穩定度（std／成功率）、成本、或更難／限制更嚴的任務上。"
+                "（注意：第 1 節變體評分仍受 conversation.json 腳本回饋影響，見誠實聲明。）"
+            )
 
     # 5. 組報告資料
     report = {
@@ -238,8 +275,11 @@ def run_e2e(
         "refined_skill": ({"name": refined["name"], "skill_id": refined.get("skill_id"),
                            "description": refined.get("description"), "content": refined.get("content")} if refined else None),
         "backtest": backtest_rows,
+        "backtest_note": note,
         "judge_prompt_general": _read_prompt_const("GENERIC_JUDGE_SYSTEM"),
-        "judge_prompt_grounded": _read_prompt_const("GROUNDED_JUDGE_SYSTEM"),
+        "judge_prompt_grounded": _judge_prompt(judge),
+        "judge_kind": judge,
+        "check_keys": list(_CHECK_KEYS.get(judge, _CHECK_KEYS["grounded"])),
     }
     out_path = os.path.join(output_dir, "result.json")
     with open(out_path, "w", encoding="utf-8") as fh:
@@ -311,23 +351,31 @@ def main(argv=None) -> int:
     parser.add_argument("--tasks-dir", default=_p("golden", "general_e2e"))
     parser.add_argument("--output-dir", default=_p("output", "e2e_general"))
     parser.add_argument("--mode", default="api", choices=["api", "mock"])
+    parser.add_argument("--judge", default="grounded", choices=["grounded", "ppt_outline"])
+    parser.add_argument("--report-out", default=_p("docs", "e2e_general_test_report.html"))
+    parser.add_argument("--report-title", default=None)
+    parser.add_argument("--report-lead", default=None)
     parser.add_argument("--no-report", action="store_true")
     args = parser.parse_args(argv)
 
     llm = LLMClient()
-    print(f"[e2e] llm provider={llm.provider} model={llm.model} mode={args.mode}")
-    report = run_e2e(args.goal_dir, args.tasks_dir, args.output_dir, mode=args.mode, llm=llm)
+    print(f"[e2e] llm provider={llm.provider} model={llm.model} mode={args.mode} judge={args.judge}")
+    report = run_e2e(args.goal_dir, args.tasks_dir, args.output_dir, mode=args.mode, llm=llm, judge=args.judge)
     print(f"[e2e] action={report['action']} accepted={report['accepted']} → {report['_out_path']}")
     print("[e2e] backtest deltas:", [(b['task_id'], b['delta']) for b in report['backtest']])
 
     if not args.no_report:
         from .e2e_report import render_report
 
-        html = render_report(report)
-        out = _p("docs", "e2e_general_test_report.html")
-        with open(out, "w", encoding="utf-8") as fh:
+        kw = {}
+        if args.report_title:
+            kw["title"] = args.report_title
+        if args.report_lead:
+            kw["lead"] = args.report_lead
+        html = render_report(report, **kw)
+        with open(args.report_out, "w", encoding="utf-8") as fh:
             fh.write(html)
-        print(f"[e2e] wrote report → {out} ({len(html)} bytes)")
+        print(f"[e2e] wrote report → {args.report_out} ({len(html)} bytes)")
     return 0
 
 

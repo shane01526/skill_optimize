@@ -1,0 +1,7 @@
+{
+  "task_type": "general",
+  "scenario": "論文總整 → PPT 大綱",
+  "judge": "ppt_outline",
+  "difficulty": "hard",
+  "note": "grounded：來源為 Anthropic 文章全文（sources.md，非即時查詢）。要求產出可直接做成投影片的分層大綱。"
+}
