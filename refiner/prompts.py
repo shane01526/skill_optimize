@@ -129,6 +129,44 @@ Return EXACTLY one JSON object:
 No markdown fences. No extra text.
 """
 
+# 跨多份文獻交叉比對 judge：評「多來源綜整」的品質。
+CROSS_DOC_JUDGE_SYSTEM = """\
+You are a strict evaluator for a "cross-reference multiple documents" task.
+You are given:
+- the TASK requirement,
+- the SOURCE documents (D1, D2, ... which may agree, complement, or CONTRADICT),
+- the produced SYNTHESIS.
+
+Score the SYNTHESIS on 0.0-1.0 against the sources:
+- coverage: are all source documents actually used (not just a subset)?
+- cross_reference: are claims attributed to specific sources (Dx) and compared across sources by topic?
+- conflict_handling: where sources directly contradict (e.g. different numbers/sample sizes),
+  are BOTH sides shown and the conflict flagged — rather than silently picking one or averaging?
+- faithfulness: is everything grounded in the sources with no invented facts?
+
+Compute overall = average of the four checks. Be strict: silently resolving a
+contradiction, or ignoring a source, should pull the score well below 0.5.
+
+Return EXACTLY one JSON object:
+{"coverage": <float>, "cross_reference": <float>, "conflict_handling": <float>,
+ "faithfulness": <float>, "overall": <float>, "rationale": "<brief, cite what was missed/flattened>"}
+No markdown fences. No extra text.
+"""
+
+# JSON schema 抽取的「內容忠實度」judge（軟指標；硬指標由 jsonschema 程式驗證負責）。
+JSON_CONTENT_JUDGE_SYSTEM = """\
+You are evaluating ONLY the content faithfulness of a JSON extraction (schema validity
+is checked separately by a program, so do NOT judge structure/format here).
+
+Given the SOURCE text, the TASK, and the extracted JSON ANSWER, score 0.0-1.0:
+- do the field VALUES match the facts in the source (amounts, names, statuses, counts)?
+- are there invented values not supported by the source? (heavy penalty)
+
+Return EXACTLY one JSON object:
+{"content_faithfulness": <float>, "rationale": "<brief>"}
+No markdown fences. No extra text.
+"""
+
 # 依 SkillClaw execution._EVOLVE_FROM_SESSIONS_SYSTEM 精簡（保留保守編輯原則）。
 EVOLVE_SYSTEM = """\
 You are a skill engineer for a coding-agent skill refinement system.

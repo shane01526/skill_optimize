@@ -160,10 +160,18 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <h3>① 通用 judge（變體評分 / detector fallback）— <code>GENERIC_JUDGE_SYSTEM</code></h3>
     <p class="mut">只看 trajectory＋summary，評 task_completion / response_quality。</p>
     <pre>{{ report.judge_prompt_general }}</pre>
+    {% if report.judge_prompts %}
+    {% for jk, jp in report.judge_prompts.items() %}
+    <h3>② 回測 judge（{{ jk }}）{% if jk == 'json_schema' %}<span class="badge b-rule">程式驗證為主</span>{% endif %}</h3>
+    {% if jk == 'json_schema' %}<p class="mut"><b>達標由 <code>jsonschema</code> 程式客觀驗證</b>（必填/型別/enum/巢狀，pass/fail），
+    這是能真正拉開弱 baseline 的硬 gate（類似 coding 的 pytest）；下方 prompt 只負責「內容忠實度」軟分數。</p>{% endif %}
+    <pre>{{ jp }}</pre>
+    {% endfor %}
+    {% else %}
     <h3>② Grounded judge（第 4 節回測用）— <code>{{ 'PPT_OUTLINE_JUDGE_SYSTEM' if report.judge_kind == 'ppt_outline' else 'GROUNDED_JUDGE_SYSTEM' }}</code></h3>
-    <p class="mut"><b>會同時看「來源材料＋需求驗收點＋產出」</b>，逐項核對 {{ report.check_keys | join(' / ') }}，
-    捏造或漏來源會重扣。這比只看文字的通用 judge 更能反映 grounded 任務的真實品質。</p>
+    <p class="mut"><b>會同時看「來源材料＋需求驗收點＋產出」</b>，逐項核對 {{ report.check_keys | join(' / ') }}。</p>
     <pre>{{ report.judge_prompt_grounded }}</pre>
+    {% endif %}
   </div>
 </section>
 
@@ -183,12 +191,12 @@ _TEMPLATE = r"""<!DOCTYPE html>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
         <td>{{ b.baseline.completion }} <span class="mut">± {{ b.baseline.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.baseline.scores }}</span>{% if b.baseline.checks %}<br><span class="mut" style="font-size:11px">{% for k,v in b.baseline.checks.items() %}{{ k }}={{ v }} {% endfor %}</span>{% endif %}</td>
-        <td><pre>{{ b.baseline.output }}</pre><p class="mut">judge：{{ b.baseline.rationale }}</p></td>
+        <td><pre>{{ b.baseline.output }}</pre><p class="mut">judge：{{ b.baseline.rationale }}</p>{% if b.baseline.schema_errors %}<p class="no" style="font-size:12px">schema 錯誤：{% for e in b.baseline.schema_errors %}<br>· {{ e }}{% endfor %}</p>{% endif %}</td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
         <td class="{{ 'ok' if (b.delta is not none and b.delta > 0) else '' }}">{{ b.refined.completion }} <span class="mut">± {{ b.refined.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.refined.scores }}</span>{% if b.refined.checks %}<br><span class="mut" style="font-size:11px">{% for k,v in b.refined.checks.items() %}{{ k }}={{ v }} {% endfor %}</span>{% endif %}</td>
-        <td><pre>{{ b.refined.output }}</pre><p class="mut">judge：{{ b.refined.rationale }}</p></td>
+        <td><pre>{{ b.refined.output }}</pre><p class="mut">judge：{{ b.refined.rationale }}</p>{% if b.refined.schema_errors %}<p class="no" style="font-size:12px">schema 錯誤：{% for e in b.refined.schema_errors %}<br>· {{ e }}{% endfor %}</p>{% endif %}</td>
       </tr>
     </table>
   </div>

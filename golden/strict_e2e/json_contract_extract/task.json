@@ -1,0 +1,7 @@
+{
+  "task_type": "general",
+  "judge": "json_schema",
+  "scenario": "非結構文本 → 嚴格 JSON schema 抽取",
+  "difficulty": "hard",
+  "note": "grounded：來源為交易描述文字（sources.md）。達標用 jsonschema 程式驗證為主（客觀 pass/fail），LLM 只評內容忠實度。schema.json 為契約。"
+}

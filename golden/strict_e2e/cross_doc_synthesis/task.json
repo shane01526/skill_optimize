@@ -1,0 +1,7 @@
+{
+  "task_type": "general",
+  "judge": "cross_doc",
+  "scenario": "跨多份文獻交叉比對",
+  "difficulty": "hard",
+  "note": "grounded：4 份有衝突/互補的短文獻（sources.md）。要求交叉引用並標矛盾，LLM cross_doc judge 評 coverage/cross_reference/conflict_handling/faithfulness。"
+}

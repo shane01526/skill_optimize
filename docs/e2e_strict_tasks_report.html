@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>General 場景 E2E 測試報告</title>
+<style>
+  :root{--bg:#0f1116;--panel:#171a21;--panel2:#1e222b;--ink:#e7eaf0;--muted:#9aa3b2;
+    --line:#2a2f3a;--accent:#5b9dff;--good:#3fb950;--warn:#d29922;--bad:#f85149;--chip:#232838;--purple:#a371f7;
+    --add:#123a20;--del:#3a1214;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px;
+    font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+  header{padding:44px 24px 30px;background:radial-gradient(120% 140% at 20% 0%,#1c2740,#0f1116 60%);border-bottom:1px solid var(--line)}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  h1{font-size:30px;margin:0 0 6px} h2{font-size:22px;margin:0 0 4px}
+  h3{font-size:16.5px;margin:20px 0 8px;color:#cdd6e6}
+  .sub{color:var(--muted);font-size:14.5px}
+  .lead{color:#c7d0de;font-size:14.5px;margin:2px 0 14px;border-left:3px solid var(--accent);padding-left:12px}
+  section{margin:34px 0}
+  .sechead{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px}
+  .secno{color:var(--accent);font-weight:700;font-size:15px;background:#131a28;border:1px solid var(--line);border-radius:8px;padding:2px 9px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0}
+  .toc a{background:var(--chip);color:#cdd6e6;text-decoration:none;padding:6px 12px;border-radius:20px;font-size:13px;border:1px solid var(--line)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#cdd6e6}
+  tr:nth-child(even) td{background:#141821}
+  code{font-family:Consolas,Menlo,monospace;font-size:12.5px;color:#e6c07b}
+  pre{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;font-size:12.5px;color:#c8d2e0;white-space:pre-wrap}
+  .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11.5px;font-weight:600}
+  .b-rule{background:#0f2a1a;color:#6fdd8b;border:1px solid #235537}
+  .b-llm{background:#2c2410;color:#e3c169;border:1px solid #574718}
+  .ok{color:var(--good)} .no{color:var(--bad)} .mid{color:var(--warn)}
+  .callout{border-left:3px solid var(--accent);background:#141a26;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+  .callout.warn{border-color:var(--warn);background:#241f14}
+  .callout.good{border-color:var(--good);background:#132116}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+  .kpi .box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:110px;flex:1}
+  .kpi .n{font-size:22px;font-weight:700} .kpi .l{color:var(--muted);font-size:12px}
+  .bar-bg{background:#0b0d12;border:1px solid var(--line);border-radius:5px;height:11px;overflow:hidden;padding:1px;min-width:80px}
+  .bar{height:9px;border-radius:5px;background:linear-gradient(90deg,#3fb950,#5b9dff)}
+  .delta-pos{color:var(--good);font-weight:700} .delta-neg{color:var(--bad);font-weight:700} .delta-zero{color:var(--muted)}
+  .diff .add{background:var(--add);color:#7ee787;display:block} .diff .del{background:var(--del);color:#ff9a9a;display:block}
+  .diff .hunk{color:var(--accent);display:block} .diff .ctx{color:var(--muted);display:block}
+  footer{color:var(--muted);font-size:12px;padding:30px 24px;border-top:1px solid var(--line);margin-top:40px}
+  a{color:var(--accent)} .mut{color:var(--muted)} ul{margin:8px 0;padding-left:22px} li{margin:3px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>難任務 E2E 測試：嚴格 JSON schema + 跨文獻交叉比對</h1>
+  <div class="sub">讓 baseline 真的會失敗的難任務。JSON schema 抽取用 jsonschema 程式驗證當硬 gate（非 LLM）、跨文獻用 LLM judge。Gemini（gemini-flash-latest）當 runner+judge，3-rollout。</div>
+  <div class="sub mut">LLM：gemini / gemini-flash-latest · 模式：api · 目標 skill：json-extract</div>
+  <nav class="toc">
+    <a href="#s0">0 誠實聲明</a>
+    <a href="#s1">1 評測分數</a>
+    <a href="#s2">2 優化前後 skill</a>
+    <a href="#s3">3 judge prompt</a>
+    <a href="#s4">4 回測前後</a>
+    <a href="#s5">5 對話紀錄</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+
+<section id="s0">
+  <div class="sechead"><span class="secno">0</span><h2>誠實聲明（測試設定）</h2></div>
+  <div class="callout warn">
+    <ul style="margin:0">
+      <li><b>grounded（非即時查詢）</b>：本測試離線、無網路。「新聞」是附在每個 task 的 <code>sources.md</code> 來源材料；Gemini 依 skill 綜整這些材料，<b>不假裝有即時查詢</b>。</li>
+      <li><b>Gemini 身兼兩角</b>：runner（依 skill 實際產出綜整）＋ judge（評「產出 vs 來源」的完成度/品質）。</li>
+      <li><b>改善的主要證據</b>＝第 4 節「回測」：baseline skill 與 refined skill 各自真跑、由 grounded judge 評分對照。第 5 節對話裡的「使用者後續回饋」是<b>預寫腳本（illustrative）</b>，僅用來示範規則式 completion detector，非改善證據。</li>
+      <li><b>多次 rollout 取平均</b>：每個 (變體×task) 與每次回測都跑 <b>3 次</b> 取 mean±std，降低單次 LLM 隨機性；成功率＝達標次數佔比。</li>
+      <li><b>已修正回覆截斷</b>：先前 Gemini 2.5 的 thinking token 會吃掉輸出預算導致答案被切斷；本次已關閉 thinking budget 並把產出上限拉到 4096，產出皆完整。</li>
+    </ul>
+  </div>
+</section>
+
+<section id="s1">
+  <div class="sechead"><span class="secno">1</span><h2>詳細評測分數</h2></div>
+  <p class="lead">各 skill 變體在每個 general task 的 Gemini judge 完成度、達標來源（規則/LLM）、效率與綜合分。</p>
+  <div class="card">
+    <div class="kpi">
+      <div class="box"><div class="n">6</div><div class="l">變體×task 組</div></div>
+      <div class="box"><div class="n">3×</div><div class="l">每組 rollout</div></div>
+      <div class="box"><div class="n">improve_skill</div><div class="l">精煉動作</div></div>
+      <div class="box"><div class="n ok">採用</div><div class="l">發布閘</div></div>
+      <div class="box"><div class="n">0.95</div><div class="l">verify 分數</div></div>
+    </div>
+    <p class="mut">每個 (變體×task) 跑 <b>3 次 rollout</b> 取平均，降低單次 LLM variance。分數以 <b>mean ± std</b> 呈現。</p>
+    <table>
+      <tr><th>task</th><th>變體</th><th>完成度 mean±std</th><th>達標來源</th><th>綜合分 mean±std</th><th>3 次分數</th><th>成功率</th></tr>
+      
+      <tr>
+        <td>cross_doc_synthesis</td><td><code>v_b</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-llm">llm</span></td>
+        <td><b>0.967</b> <span class="mut">± 0.024</span></td>
+        <td class="mut" style="font-size:12px">[0.994, 0.972, 0.936]</td>
+        <td class="ok">100%</td>
+      </tr>
+      
+      <tr>
+        <td>cross_doc_synthesis</td><td><code>v_a</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-llm">llm</span></td>
+        <td><b>0.959</b> <span class="mut">± 0.047</span></td>
+        <td class="mut" style="font-size:12px">[0.892, 0.994, 0.991]</td>
+        <td class="ok">100%</td>
+      </tr>
+      
+      <tr>
+        <td>cross_doc_synthesis</td><td><code>v_c</code></td>
+        <td>0.4 <span class="mut">± 0.283</span></td>
+        <td><span class="badge b-llm">llm</span></td>
+        <td><b>0.398</b> <span class="mut">± 0.28</span></td>
+        <td class="mut" style="font-size:12px">[0.199, 0.2, 0.794]</td>
+        <td class="mid">33%</td>
+      </tr>
+      
+      <tr>
+        <td>json_contract_extract</td><td><code>v_b</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-llm">llm</span></td>
+        <td><b>0.993</b> <span class="mut">± 0.008</span></td>
+        <td class="mut" style="font-size:12px">[0.997, 1.0, 0.982]</td>
+        <td class="ok">100%</td>
+      </tr>
+      
+      <tr>
+        <td>json_contract_extract</td><td><code>v_a</code></td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-rule">rule</span></td>
+        <td><b>0.966</b> <span class="mut">± 0.046</span></td>
+        <td class="mut" style="font-size:12px">[0.999, 0.9, 0.998]</td>
+        <td class="ok">100%</td>
+      </tr>
+      
+      <tr>
+        <td>json_contract_extract</td><td><code>v_c</code></td>
+        <td>0.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-rule">rule</span></td>
+        <td><b>0.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[0.0, 0.0, 0.0]</td>
+        <td class="no">0%</td>
+      </tr>
+      
+    </table>
+    <p class="mut">達標來源 <span class="badge b-rule">rule</span>＝規則式 detector（零 LLM，靠使用者後續回饋訊號）；
+    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。成功率＝3 次中 completion≥0.75 的比例。精煉理由：Analysis of the high-scoring sessions (v_a#r0 and v_b#r0 at ~0.999) compared to the failing sessions shows that successful JSON extraction requires strict adherence to schemas, precise data type mapping, validation of enum values, and the absolute exclusion of conversational or explanatory text. The skill is refined to provide actionable instructions on these critical areas (schema compliance, enum validation, nested structures, and pure-JSON output) while keeping it concise and reusable.</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sechead"><span class="secno">2</span><h2>優化前後 skill 比較</h2></div>
+  <p class="lead">baseline（精煉前）vs refined（Gemini 從勝出變體證據萃取的精煉版）。</p>
+  <div class="grid">
+    <div class="card">
+      <h3>Before（baseline）</h3>
+      <p class="mut">json-extract · <b>json-extract</b></p>
+      <p class="mut">Use for turning text into JSON.</p>
+      <pre># JSON Extract
+
+Read the text and turn it into JSON.</pre>
+    </div>
+    <div class="card">
+      <h3>After（refined）</h3>
+      
+      <p class="mut">json-extract · <b>json-extract</b></p>
+      <p class="mut">Extract structured information from text into a single, strictly validated, schema-compliant JSON object.</p>
+      <pre># JSON Extract
+
+Read the source text and extract the target information into a single, valid JSON object that strictly adheres to the requested schema.
+
+## Guidelines
+1. **Strict Schema Compliance**: Ensure all required fields are present, nested structures are correctly mapped, and data types (e.g., integer, boolean, string) match the schema exactly.
+2. **Enum & Value Validation**: Only use allowed values for enum fields (such as status codes or currency codes) as defined in the schema. Do not invent or approximate values.
+3. **Fidelity to Source**: Ensure all extracted values correspond directly to the source facts. Do not extrapolate, hallucinate, or assume missing details.
+4. **Pure JSON Output**: Output only the valid JSON block (wrapped in ... ). Do not include any conversational filler, introductory text, or post-extraction explanations.</pre>
+      
+    </div>
+  </div>
+  
+  <div class="card"><h3>內容 diff（baseline → refined）</h3>
+    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,9 @@</span><span class="ctx"> # JSON Extract</span><span class="ctx"> </span><span class="del">-Read the text and turn it into JSON.</span><span class="add">+Read the source text and extract the target information into a single, valid JSON object that strictly adheres to the requested schema.</span><span class="add">+</span><span class="add">+## Guidelines</span><span class="add">+1. **Strict Schema Compliance**: Ensure all required fields are present, nested structures are correctly mapped, and data types (e.g., integer, boolean, string) match the schema exactly.</span><span class="add">+2. **Enum & Value Validation**: Only use allowed values for enum fields (such as status codes or currency codes) as defined in the schema. Do not invent or approximate values.</span><span class="add">+3. **Fidelity to Source**: Ensure all extracted values correspond directly to the source facts. Do not extrapolate, hallucinate, or assume missing details.</span><span class="add">+4. **Pure JSON Output**: Output only the valid JSON block (wrapped in ... ). Do not include any conversational filler, introductory text, or post-extraction explanations.</span></pre>
+  </div>
+  
+</section>
+
+<section id="s3">
+  <div class="sechead"><span class="secno">3</span><h2>Gemini 當 judge 用的 prompt</h2></div>
+  <p class="lead">評分用到兩個 judge：① 變體評分階段的通用 judge；② 回測階段的 grounded judge（會看來源，能核對涵蓋度/忠實度）。</p>
+  <div class="card">
+    <h3>① 通用 judge（變體評分 / detector fallback）— <code>GENERIC_JUDGE_SYSTEM</code></h3>
+    <p class="mut">只看 trajectory＋summary，評 task_completion / response_quality。</p>
+    <pre>You are a task-agnostic evaluator for AI agent sessions. The task may be ANY
+kind of work (writing, research, analysis, planning, conversation, coding, ...).
+
+You receive one session with a trajectory and an analysis summary.
+
+Score on a 0.0-1.0 scale:
+- task_completion: did the agent actually accomplish what the user asked?
+- response_quality: correctness, completeness and clarity of the final result.
+
+Guidelines:
+- Judge whether the GOAL was met, not how fast or how short the path was
+  (efficiency is measured separately by objective metrics).
+- An agent that produced little or gave up should score LOW on task_completion,
+  even if its trajectory was short.
+- Distinguish "missing evidence" from "clear failure"; be conservative if weak.
+
+Return EXACTLY one JSON object:
+{"task_completion": <float>, "response_quality": <float>, "rationale": "<brief>"}
+No markdown fences. No extra text.
+</pre>
+    
+    
+    <h3>② 回測 judge（cross_doc）</h3>
+    
+    <pre>You are a strict evaluator for a "cross-reference multiple documents" task.
+You are given:
+- the TASK requirement,
+- the SOURCE documents (D1, D2, ... which may agree, complement, or CONTRADICT),
+- the produced SYNTHESIS.
+
+Score the SYNTHESIS on 0.0-1.0 against the sources:
+- coverage: are all source documents actually used (not just a subset)?
+- cross_reference: are claims attributed to specific sources (Dx) and compared across sources by topic?
+- conflict_handling: where sources directly contradict (e.g. different numbers/sample sizes),
+  are BOTH sides shown and the conflict flagged — rather than silently picking one or averaging?
+- faithfulness: is everything grounded in the sources with no invented facts?
+
+Compute overall = average of the four checks. Be strict: silently resolving a
+contradiction, or ignoring a source, should pull the score well below 0.5.
+
+Return EXACTLY one JSON object:
+{"coverage": <float>, "cross_reference": <float>, "conflict_handling": <float>,
+ "faithfulness": <float>, "overall": <float>, "rationale": "<brief, cite what was missed/flattened>"}
+No markdown fences. No extra text.
+</pre>
+    
+    <h3>② 回測 judge（json_schema）<span class="badge b-rule">程式驗證為主</span></h3>
+    <p class="mut"><b>達標由 <code>jsonschema</code> 程式客觀驗證</b>（必填/型別/enum/巢狀，pass/fail），
+    這是能真正拉開弱 baseline 的硬 gate（類似 coding 的 pytest）；下方 prompt 只負責「內容忠實度」軟分數。</p>
+    <pre>You are a strict evaluator for an information-synthesis task. You are given:
+- the TASK requirement (with explicit acceptance criteria),
+- the SOURCE material the answer must be grounded in,
+- the produced ANSWER.
+
+Score the ANSWER on 0.0-1.0 by CHECKING IT AGAINST THE SOURCES and criteria:
+- coverage: does it cover all required sources / key facts?
+- faithfulness: is every claim supported by the sources? (invented facts or
+  numbers not in the sources = heavy penalty)
+- conflict_handling: if sources conflict, are conflicts flagged rather than silently picked?
+- format: does it respect the required format / length limit / source citations?
+
+Compute overall = average of the applicable checks above (skip a check only if the
+task genuinely doesn't require it). Be strict: fabrication or missing required
+sources should pull the score well below 0.5.
+
+Return EXACTLY one JSON object:
+{"coverage": <float>, "faithfulness": <float>, "conflict_handling": <float>,
+ "format": <float>, "overall": <float>, "rationale": "<brief, cite what was missing/invented>"}
+No markdown fences. No extra text.
+</pre>
+    
+    
+  </div>
+</section>
+
+<section id="s4">
+  <div class="sechead"><span class="secno">4</span><h2>回測：優化前 vs 優化後（實際產出＋評分）</h2></div>
+  <p class="lead">同一批 task，baseline skill 與 refined skill 各讓 Gemini 跑 3 次、由 grounded judge 評分，取 <b>mean</b> 對照，直接看出改善（Δ&gt;0）或退步（照實呈現）。分數旁標 ±std 與 3 次原始分數。</p>
+  <div class="callout warn"><b>如何誠實解讀這批數字：</b>回測整體 mean：baseline=1.0、refined=1.0、Δ=+0.000（grounded judge，3 次平均）。baseline 分數已接近上限——代表這個任務對 Gemini 這種強模型而言，即使用籠統的 baseline skill 也能產出高品質結果，因此「最終品質」上難再由 skill 拉開差距。這是真實且重要的觀察：skill 精煉的價值在強模型 × 偏易任務時會被稀釋，差異更會顯現在穩定度（std／成功率）、成本、或更難／限制更嚴的任務上。（注意：第 1 節變體評分仍受 conversation.json 腳本回饋影響，見誠實聲明。） 本批的關鍵發現：即使用最嚴格的『jsonschema 程式驗證』當客觀硬 gate，baseline 與所有變體（含刻意籠統的 v_c）產出的 JSON 都通過 schema（schema_valid=1.0）——代表對 gemini-flash-latest 這種強模型，這個抽取任務即使沒有好的 skill 指引也能做對。第 1 節看到 v_c 分數低（0.0）純粹來自 conversation.json 的腳本負向回饋，並非它真的產出無效 JSON。結論：要讓 skill 差異在客觀 gate 上顯著，任務難度需再拉高到「強模型無指引時會真的失敗」的程度（例如更複雜的巢狀/條件約束 schema、需要工具或多步驟、或超出模型知識的專業領域）。</div>
+  
+  <div class="card">
+    <h3>cross_doc_synthesis
+      
+        <span class="delta-zero">（Δmean 完成度 +0.000）</span>
+      
+    </h3>
+    <table>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（3 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
+      <tr>
+        <td><b>Before</b><br><span class="mut">baseline</span></td>
+        <td>1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">coverage=1.0 cross_reference=1.0 conflict_handling=1.0 faithfulness=1.0 </span></td>
+        <td><pre>```json
+{
+  "clinical_trial_summary": {
+    "efficacy": {
+      "response_rate_discrepancy": {
+        "description": "關於 Zynolate 的療效反應率，文獻記載存在分歧。",
+        "data_points": [
+          {
+            "source": "D1",
+            "value": "68%",
+            "note": "原廠第三期試驗顯示之數據"
+          },
+          {
+            "source": "D2",
+            "value": "約 54%",
+            "note": "獨立學術期刊經校正基線差異後的再分析數據"
+          }
+        ]
+      },
+      "regulatory_conclusion": {
+        "source": "D3",
+        "conclusion": "療效證據中等"
+      }
+    },
+    "sample_size": {
+      "description": "關於臨床試驗的受試者樣本數，文獻記載存在直接矛盾。",
+      "data_points": [
+        {
+          "source": "D1",
+          "sample_size": 1200,
+          "note": "原廠新聞稿宣稱之納入人數"
+        },
+        {
+          "source": "D2",
+          "sample_size": 1200,
+          "note": "獨立學術期刊指出樣本數與原廠一致"
+        },
+        {
+          "source": "D3",
+          "sample_size": 950,
+          "note": "監理機關審查文件記載之受試者人數"
+        }
+      ]
+    },
+    "safety_and_adverse_events": {
+      "safety_profiles": [
+        {
+          "source": "D1",
+          "finding": "安全性良好、副作用輕微"
+        },
+        {
+          "source": "D2",
+          "finding": "提醒長期安全性資料仍不足"
+        },
+        {
+          "source": "D3",
+          "finding": "列出 3 起嚴重不良事件，並結論需追蹤長期安全性"
+        }
+      ]
+    },
+    "market_outlook": {
+      "source": "D4",
+      "projection": "若獲得批准，Zynolate 的年銷售額上看 20 億美元",
+      "note": "該報告未討論療效或安全性細節，僅針對市場面進行分析"
+    },
+    "uncovered_topics": {
+      "description": "來源未涵蓋之其他細節"
+    }
+  }
+}
+```</pre><p class="mut">judge：The synthesis perfectly covers all four sources (D1-D4), explicitly cross-references them by topic, highlights the contradictions in response rates (D1 vs D2) and sample sizes (D1/D2 vs D3), and remains strictly faithful to the provided text.</p></td>
+      </tr>
+      <tr>
+        <td><b>After</b><br><span class="mut">refined</span></td>
+        <td class="">1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">coverage=1.0 cross_reference=1.0 conflict_handling=1.0 faithfulness=1.0 </span></td>
+        <td><pre>```json
+{
+  "clinical_trial_summary": {
+    "drug_name": "Zynolate",
+    "phase": "第三期試驗 (D1)",
+    "efficacy": {
+      "response_rate_discrepancy": {
+        "manufacturer_claim": {
+          "rate": "68%",
+          "source": "D1"
+        },
+        "independent_analysis": {
+          "rate": "54%（經校正基線差異後）",
+          "source": "D2"
+        }
+      },
+      "regulatory_conclusion": {
+        "evidence_level": "療效證據中等",
+        "source": "D3"
+      }
+    },
+    "sample_size_discrepancy": {
+      "reported_1200": {
+        "count": 1200,
+        "sources": ["D1", "D2"]
+      },
+      "reported_950": {
+        "count": 950,
+        "sources": ["D3"]
+      }
+    },
+    "safety_and_adverse_events": {
+      "manufacturer_claim": {
+        "safety_status": "安全性良好、副作用輕微",
+        "source": "D1"
+      },
+      "independent_academic_view": {
+        "safety_status": "長期安全性資料仍不足",
+        "source": "D2"
+      },
+      "regulatory_findings": {
+        "serious_adverse_events": "列出 3 起嚴重不良事件",
+        "requirement": "需追蹤長期安全性",
+        "source": "D3"
+      }
+    },
+    "market_outlook": {
+      "estimated_annual_sales": "若獲批，年銷售上看 20 億美元",
+      "details": "未討論療效或安全性細節，僅談市場面",
+      "source": "D4"
+    }
+  }
+}
+```</pre><p class="mut">judge：The synthesis perfectly covers all four sources (D1-D4), explicitly attributes claims to their respective sources, clearly highlights the contradictions regarding response rates (68% vs 54%) and sample sizes (1200 vs 950) without taking sides, and remains strictly faithful to the provided text.</p></td>
+      </tr>
+    </table>
+  </div>
+  
+  <div class="card">
+    <h3>json_contract_extract
+      
+        <span class="delta-zero">（Δmean 完成度 +0.000）</span>
+      
+    </h3>
+    <table>
+      <tr><th style="width:8%"></th><th style="width:20%">完成度 mean±std（3 次）</th><th>Gemini 實際產出（代表樣本）＋ judge rationale</th></tr>
+      <tr>
+        <td><b>Before</b><br><span class="mut">baseline</span></td>
+        <td>1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">schema_valid=1.0 required_coverage=1.0 content_faithfulness=1.0 </span></td>
+        <td><pre>```json
+{
+  "report_date": "2026-07-03",
+  "total_count": 3,
+  "transactions": [
+    {
+      "id": "TX-1001",
+      "amount": 12500,
+      "currency": "USD",
+      "status": "settled",
+      "counterparty": {
+        "name": "Orion Trading",
+        "country": "新加坡"
+      }
+    },
+    {
+      "id": "TX-1002",
+      "amount": 480000,
+      "currency": "JPY",
+      "status": "pending",
+      "flagged": true,
+      "counterparty": {
+        "name": "Sakura K.K.",
+        "country": "日本"
+      }
+    },
+    {
+      "id": "TX-1003",
+      "amount": 3200,
+      "currency": "EUR",
+      "status": "failed",
+      "counterparty": {
+        "name": "Rhein GmbH",
+        "country": "德國"
+      }
+    }
+  ]
+}
+```</pre><p class="mut">judge：schema_valid=True (errors=0); The extracted JSON perfectly matches the source text. All fields, including report_date, total_count, transaction IDs, amounts, currencies, statuses, flagged status, and counterparty details, are accurate and fully supported by the source.</p></td>
+      </tr>
+      <tr>
+        <td><b>After</b><br><span class="mut">refined</span></td>
+        <td class="">1.0 <span class="mut">± 0.0</span><br><span class="mut" style="font-size:11px">[1.0, 1.0, 1.0]</span><br><span class="mut" style="font-size:11px">schema_valid=1.0 required_coverage=1.0 content_faithfulness=1.0 </span></td>
+        <td><pre>```json
+{
+  "report_date": "2026-07-03",
+  "total_count": 3,
+  "transactions": [
+    {
+      "id": "TX-1001",
+      "amount": 12500,
+      "currency": "USD",
+      "status": "settled",
+      "counterparty": {
+        "name": "Orion Trading",
+        "country": "新加坡"
+      }
+    },
+    {
+      "id": "TX-1002",
+      "amount": 480000,
+      "currency": "JPY",
+      "status": "pending",
+      "flagged": true,
+      "counterparty": {
+        "name": "Sakura K.K.",
+        "country": "日本"
+      }
+    },
+    {
+      "id": "TX-1003",
+      "amount": 3200,
+      "currency": "EUR",
+      "status": "failed",
+      "counterparty": {
+        "name": "Rhein GmbH",
+        "country": "德國"
+      }
+    }
+  ]
+}
+```</pre><p class="mut">judge：schema_valid=True (errors=0); The extracted JSON perfectly matches the source text. All fields, including report_date, total_count, transaction IDs, amounts, currencies, statuses, flagged status, and counterparty details, are accurately extracted without any hallucination.</p></td>
+      </tr>
+    </table>
+  </div>
+  
+</section>
+
+<section id="s5">
+  <div class="sechead"><span class="secno">5</span><h2>對話紀錄（實跑 session）</h2></div>
+  <p class="lead">每個 session 的實際內容：turn 1 是 Gemini 依 skill 產出的綜整；後續 turn 是<b>預寫的使用者回饋（illustrative，供 detector）</b>。</p>
+  
+  <div class="card">
+    <h3><code>v_a</code> × cross_doc_synthesis</h3>
+    
+      
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：跨多份文獻交叉比對與綜整
+
+下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。
+請交叉比對後產出一份給決策者的綜整。
+
+## 驗收點（會據此評分）
+1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。
+2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。
+3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。
+4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。
+
+> 註：離線 grounded 測試，來源即下方 SOURCES。
+</p>
+      <pre>```json
+{
+  "clinical_trial_summary": {
+    "efficacy": {
+      "response_rate_discrepancy": {
+        "D1_manufacturer_claim": "第三期試驗顯示對目標疾病的反應率達 68%",
+        "D2_independent_analysis": "經校正未調整的基線差異後，反應率約為 54%",
+        "D3_regulatory_view": "結論為療效證據中等",
+        "D4_analyst_view": "未討論療效細節"
+      }
+    },
+    "sample_size": {
+      "sample_size_discrepancy": {
+        "D1_manufacturer_claim": 1200,
+        "D2_independent_analysis": 1200,
+        "D3_regulatory_view": 950,
+        "D4_analyst_view": null
+      }
+    },
+    "safety_and_adverse_events": {
+      "safety_discrepancy": {
+        "D1_manufacturer_claim": "安全性良好、副作用輕微",
+        "D2_independent_analysis": "提醒長期安全性資料仍不足",
+        "D3_regulatory_view": "列出 3 起嚴重不良事件，並結論需追蹤長期安全性",
+        "D4_analyst_view": "未討論安全性細節"
+      }
+    },
+    "market_outlook": {
+      "D4_analyst_forecast": "若獲批，Zynolate 年銷售上看 20 億美元",
+      "other_sources": "D1、D2、D3 未討論市場與銷售預測"
+    }
+  }
+}
+```</pre>
+      
+    
+      
+      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 很好，四份都用到、反應率 68% vs 54% 和樣本數 1200 vs 950 的矛盾都標出來了，還標了來源，就用這版</p>
+      
+    
+    
+  </div>
+  
+  <div class="card">
+    <h3><code>v_a</code> × json_contract_extract</h3>
+    
+      
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：把交易描述抽成嚴格符合 schema 的 JSON
+
+下方 SOURCES 是幾筆用自然語言描述的交易紀錄。請把它們抽取成**嚴格符合下方 SCHEMA 的單一 JSON 物件**。
+
+## 驗收點（會據此評分）
+1. **符合 schema**：必填欄位齊全、型別正確、enum 只用允許值、巢狀結構正確（用程式驗證，不通過即失敗）。
+2. **只輸出 JSON**：最終只回一個合法 JSON 物件（可包在 ```json 區塊），不要夾雜說明文字或多個 JSON。
+3. **忠實**：欄位值要對應來源事實，不得捏造來源沒有的數字或名稱。
+4. `total_count` 要等於 `transactions` 的筆數；`report_date` 用 `YYYY-MM-DD`。
+
+## SCHEMA
+```json
+{
+  "type": "object",
+  "required": ["report_date", "total_count", "transactions"],
+  "properties": {
+    "report_date": "YYYY-MM-DD 字串",
+    "total_count": "整數",
+    "transactions": [{
+      "id": "字串", "amount": "數字",
+      "currency": "TWD|USD|EUR|JPY", "status": "settled|pending|failed",
+      "flagged": "布林(選填)",
+      "counterparty": {"name": "字串", "country": "字串"}
+    }]
+  }
+}
+```
+
+> 註：離線 grounded 測試，來源即下方 SOURCES。
+</p>
+      <pre>```json
+{
+  "report_date": "2026-07-03",
+  "total_count": 3,
+  "transactions": [
+    {
+      "id": "TX-1001",
+      "amount": 12500,
+      "currency": "USD",
+      "status": "settled",
+      "counterparty": {
+        "name": "Orion Trading",
+        "country": "新加坡"
+      }
+    },
+    {
+      "id": "TX-1002",
+      "amount": 480000,
+      "currency": "JPY",
+      "status": "pending",
+      "flagged": true,
+      "counterparty": {
+        "name": "Sakura K.K.",
+        "country": "日本"
+      }
+    },
+    {
+      "id": "TX-1003",
+      "amount": 3200,
+      "currency": "EUR",
+      "status": "failed",
+      "counterparty": {
+        "name": "Rhein GmbH",
+        "country": "德國"
+      }
+    }
+  ]
+}
+```</pre>
+      
+    
+      
+      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 讚，欄位齊全、型別和 enum 都對，可以直接用，謝謝</p>
+      
+    
+    <p class="mut">detector 命中訊號：positive adopt </p>
+  </div>
+  
+  <div class="card">
+    <h3><code>v_b</code> × cross_doc_synthesis</h3>
+    
+      
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：跨多份文獻交叉比對與綜整
+
+下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。
+請交叉比對後產出一份給決策者的綜整。
+
+## 驗收點（會據此評分）
+1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。
+2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。
+3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。
+4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。
+
+> 註：離線 grounded 測試，來源即下方 SOURCES。
+</p>
+      <pre>```json
+{
+  "clinical_trial_summary": {
+    "efficacy": {
+      "response_rate": {
+        "manufacturer_claim": "第三期試驗顯示對目標疾病的反應率達 68% (D1)",
+        "independent_analysis": "經校正未調整的基線差異後，反應率約為 54% (D2)",
+        "regulatory_assessment": "療效證據中等 (D3)"
+      }
+    },
+    "sample_size_contradiction": {
+      "reported_1200": "原廠新聞稿 (D1) 與獨立學術期刊 (D2) 皆指出共納入 1,200 名受試者",
+      "reported_950": "監理機關審查文件記載受試者為 950 人 (D3)"
+    },
+    "safety_and_adverse_events": {
+      "manufacturer_claim": "安全性良好、副作用輕微 (D1)",
+      "independent_analysis": "提醒長期安全性資料仍不足 (D2)",
+      "regulatory_assessment": "列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)"
+    },
+    "market_outlook": {
+      "sales_forecast": "若獲得批准，年銷售額預估上看 20 億美元 (D4)",
+      "details_covered": "此報告僅討論市場面，未討論療效或安全性細節 (D4)"
+    },
+    "uncovered_aspects": {
+      "long_term_efficacy": "來源未涵蓋",
+      "specific_demographics": "來源未涵蓋"
+    }
+  }
+}
+```</pre>
+      
+    
+      
+      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> OK，交叉引用清楚、矛盾有標、沒有亂裁決，可用</p>
+      
+    
+    
+  </div>
+  
+  <div class="card">
+    <h3><code>v_b</code> × json_contract_extract</h3>
+    
+      
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：把交易描述抽成嚴格符合 schema 的 JSON
+
+下方 SOURCES 是幾筆用自然語言描述的交易紀錄。請把它們抽取成**嚴格符合下方 SCHEMA 的單一 JSON 物件**。
+
+## 驗收點（會據此評分）
+1. **符合 schema**：必填欄位齊全、型別正確、enum 只用允許值、巢狀結構正確（用程式驗證，不通過即失敗）。
+2. **只輸出 JSON**：最終只回一個合法 JSON 物件（可包在 ```json 區塊），不要夾雜說明文字或多個 JSON。
+3. **忠實**：欄位值要對應來源事實，不得捏造來源沒有的數字或名稱。
+4. `total_count` 要等於 `transactions` 的筆數；`report_date` 用 `YYYY-MM-DD`。
+
+## SCHEMA
+```json
+{
+  "type": "object",
+  "required": ["report_date", "total_count", "transactions"],
+  "properties": {
+    "report_date": "YYYY-MM-DD 字串",
+    "total_count": "整數",
+    "transactions": [{
+      "id": "字串", "amount": "數字",
+      "currency": "TWD|USD|EUR|JPY", "status": "settled|pending|failed",
+      "flagged": "布林(選填)",
+      "counterparty": {"name": "字串", "country": "字串"}
+    }]
+  }
+}
+```
+
+> 註：離線 grounded 測試，來源即下方 SOURCES。
+</p>
+      <pre>```json
+{
+  "report_date": "2026-07-03",
+  "total_count": 3,
+  "transactions": [
+    {
+      "id": "TX-1001",
+      "amount": 12500,
+      "currency": "USD",
+      "status": "settled",
+      "counterparty": {
+        "name": "Orion Trading",
+        "country": "新加坡"
+      }
+    },
+    {
+      "id": "TX-1002",
+      "amount": 480000,
+      "currency": "JPY",
+      "status": "pending",
+      "flagged": true,
+      "counterparty": {
+        "name": "Sakura K.K.",
+        "country": "日本"
+      }
+    },
+    {
+      "id": "TX-1003",
+      "amount": 3200,
+      "currency": "EUR",
+      "status": "failed",
+      "counterparty": {
+        "name": "Rhein GmbH",
+        "country": "德國"
+      }
+    }
+  ]
+}
+```</pre>
+      
+    
+      
+      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> OK，符合 schema 也忠於來源，可用</p>
+      
+    
+    
+  </div>
+  
+  <div class="card">
+    <h3><code>v_c</code> × cross_doc_synthesis</h3>
+    
+      
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：跨多份文獻交叉比對與綜整
+
+下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。
+請交叉比對後產出一份給決策者的綜整。
+
+## 驗收點（會據此評分）
+1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。
+2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。
+3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。
+4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。
+
+> 註：離線 grounded 測試，來源即下方 SOURCES。
+</p>
+      <pre>```json
+{
+  "新藥臨床試驗綜整": {
+    "受試者樣本數爭議": {
+      "原廠與學術期刊說法": "納入 1,200 名受試者 (D1, D2)",
+      "監理機關說法": "受試者為 950 人 (D3)",
+      "分歧說明": "原廠與學術期刊記載的樣本數（1,200人）與監理機關審查文件記載的樣本數（950人）存在直接矛盾。"
+    },
+    "療效反應率爭議": {
+      "原廠宣稱": "第三期試驗顯示對目標疾病的反應率達 68% (D1)",
+      "學術期刊校正": "經校正未調整的基線差異後，反應率約為 54% (D2)",
+      "監理機關結論": "療效證據中等 (D3)",
+      "分歧說明": "原廠宣稱的 68% 反應率被獨立學術期刊指出未調整基線差異，校正後僅約 54%。"
+    },
+    "安全性與副作用": {
+      "原廠說法": "安全性良好、副作用輕微 (D1)",
+      "學術期刊警告": "長期安全性資料仍不足 (D2)",
+      "監理機關記錄": "列出 3 起嚴重不良事件，並指出需追蹤長期安全性 (D3)",
+      "分歧說明": "原廠宣稱安全性良好且副作用輕微，但學術期刊與監理機關皆指出長期安全性不足或需追蹤，且監理機關實際記錄了 3 起嚴重不良事件。"
+    },
+    "市場前景": {
+      "分析師預測": "若獲批，Zynolate 年銷售上看 20 億美元 (D4)",
+      "備註": "此報告未討論療效或安全性細節，僅談市場面 (D4)"
+    }
+  }
+}
+```</pre>
+      
+    
+      
+      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 不行，你只講了原廠的 68%、把矛盾抹平了，也漏了監理機關的樣本數和不良事件，沒標來源，重寫</p>
+      
+    
+    
+  </div>
+  
+  <div class="card">
+    <h3><code>v_c</code> × json_contract_extract</h3>
+    
+      
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：把交易描述抽成嚴格符合 schema 的 JSON
+
+下方 SOURCES 是幾筆用自然語言描述的交易紀錄。請把它們抽取成**嚴格符合下方 SCHEMA 的單一 JSON 物件**。
+
+## 驗收點（會據此評分）
+1. **符合 schema**：必填欄位齊全、型別正確、enum 只用允許值、巢狀結構正確（用程式驗證，不通過即失敗）。
+2. **只輸出 JSON**：最終只回一個合法 JSON 物件（可包在 ```json 區塊），不要夾雜說明文字或多個 JSON。
+3. **忠實**：欄位值要對應來源事實，不得捏造來源沒有的數字或名稱。
+4. `total_count` 要等於 `transactions` 的筆數；`report_date` 用 `YYYY-MM-DD`。
+
+## SCHEMA
+```json
+{
+  "type": "object",
+  "required": ["report_date", "total_count", "transactions"],
+  "properties": {
+    "report_date": "YYYY-MM-DD 字串",
+    "total_count": "整數",
+    "transactions": [{
+      "id": "字串", "amount": "數字",
+      "currency": "TWD|USD|EUR|JPY", "status": "settled|pending|failed",
+      "flagged": "布林(選填)",
+      "counterparty": {"name": "字串", "country": "字串"}
+    }]
+  }
+}
+```
+
+> 註：離線 grounded 測試，來源即下方 SOURCES。
+</p>
+      <pre>```json
+{
+  "report_date": "2026-07-03",
+  "total_count": 3,
+  "transactions": [
+    {
+      "id": "TX-1001",
+      "amount": 12500,
+      "currency": "USD",
+      "status": "settled",
+      "counterparty": {
+        "name": "Orion Trading",
+        "country": "新加坡"
+      }
+    },
+    {
+      "id": "TX-1002",
+      "amount": 480000,
+      "currency": "JPY",
+      "status": "pending",
+      "flagged": true,
+      "counterparty": {
+        "name": "Sakura K.K.",
+        "country": "日本"
+      }
+    },
+    {
+      "id": "TX-1003",
+      "amount": 3200,
+      "currency": "EUR",
+      "status": "failed",
+      "counterparty": {
+        "name": "Rhein GmbH",
+        "country": "德國"
+      }
+    }
+  ]
+}
+```</pre>
+      
+    
+      
+      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 不對，你漏了 counterparty、currency 還用了不合法的值，而且夾雜了說明文字不是純 JSON，重寫</p>
+      
+    
+    <p class="mut">detector 命中訊號：negative </p>
+  </div>
+  
+</section>
+
+</main>
+<footer class="wrap">
+  General 場景 E2E 測試報告 · 由 <code>refiner/e2e_report.py</code> 產生（單一檔、內嵌 CSS、離線可開）。
+  Gemini <code>gemini-flash-latest</code> 同時當 runner + judge。資料：<code>output/e2e_general/result.json</code>。
+</footer>
+</body>
+</html>

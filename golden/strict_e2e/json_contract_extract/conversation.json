@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這份 JSON 可以嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "讚，欄位齊全、型別和 enum 都對，可以直接用，謝謝", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，符合 schema 也忠於來源，可用", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不對，你漏了 counterparty、currency 還用了不合法的值，而且夾雜了說明文字不是純 JSON，重寫", "response_text": ""}
+  ]
+}

@@ -61,6 +61,20 @@ def discover_tasks(tasks_dir: str) -> list[str]:
     return sorted(d for d in glob.glob(os.path.join(tasks_dir, "*")) if os.path.isdir(d))
 
 
+def _task_judge(task_dir: str, default: str) -> str:
+    """讀 task.json 的 judge 欄位決定該 task 用哪個 judge；未指定用 default。"""
+    p = os.path.join(task_dir, "task.json")
+    if os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as fh:
+                j = str(json.load(fh).get("judge") or "").strip()
+            if j in _CHECK_KEYS:
+                return j
+        except (json.JSONDecodeError, OSError):
+            pass
+    return default
+
+
 def load_baseline_skill(goal_dir: str) -> dict[str, Any]:
     path = os.path.join(goal_dir, "baseline", "SKILL.md")
     if not os.path.exists(path):
@@ -79,13 +93,18 @@ def load_baseline_skill(goal_dir: str) -> dict[str, Any]:
 _CHECK_KEYS = {
     "grounded": ("coverage", "faithfulness", "conflict_handling", "format"),
     "ppt_outline": ("coverage", "structure", "granularity", "faithfulness"),
+    "cross_doc": ("coverage", "cross_reference", "conflict_handling", "faithfulness"),
+    "json_schema": ("schema_valid", "required_coverage", "content_faithfulness"),
 }
 
 
 def _judge_prompt(judge: str) -> str:
     from . import prompts
 
-    return prompts.PPT_OUTLINE_JUDGE_SYSTEM if judge == "ppt_outline" else prompts.GROUNDED_JUDGE_SYSTEM
+    return {
+        "ppt_outline": prompts.PPT_OUTLINE_JUDGE_SYSTEM,
+        "cross_doc": prompts.CROSS_DOC_JUDGE_SYSTEM,
+    }.get(judge, prompts.GROUNDED_JUDGE_SYSTEM)
 
 
 def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_id: str, label: str,
@@ -102,6 +121,9 @@ def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, tas
     except Exception as exc:  # noqa: BLE001
         output = f"[error] {exc}"
 
+    if judge == "json_schema":
+        return _score_json_schema(llm, task_dir, task_prompt, sources, output, task_id, label)
+
     result = _grounded_judge(llm, task_prompt, sources, output, judge=judge)
     keys = _CHECK_KEYS.get(judge, _CHECK_KEYS["grounded"])
     return {
@@ -111,6 +133,99 @@ def _run_skill_on_task(llm: LLMClient, skill: dict[str, Any], task_dir: str, tas
         "completion": result.get("overall"),
         "checks": {k: result.get(k) for k in keys},
         "rationale": result.get("rationale", ""),
+    }
+
+
+def _validate_json_schema(answer: str, schema: dict[str, Any]) -> dict[str, Any]:
+    """程式驗證（非 LLM）：從產出抽 JSON → 用 jsonschema 收集錯誤。
+
+    回傳 {parsed_ok, schema_valid, error_count, errors, required_coverage}。
+    這是能真正拉開弱 baseline 的客觀 gate（類似 coding 的 pytest）。
+    """
+    from .skillmd import extract_json_object
+
+    obj = extract_json_object(answer)
+    if obj is None:
+        # 抽不出合法 JSON（弱 baseline 常見：夾雜文字/多段/壞括號）
+        return {"parsed_ok": False, "schema_valid": False, "error_count": None,
+                "errors": ["無法從產出抽出合法 JSON"], "required_coverage": 0.0}
+
+    try:
+        import jsonschema
+        from jsonschema import Draft202012Validator
+    except ImportError:
+        return {"parsed_ok": True, "schema_valid": None, "error_count": None,
+                "errors": ["jsonschema 未安裝"], "required_coverage": None}
+
+    validator = Draft202012Validator(schema)
+    errors = sorted(validator.iter_errors(obj), key=lambda e: list(e.path))
+    err_msgs = [f"{'/'.join(str(p) for p in e.path) or '(root)'}: {e.message}" for e in errors][:10]
+
+    # required 欄位到位比例（頂層）：給部分分，讓「差一點」與「完全不對」有區別
+    req = schema.get("required", []) or []
+    present = sum(1 for k in req if isinstance(obj, dict) and k in obj)
+    required_coverage = round(present / len(req), 3) if req else 1.0
+
+    return {
+        "parsed_ok": True,
+        "schema_valid": len(errors) == 0,
+        "error_count": len(errors),
+        "errors": err_msgs,
+        "required_coverage": required_coverage,
+    }
+
+
+def _score_json_schema(llm: LLMClient, task_dir: str, task_prompt: str, sources: str,
+                       output: str, task_id: str, label: str) -> dict[str, Any]:
+    """json_schema judge：程式驗證(硬) 為主 + LLM 內容忠實度(軟) 為輔，合成 completion。"""
+    from .skillmd import extract_json_object
+
+    schema_path = os.path.join(task_dir, "schema.json")
+    schema = {}
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as fh:
+            schema = json.load(fh)
+    v = _validate_json_schema(output, schema)
+
+    # 硬指標：schema 全過 → 1.0；否則用 required_coverage 給部分分（上限 0.5，代表「沒真的過」）
+    if v["schema_valid"]:
+        schema_pass = 1.0
+    else:
+        schema_pass = round(min(0.5, (v.get("required_coverage") or 0.0) * 0.5), 3)
+
+    # 軟指標：只在有抽出 JSON 時才問 LLM 內容忠實度（省呼叫）
+    content = 0.0
+    content_rationale = "未抽出 JSON，略過內容評分" if not v["parsed_ok"] else ""
+    if v["parsed_ok"]:
+        from .prompts import JSON_CONTENT_JUDGE_SYSTEM
+        from .skillmd import extract_json_object as _ejo
+
+        payload = json.dumps({"task": task_prompt, "sources": sources, "answer": output}, ensure_ascii=False)
+        try:
+            raw = llm.chat(JSON_CONTENT_JUDGE_SYSTEM, payload, temperature=0.1, max_tokens=800)
+            parsed = _ejo(raw) or {}
+            cf = parsed.get("content_faithfulness")
+            content = round(max(0.0, min(1.0, float(cf))), 3) if isinstance(cf, (int, float)) and not isinstance(cf, bool) else 0.5
+            content_rationale = str(parsed.get("rationale") or "").strip()
+        except Exception:  # noqa: BLE001
+            content = 0.5
+
+    completion = round(0.7 * schema_pass + 0.3 * content, 3)
+    rationale = f"schema_valid={v['schema_valid']} (errors={v['error_count']}); {content_rationale}"
+    if v["errors"]:
+        rationale += " | " + "; ".join(v["errors"][:5])
+    return {
+        "task_id": task_id,
+        "label": label,
+        "output": output,
+        "completion": completion,
+        "checks": {
+            "schema_valid": 1.0 if v["schema_valid"] else 0.0,
+            "required_coverage": v.get("required_coverage"),
+            "content_faithfulness": content,
+        },
+        "schema_errors": v["errors"],
+        "rationale": rationale,
     }
 
 
@@ -150,6 +265,7 @@ def _backtest_skill(llm: LLMClient, skill: dict[str, Any], task_dir: str, task_i
         "label": label,
         "output": rep["output"],
         "checks": rep["checks"],
+        "schema_errors": rep.get("schema_errors"),  # json_schema 任務才有
         "rationale": rep["rationale"],
         "completion": stats["mean"],       # mean 作為代表分數
         "completion_std": stats["std"],
@@ -164,8 +280,9 @@ def backtest(llm: LLMClient, baseline: dict[str, Any], refined: dict[str, Any], 
     rows: list[dict[str, Any]] = []
     for task_dir in tasks:
         task_id = os.path.basename(task_dir)
-        b = _backtest_skill(llm, baseline, task_dir, task_id, "baseline", judge=judge)
-        r = _backtest_skill(llm, refined, task_dir, task_id, "refined", judge=judge)
+        tj = _task_judge(task_dir, judge)
+        b = _backtest_skill(llm, baseline, task_dir, task_id, "baseline", judge=tj)
+        r = _backtest_skill(llm, refined, task_dir, task_id, "refined", judge=tj)
         delta = None
         if b["completion"] is not None and r["completion"] is not None:
             delta = round(r["completion"] - b["completion"], 3)
@@ -280,6 +397,9 @@ def run_e2e(
         "judge_prompt_grounded": _judge_prompt(judge),
         "judge_kind": judge,
         "check_keys": list(_CHECK_KEYS.get(judge, _CHECK_KEYS["grounded"])),
+        # 本次實際用到的 judge（可能因 per-task 而混合）+ 各自 prompt，供報告顯示
+        "judges_used": sorted({_task_judge(t, judge) for t in tasks}),
+        "judge_prompts": {jk: _judge_prompt(jk) for jk in sorted({_task_judge(t, judge) for t in tasks})},
     }
     out_path = os.path.join(output_dir, "result.json")
     with open(out_path, "w", encoding="utf-8") as fh:
@@ -351,7 +471,7 @@ def main(argv=None) -> int:
     parser.add_argument("--tasks-dir", default=_p("golden", "general_e2e"))
     parser.add_argument("--output-dir", default=_p("output", "e2e_general"))
     parser.add_argument("--mode", default="api", choices=["api", "mock"])
-    parser.add_argument("--judge", default="grounded", choices=["grounded", "ppt_outline"])
+    parser.add_argument("--judge", default="grounded", choices=["grounded", "ppt_outline", "cross_doc", "json_schema"])
     parser.add_argument("--report-out", default=_p("docs", "e2e_general_test_report.html"))
     parser.add_argument("--report-title", default=None)
     parser.add_argument("--report-lead", default=None)

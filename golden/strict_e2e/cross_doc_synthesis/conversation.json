@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "這份綜整可以嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，四份都用到、反應率 68% vs 54% 和樣本數 1200 vs 950 的矛盾都標出來了，還標了來源，就用這版", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，交叉引用清楚、矛盾有標、沒有亂裁決，可用", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不行，你只講了原廠的 68%、把矛盾抹平了，也漏了監理機關的樣本數和不良事件，沒標來源，重寫", "response_text": ""}
+  ]
+}
