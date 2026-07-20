@@ -70,8 +70,15 @@ def evolve_skill_from_sessions(
         f"## Existing skill names in the library\n\n"
         f"{', '.join(existing_skill_names) or '(none)'}\n"
     )
-    raw = llm.chat(system, user, temperature=0.4, max_tokens=8192)
-    return _parse_evolve_result(raw, skill_name)
+    # LLM 偶爾會回出無法解析的 JSON（長 skill 內嵌 markdown 導致截斷/括號失配），
+    # 造成精煉版被靜默丟棄（action=None、報告 §2 空白）。重試數次直到拿到可解析結果。
+    result: Optional[dict[str, Any]] = None
+    for _ in range(3):
+        raw = llm.chat(system, user, temperature=0.4, max_tokens=8192)
+        result = _parse_evolve_result(raw, skill_name)
+        if result is not None:
+            break
+    return result
 
 
 def _parse_evolve_result(raw: str, skill_name: str) -> Optional[dict[str, Any]]:

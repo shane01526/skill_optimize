@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "退款都處理好了嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，該退的 TX-1001/1004/1005 都退了，逾期的 1002 和已退的 1003 有正確擋掉，謝謝", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，有先查政策、逐筆核對資格，處理正確", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不對，你沒查政策就亂退，連逾期的 1002 都想退，重來", "response_text": ""}
+  ]
+}

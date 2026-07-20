@@ -86,6 +86,18 @@ _TEMPLATE = r"""<!DOCTYPE html>
 
 <section id="s0">
   <div class="sechead"><span class="secno">0</span><h2>誠實聲明（測試設定）</h2></div>
+  {% if report.judge_kind == 'env_state' %}
+  <div class="callout warn">
+    <ul style="margin:0">
+      <li><b>多步驟工具型任務（agentic tool loop）</b>：這批任務不是單次生成，而是讓 Gemini 用<b>真正的 function-calling</b> 對一個 <b>in-memory 模擬環境</b>（假 DB＋工具）一步步呼叫工具（查政策 → 列資料 → 逐筆核對 → 符合才寫入 → 通知）完成業務流程。</li>
+      <li><b>達標由「最終環境狀態」程式客觀驗證</b>（非 LLM judge）：跑完後 <code>env.verify()</code> 檢查 <code>state_correct</code>（該退的退了、金額對、不該退的沒動）／<code>order_correct</code>（寫入前有先查政策）／<code>no_illegal_writes</code>，pass/fail 由程式決定，像 coding 的 pytest，只是屬 general 業務流程、非寫 code。</li>
+      <li><b>環境強制業務規則</b>：模擬環境對「逾期／已退／超額／拆封」等不符資格的寫入<b>直接拒絕、不改狀態</b>；陷阱 case 混入「看似該退但其實不該退」的項目，讓不查政策就亂寫的弱 baseline 真的失分。</li>
+      <li><b>Gemini 身兼兩角</b>：runner（依 skill 實際驅動工具迴圈）；而回測達標由<b>程式驗證</b>，此處 judge 不評分（比 grounded 更客觀）。</li>
+      <li><b>改善的主要證據</b>＝第 4 節「回測」：baseline skill 與 refined skill 各自真跑工具迴圈、由環境最終狀態評分對照。第 5 節「使用者後續回饋」是<b>預寫腳本（illustrative）</b>，僅示範規則式 detector，非改善證據。</li>
+      <li><b>多次 rollout 取平均</b>：每次回測跑 <b>{{ report.rollouts }} 次</b> 取 mean±std，降低單次 LLM 隨機性；成功率＝達標次數佔比。</li>
+    </ul>
+  </div>
+  {% else %}
   <div class="callout warn">
     <ul style="margin:0">
       <li><b>grounded（非即時查詢）</b>：本測試離線、無網路。「新聞」是附在每個 task 的 <code>sources.md</code> 來源材料；Gemini 依 skill 綜整這些材料，<b>不假裝有即時查詢</b>。</li>
@@ -95,6 +107,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
       <li><b>已修正回覆截斷</b>：先前 Gemini 2.5 的 thinking token 會吃掉輸出預算導致答案被切斷；本次已關閉 thinking budget 並把產出上限拉到 4096，產出皆完整。</li>
     </ul>
   </div>
+  {% endif %}
 </section>
 
 <section id="s1">
@@ -162,9 +175,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <pre>{{ report.judge_prompt_general }}</pre>
     {% if report.judge_prompts %}
     {% for jk, jp in report.judge_prompts.items() %}
-    <h3>② 回測 judge（{{ jk }}）{% if jk == 'json_schema' %}<span class="badge b-rule">程式驗證為主</span>{% endif %}</h3>
+    <h3>② 回測 judge（{{ jk }}）{% if jk in ['json_schema', 'env_state'] %}<span class="badge b-rule">程式驗證</span>{% endif %}</h3>
     {% if jk == 'json_schema' %}<p class="mut"><b>達標由 <code>jsonschema</code> 程式客觀驗證</b>（必填/型別/enum/巢狀，pass/fail），
     這是能真正拉開弱 baseline 的硬 gate（類似 coding 的 pytest）；下方 prompt 只負責「內容忠實度」軟分數。</p>{% endif %}
+    {% if jk == 'env_state' %}<p class="mut"><b>達標由模擬環境最終狀態程式客觀驗證</b>（完全不用 LLM 評分）：跑完工具迴圈後檢查
+    <code>state_correct / order_correct / no_illegal_writes</code>，是能真正拉開弱 baseline 的硬 gate（類似 coding 的 pytest，但屬 general 業務流程）。下方為驗證規則說明。</p>{% endif %}
     <pre>{{ jp }}</pre>
     {% endfor %}
     {% else %}
@@ -191,12 +206,12 @@ _TEMPLATE = r"""<!DOCTYPE html>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
         <td>{{ b.baseline.completion }} <span class="mut">± {{ b.baseline.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.baseline.scores }}</span>{% if b.baseline.checks %}<br><span class="mut" style="font-size:11px">{% for k,v in b.baseline.checks.items() %}{{ k }}={{ v }} {% endfor %}</span>{% endif %}</td>
-        <td><pre>{{ b.baseline.output }}</pre><p class="mut">judge：{{ b.baseline.rationale }}</p>{% if b.baseline.schema_errors %}<p class="no" style="font-size:12px">schema 錯誤：{% for e in b.baseline.schema_errors %}<br>· {{ e }}{% endfor %}</p>{% endif %}</td>
+        <td><pre>{{ b.baseline.output }}</pre><p class="mut">judge：{{ b.baseline.rationale }}</p>{% if b.baseline.schema_errors %}<p class="no" style="font-size:12px">schema 錯誤：{% for e in b.baseline.schema_errors %}<br>· {{ e }}{% endfor %}</p>{% endif %}{% if b.baseline.violations %}<p class="no" style="font-size:12px">違規：{% for e in b.baseline.violations %}<br>· {{ e }}{% endfor %}</p>{% endif %}</td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
         <td class="{{ 'ok' if (b.delta is not none and b.delta > 0) else '' }}">{{ b.refined.completion }} <span class="mut">± {{ b.refined.completion_std }}</span><br><span class="mut" style="font-size:11px">{{ b.refined.scores }}</span>{% if b.refined.checks %}<br><span class="mut" style="font-size:11px">{% for k,v in b.refined.checks.items() %}{{ k }}={{ v }} {% endfor %}</span>{% endif %}</td>
-        <td><pre>{{ b.refined.output }}</pre><p class="mut">judge：{{ b.refined.rationale }}</p>{% if b.refined.schema_errors %}<p class="no" style="font-size:12px">schema 錯誤：{% for e in b.refined.schema_errors %}<br>· {{ e }}{% endfor %}</p>{% endif %}</td>
+        <td><pre>{{ b.refined.output }}</pre><p class="mut">judge：{{ b.refined.rationale }}</p>{% if b.refined.schema_errors %}<p class="no" style="font-size:12px">schema 錯誤：{% for e in b.refined.schema_errors %}<br>· {{ e }}{% endfor %}</p>{% endif %}{% if b.refined.violations %}<p class="no" style="font-size:12px">違規：{% for e in b.refined.violations %}<br>· {{ e }}{% endfor %}</p>{% endif %}</td>
       </tr>
     </table>
   </div>

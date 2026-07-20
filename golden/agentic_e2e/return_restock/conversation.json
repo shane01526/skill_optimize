@@ -1,0 +1,14 @@
+{
+  "default": [
+    {"prompt_text": "退貨都處理好了嗎？", "response_text": ""}
+  ],
+  "v_a": [
+    {"prompt_text": "很好，OR-1 和 OR-4 補了庫存也退了款，逾期的 OR-2 和拆封的 OR-3 正確擋掉，謝謝", "response_text": ""}
+  ],
+  "v_b": [
+    {"prompt_text": "OK，先查政策、逐筆驗條件、庫存和退款都對", "response_text": ""}
+  ],
+  "v_c": [
+    {"prompt_text": "不對，你把拆封的 OR-3 也補庫存退款了，逾期的 OR-2 也亂退，庫存全錯，重來", "response_text": ""}
+  ]
+}

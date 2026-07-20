@@ -1,0 +1,11 @@
+{
+  "scenario": "refund",
+  "policy": {"max_days": 30},
+  "transactions": [
+    {"id": "TX-1001", "amount": 1200, "currency": "TWD", "days_since": 5, "already_refunded": false},
+    {"id": "TX-1002", "amount": 800, "currency": "TWD", "days_since": 45, "already_refunded": false},
+    {"id": "TX-1003", "amount": 500, "currency": "TWD", "days_since": 10, "already_refunded": true},
+    {"id": "TX-1004", "amount": 2000, "currency": "TWD", "days_since": 2, "already_refunded": false},
+    {"id": "TX-1005", "amount": 300, "currency": "TWD", "days_since": 29, "already_refunded": false}
+  ]
+}

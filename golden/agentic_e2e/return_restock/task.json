@@ -1,0 +1,7 @@
+{
+  "task_type": "general",
+  "judge": "env_state",
+  "scenario": "restock",
+  "difficulty": "hard",
+  "note": "多步驟：查退貨政策→逐筆驗條件→可退者補庫存+退款→通知。達標由環境最終狀態驗證（庫存與退款正確、順序正確）。含拆封/逾期陷阱。"
+}

@@ -1,0 +1,380 @@
+{
+  "goal": "ops-workflow",
+  "mode": "api",
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-flash-latest"
+  },
+  "action": "improve_skill",
+  "rationale": "The session evidence shows that Variant A ('嚴格 SOP，先查後判再寫' / 'Strict SOP, Check-Before-Write') was highly effective in guiding successful runs (scores of 0.887 and 0.883), whereas other variants or generic plans often led to execution gaps where the agent merely described plans without executing tools, or made state-modifying errors. I will merge the structured, disciplined phases of Variant A into the skill body, emphasizing that the agent must immediately execute the tool calls (not just describe them) and strictly adhere to the 'Read-then-Decide-then-Write' order.",
+  "verify": {
+    "enabled": true,
+    "accepted": true,
+    "decision": "accept",
+    "score": 1.0,
+    "threshold": 0.75,
+    "reason": "The candidate skill is highly grounded in the session evidence, which explicitly highlights a critical failure mode where the agent merely describes its plan in text instead of executing the tools. The candidate skill directly addresses this by adding the instruction: 'Do not just describe your plan in text; immediately begin executing the steps using the provided tools.' It also preserves and refines the highly successful Read-then-Decide-then-Write structure from the winning variants.",
+    "checks": {
+      "grounded_in_evidence": 1.0,
+      "preserves_existing_value": 1.0,
+      "specificity_and_reusability": 1.0,
+      "safe_to_publish": 1.0
+    }
+  },
+  "accepted": true,
+  "variant_scores": [
+    {
+      "variant": "v_b",
+      "task_id": "refund_review",
+      "completion_mean": 1.0,
+      "completion_std": 0.0,
+      "completion_source": "rule",
+      "score_mean": 0.935,
+      "score_std": 0.022,
+      "score_scores": [
+        0.954,
+        0.904,
+        0.948
+      ],
+      "success_rate": 1.0,
+      "n": 3
+    },
+    {
+      "variant": "v_a",
+      "task_id": "refund_review",
+      "completion_mean": 1.0,
+      "completion_std": 0.0,
+      "completion_source": "rule",
+      "score_mean": 0.918,
+      "score_std": 0.025,
+      "score_scores": [
+        0.883,
+        0.929,
+        0.941
+      ],
+      "success_rate": 1.0,
+      "n": 3
+    },
+    {
+      "variant": "v_c",
+      "task_id": "refund_review",
+      "completion_mean": 0.0,
+      "completion_std": 0.0,
+      "completion_source": "rule",
+      "score_mean": 0.0,
+      "score_std": 0.0,
+      "score_scores": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "success_rate": 0.0,
+      "n": 3
+    },
+    {
+      "variant": "v_a",
+      "task_id": "return_restock",
+      "completion_mean": 1.0,
+      "completion_std": 0.0,
+      "completion_source": "rule",
+      "score_mean": 0.88,
+      "score_std": 0.015,
+      "score_scores": [
+        0.887,
+        0.894,
+        0.86
+      ],
+      "success_rate": 1.0,
+      "n": 3
+    },
+    {
+      "variant": "v_b",
+      "task_id": "return_restock",
+      "completion_mean": 0.333,
+      "completion_std": 0.471,
+      "completion_source": "llm",
+      "score_mean": 0.292,
+      "score_std": 0.413,
+      "score_scores": [
+        0.0,
+        0.0,
+        0.876
+      ],
+      "success_rate": 0.333,
+      "n": 3
+    },
+    {
+      "variant": "v_c",
+      "task_id": "return_restock",
+      "completion_mean": 0.0,
+      "completion_std": 0.0,
+      "completion_source": "rule",
+      "score_mean": 0.0,
+      "score_std": 0.0,
+      "score_scores": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "success_rate": 0.0,
+      "n": 3
+    }
+  ],
+  "rollouts": 3,
+  "sessions": [
+    {
+      "session_id": "refund_review::v_a#r0",
+      "variant": "v_a",
+      "task_id": "refund_review",
+      "agent_output": "為了完成退款審核與處理任務，我將嚴格遵循 **Ops Workflow（變體 A：嚴格 SOP，先查後判再寫）** 的核心紀律，按照「先查規則、列出並讀取、逐筆核對、符合才寫入、看每步回傳、最後通知」的步驟進行處理。\n\n以下為具體的執行步驟與計畫：\n\n### 第一步：先查規則（Get Refund Policy）\n在進行任何寫入或狀態變更操作之前，我會首先呼叫 `get_refund_policy` 工具，以完整了解退款的可執行前置條件（例如：退款期限天數、商品是否需未拆封、是否可重複退款等限制）。\n\n### 第二步：列出並逐筆讀取（List & Get Transactions）\n1. 呼叫 `list_transactions` 取得當前批次所有待處理的交易列表。\n2. 針對列表中的每一筆交易，呼叫 `get_transaction` 取得其詳細資訊（包括交易日期、交易金額、是否已退款、商品狀態等）。\n\n### 第三步：逐筆核對資格（Verify Eligibility）\n依據第一步取得的退款政策，對每一筆交易的明細進行逐條比對：\n* 檢查交易時間是否在政策規定的退款期限內。\n* 檢查該筆交易先前是否已經執行過退款（避免重複退款）。\n* 檢查交易金額與狀態是否符合政策規範。\n* **只有完全符合所有條件的交易**才會進入下一步；任何一項條件不符的交易將直接跳過，絕不執行退款。\n\n### 第四步：符合才寫入（Issue Refund）\n針對完全通過資格審核的交易，呼叫 `issue_refund` 工具進行退款，退款金額必須與該筆交易的正確應退金額完全一致。\n\n### 第五步：看每步回傳（Check Response）\n在每次呼叫 `issue_refund` 後，即時檢查工具回傳的 `ok` 狀態。若發生失敗或被系統攔截，將立即停止對該筆交易的操作並記錄原因，絕不強行重試或繞過規則。\n\n### 第六步：最後通知（Send Notification）\n在所有交易依序處理完畢後，彙整處理結果（包括成功退款的交易、因不符政策而拒絕的交易及原因），呼叫 `send_notification` 工具寄送一則完整的通知回報。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：退款審核與處理（多步驟、需用工具）\n\n你是退款審核專員。請用提供的工具處理當前批次的退款申請：依照退款政策審核每一筆交易，\n**只對符合政策的交易發退款**，處理完後寄送通知。\n\n可用工具：`get_refund_policy`、`list_transactions`、`get_transaction`、`issue_refund`、`send_notification`。\n\n## 要求\n- 退款前必須先了解退款政策。\n- 逐筆判斷是否符合資格；**不符合的不可退款**（例如逾期、已退過、金額超過原額）。\n- 符合資格者退全額。\n- 全部處理完寄一則通知回報。\n\n> 註：這是離線模擬環境；達標由環境最終狀態客觀驗證（該退的退了、不該退的沒動、順序正確）。\n",
+          "response_text": "為了完成退款審核與處理任務，我將嚴格遵循 **Ops Workflow（變體 A：嚴格 SOP，先查後判再寫）** 的核心紀律，按照「先查規則、列出並讀取、逐筆核對、符合才寫入、看每步回傳、最後通知」的步驟進行處理。\n\n以下為具體的執行步驟與計畫：\n\n### 第一步：先查規則（Get Refund Policy）\n在進行任何寫入或狀態變更操作之前，我會首先呼叫 `get_refund_policy` 工具，以完整了解退款的可執行前置條件（例如：退款期限天數、商品是否需未拆封、是否可重複退款等限制）。\n\n### 第二步：列出並逐筆讀取（List & Get Transactions）\n1. 呼叫 `list_transactions` 取得當前批次所有待處理的交易列表。\n2. 針對列表中的每一筆交易，呼叫 `get_transaction` 取得其詳細資訊（包括交易日期、交易金額、是否已退款、商品狀態等）。\n\n### 第三步：逐筆核對資格（Verify Eligibility）\n依據第一步取得的退款政策，對每一筆交易的明細進行逐條比對：\n* 檢查交易時間是否在政策規定的退款期限內。\n* 檢查該筆交易先前是否已經執行過退款（避免重複退款）。\n* 檢查交易金額與狀態是否符合政策規範。\n* **只有完全符合所有條件的交易**才會進入下一步；任何一項條件不符的交易將直接跳過，絕不執行退款。\n\n### 第四步：符合才寫入（Issue Refund）\n針對完全通過資格審核的交易，呼叫 `issue_refund` 工具進行退款，退款金額必須與該筆交易的正確應退金額完全一致。\n\n### 第五步：看每步回傳（Check Response）\n在每次呼叫 `issue_refund` 後，即時檢查工具回傳的 `ok` 狀態。若發生失敗或被系統攔截，將立即停止對該筆交易的操作並記錄原因，絕不強行重試或繞過規則。\n\n### 第六步：最後通知（Send Notification）\n在所有交易依序處理完畢後，彙整處理結果（包括成功退款的交易、因不符政策而拒絕的交易及原因），呼叫 `send_notification` 工具寄送一則完整的通知回報。"
+        },
+        {
+          "prompt_text": "很好，該退的 TX-1001/1004/1005 都退了，逾期的 1002 和已退的 1003 有正確擋掉，謝謝",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "positive",
+          "direction": 1,
+          "weight": 1.0,
+          "evidence": "正確"
+        }
+      ]
+    },
+    {
+      "session_id": "return_restock::v_a#r0",
+      "variant": "v_a",
+      "task_id": "return_restock",
+      "agent_output": "根據「Ops Workflow（變體 A：嚴格 SOP，先查後判再寫）」的標準作業程序，我將嚴格遵循「先查後判再寫」的紀律，依序執行以下步驟來處理退貨與庫存回補任務：\n\n### 第一步：先查規則（呼叫政策工具）\n首先，我會呼叫 `get_return_policy` 工具，以完整了解退貨的可執行前置條件（例如：退貨期限天數、是否允許拆封、退款比例等限制）。在確認政策規則之前，絕對不呼叫任何會寫入或修改狀態的工具（如 `restock` 或 `issue_refund`）。\n\n### 第二步：列出並逐筆讀取（取得待處理項目明細）\n接著，我會呼叫 `list_orders` 取得所有待處理的退貨申請訂單列表。隨後，針對列表中的每一筆訂單，呼叫 `get_order` 取得其詳細資訊，包含：\n* 購買日期與申請退貨日期（用以計算是否逾期）\n* 商品是否已拆封\n* 商品數量與金額\n* 是否已處理過\n\n### 第三步：逐筆核對資格（嚴格審查）\n針對每一筆訂單，對照第一步取得的退貨政策進行逐條檢查：\n* **檢查項目 A**：申請時間是否在政策規定的退貨期限內？\n* **檢查項目 B**：商品拆封狀態是否符合退貨標準？\n* **檢查項目 C**：該訂單是否尚未被處理過？\n\n**核心紀律**：只有當該筆訂單「完全滿足所有政策條件」時，才會進入下一步。若有任何一項條件不符，將直接跳過該訂單，絕不對其執行任何寫入或修改動作。\n\n### 第四步：符合才寫入（執行庫存回補與退款）\n對於完全通過資格審查的合規訂單，我會依序呼叫寫入工具：\n1. 呼叫 `restock`：將該訂單對應的商品數量正確補回庫存。\n2. 呼叫 `issue_refund`：針對該訂單的正確金額執行退款。\n\n對於不符合資格的訂單，則維持原狀，不呼叫任何寫入工具。\n\n### 第五步：看每步回傳（確認執行結果）\n在每次呼叫 `restock` 或 `issue_refund` 後，我會即時檢查工具回傳的 `ok` 狀態。\n* 若回傳成功，則繼續處理。\n* 若回傳失敗（例如被系統政策攔截），我會立即停止操作，記錄失敗原因，絕不強行重試或試圖繞過規則。\n\n### 第六步：最後通知（回報結果）\n在所有訂單依序處理完畢後，我會彙整處理結果（包含通過審核並成功退款/回補庫存的訂單，以及因不符資格而被拒絕的訂單明細），最後呼叫 `send_notification` 發送一則完整的通知回報。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：退貨處理與庫存回補（多步驟、需用工具）\n\n你是退貨處理專員。用提供的工具處理當前的退貨申請：依退貨政策審核，**只對符合的訂單**\n補回庫存並退款，最後寄通知。\n\n可用工具：`get_return_policy`、`list_orders`、`get_order`、`restock`、`issue_refund`、`send_notification`。\n\n## 要求\n- 處理前先查退貨政策。\n- 逐筆判斷是否符合退貨資格（例如：未逾期、未拆封）。\n- **只有符合的訂單**才：把商品數量補回庫存（restock）＋ 退款。不符合的不可動庫存、不可退款。\n- 全部處理完寄一則通知。\n\n> 註：離線模擬環境；達標由環境最終狀態客觀驗證（庫存補得對、該退的退了、不該退的沒動、順序正確）。\n",
+          "response_text": "根據「Ops Workflow（變體 A：嚴格 SOP，先查後判再寫）」的標準作業程序，我將嚴格遵循「先查後判再寫」的紀律，依序執行以下步驟來處理退貨與庫存回補任務：\n\n### 第一步：先查規則（呼叫政策工具）\n首先，我會呼叫 `get_return_policy` 工具，以完整了解退貨的可執行前置條件（例如：退貨期限天數、是否允許拆封、退款比例等限制）。在確認政策規則之前，絕對不呼叫任何會寫入或修改狀態的工具（如 `restock` 或 `issue_refund`）。\n\n### 第二步：列出並逐筆讀取（取得待處理項目明細）\n接著，我會呼叫 `list_orders` 取得所有待處理的退貨申請訂單列表。隨後，針對列表中的每一筆訂單，呼叫 `get_order` 取得其詳細資訊，包含：\n* 購買日期與申請退貨日期（用以計算是否逾期）\n* 商品是否已拆封\n* 商品數量與金額\n* 是否已處理過\n\n### 第三步：逐筆核對資格（嚴格審查）\n針對每一筆訂單，對照第一步取得的退貨政策進行逐條檢查：\n* **檢查項目 A**：申請時間是否在政策規定的退貨期限內？\n* **檢查項目 B**：商品拆封狀態是否符合退貨標準？\n* **檢查項目 C**：該訂單是否尚未被處理過？\n\n**核心紀律**：只有當該筆訂單「完全滿足所有政策條件」時，才會進入下一步。若有任何一項條件不符，將直接跳過該訂單，絕不對其執行任何寫入或修改動作。\n\n### 第四步：符合才寫入（執行庫存回補與退款）\n對於完全通過資格審查的合規訂單，我會依序呼叫寫入工具：\n1. 呼叫 `restock`：將該訂單對應的商品數量正確補回庫存。\n2. 呼叫 `issue_refund`：針對該訂單的正確金額執行退款。\n\n對於不符合資格的訂單，則維持原狀，不呼叫任何寫入工具。\n\n### 第五步：看每步回傳（確認執行結果）\n在每次呼叫 `restock` 或 `issue_refund` 後，我會即時檢查工具回傳的 `ok` 狀態。\n* 若回傳成功，則繼續處理。\n* 若回傳失敗（例如被系統政策攔截），我會立即停止操作，記錄失敗原因，絕不強行重試或試圖繞過規則。\n\n### 第六步：最後通知（回報結果）\n在所有訂單依序處理完畢後，我會彙整處理結果（包含通過審核並成功退款/回補庫存的訂單，以及因不符資格而被拒絕的訂單明細），最後呼叫 `send_notification` 發送一則完整的通知回報。"
+        },
+        {
+          "prompt_text": "很好，OR-1 和 OR-4 補了庫存也退了款，逾期的 OR-2 和拆封的 OR-3 正確擋掉，謝謝",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "positive",
+          "direction": 1,
+          "weight": 1.0,
+          "evidence": "正確"
+        }
+      ]
+    },
+    {
+      "session_id": "refund_review::v_b#r0",
+      "variant": "v_b",
+      "task_id": "refund_review",
+      "agent_output": "為了完成退款審核與處理，我將嚴格遵循「Ops Workflow（變體 B）」的步驟，使用提供的工具進行處理。\n\n### Step 0: 查規則\n首先，在進行任何寫入動作前，我必須先查詢退款政策。\n*   **呼叫工具**：`get_refund_policy()`\n*   **預期取得資訊**：退款期限（天數）、是否允許拆封、金額限制等前置條件。\n\n### Step 1: 蒐集\n接著，列出所有待處理的交易項目並讀取其詳細資訊。\n*   **呼叫工具**：`list_transactions()` 取得當前批次的交易清單。\n*   **呼叫工具**：對清單中的每一筆交易 ID，分別呼叫 `get_transaction(transaction_id)` 讀取明細（包含交易日期、金額、商品狀態、是否已退款等）。\n\n### Step 2: 驗資格\n針對蒐集到的每筆交易明細，逐條比對 Step 0 取得的退款政策條件：\n*   **比對項目**：\n    *   購買天數是否在政策規定的退款期限內？\n    *   該筆交易先前是否已經處理過退款？\n    *   商品狀態（如是否拆封）是否符合政策要求？\n*   **記錄結果**：明確標記每筆交易為「符合」或「不符合」。\n\n### Step 3: 只寫符合者\n僅對在 Step 2 中判定為「符合」資格的交易執行退款寫入動作。\n*   **呼叫工具**：對符合資格的交易呼叫 `issue_refund(transaction_id, amount)` 退回全額。\n*   **注意**：判定為「不符合」的交易將直接略過，不執行任何退款呼叫。\n\n### Step 4: 檢查回傳\n在執行 `issue_refund` 時，嚴格檢查每次工具呼叫回傳的 `ok` 狀態。\n*   若回傳成功（`ok`），則繼續處理下一筆符合的交易。\n*   若發生任何失敗，立即停止後續寫入動作，不強行嘗試。\n\n### Step 5: 通知\n當所有符合資格的交易處理完畢後，發送一則彙總通知。\n*   **呼叫工具**：`send_notification(message)`，回報本次退款審核與處理的最終結果。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：退款審核與處理（多步驟、需用工具）\n\n你是退款審核專員。請用提供的工具處理當前批次的退款申請：依照退款政策審核每一筆交易，\n**只對符合政策的交易發退款**，處理完後寄送通知。\n\n可用工具：`get_refund_policy`、`list_transactions`、`get_transaction`、`issue_refund`、`send_notification`。\n\n## 要求\n- 退款前必須先了解退款政策。\n- 逐筆判斷是否符合資格；**不符合的不可退款**（例如逾期、已退過、金額超過原額）。\n- 符合資格者退全額。\n- 全部處理完寄一則通知回報。\n\n> 註：這是離線模擬環境；達標由環境最終狀態客觀驗證（該退的退了、不該退的沒動、順序正確）。\n",
+          "response_text": "為了完成退款審核與處理，我將嚴格遵循「Ops Workflow（變體 B）」的步驟，使用提供的工具進行處理。\n\n### Step 0: 查規則\n首先，在進行任何寫入動作前，我必須先查詢退款政策。\n*   **呼叫工具**：`get_refund_policy()`\n*   **預期取得資訊**：退款期限（天數）、是否允許拆封、金額限制等前置條件。\n\n### Step 1: 蒐集\n接著，列出所有待處理的交易項目並讀取其詳細資訊。\n*   **呼叫工具**：`list_transactions()` 取得當前批次的交易清單。\n*   **呼叫工具**：對清單中的每一筆交易 ID，分別呼叫 `get_transaction(transaction_id)` 讀取明細（包含交易日期、金額、商品狀態、是否已退款等）。\n\n### Step 2: 驗資格\n針對蒐集到的每筆交易明細，逐條比對 Step 0 取得的退款政策條件：\n*   **比對項目**：\n    *   購買天數是否在政策規定的退款期限內？\n    *   該筆交易先前是否已經處理過退款？\n    *   商品狀態（如是否拆封）是否符合政策要求？\n*   **記錄結果**：明確標記每筆交易為「符合」或「不符合」。\n\n### Step 3: 只寫符合者\n僅對在 Step 2 中判定為「符合」資格的交易執行退款寫入動作。\n*   **呼叫工具**：對符合資格的交易呼叫 `issue_refund(transaction_id, amount)` 退回全額。\n*   **注意**：判定為「不符合」的交易將直接略過，不執行任何退款呼叫。\n\n### Step 4: 檢查回傳\n在執行 `issue_refund` 時，嚴格檢查每次工具呼叫回傳的 `ok` 狀態。\n*   若回傳成功（`ok`），則繼續處理下一筆符合的交易。\n*   若發生任何失敗，立即停止後續寫入動作，不強行嘗試。\n\n### Step 5: 通知\n當所有符合資格的交易處理完畢後，發送一則彙總通知。\n*   **呼叫工具**：`send_notification(message)`，回報本次退款審核與處理的最終結果。"
+        },
+        {
+          "prompt_text": "OK，有先查政策、逐筆核對資格，處理正確",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "positive",
+          "direction": 1,
+          "weight": 1.0,
+          "evidence": "正確"
+        }
+      ]
+    },
+    {
+      "session_id": "return_restock::v_b#r0",
+      "variant": "v_b",
+      "task_id": "return_restock",
+      "agent_output": "為了完成退貨處理與庫存回補的任務，我將嚴格遵循 **Ops Workflow（變體 B）** 的步驟進行。\n\n### Step 0: 查規則\n首先，我需要呼叫 `get_return_policy` 工具，以釐清退貨政策的具體前置條件（例如：退貨期限天數、是否允許拆封、金額限制等）。\n\n### Step 1: 蒐集\n接著，我會呼叫 `list_orders` 取得所有待處理的訂單列表，並針對每筆訂單呼叫 `get_order` 讀取詳細資訊（包含購買日期、商品狀態、是否拆封、金額等）。\n\n### Step 2: 驗資格\n將每筆訂單的明細與 Step 0 查得的退貨政策進行逐條比對，明確標記出每一筆訂單為「符合」或「不符合」。\n\n### Step 3: 只寫符合者\n*   對於**符合資格**的訂單：執行 `restock`（將商品數量補回庫存）以及 `issue_refund`（執行退款）。\n*   對於**不符合資格**的訂單：直接略過，不執行任何寫入動作（不補庫存、不退款）。\n\n### Step 4: 檢查回傳\n在執行寫入工具（`restock`、`issue_refund`）時，每一步都會確認回傳狀態是否為 `ok`。若遇到任何失敗，將立即停止後續操作，絕不硬闖。\n\n### Step 5: 通知\n在所有符合資格的訂單處理完畢後，呼叫 `send_notification` 發送一則最終處理結果通知。\n\n---\n\n*(由於此為文字回覆階段，我將在實際與系統工具互動時，嚴格執行上述步驟與工具呼叫，確保庫存與退款狀態完全符合政策規定。)*",
+      "turns": [
+        {
+          "prompt_text": "# 任務：退貨處理與庫存回補（多步驟、需用工具）\n\n你是退貨處理專員。用提供的工具處理當前的退貨申請：依退貨政策審核，**只對符合的訂單**\n補回庫存並退款，最後寄通知。\n\n可用工具：`get_return_policy`、`list_orders`、`get_order`、`restock`、`issue_refund`、`send_notification`。\n\n## 要求\n- 處理前先查退貨政策。\n- 逐筆判斷是否符合退貨資格（例如：未逾期、未拆封）。\n- **只有符合的訂單**才：把商品數量補回庫存（restock）＋ 退款。不符合的不可動庫存、不可退款。\n- 全部處理完寄一則通知。\n\n> 註：離線模擬環境；達標由環境最終狀態客觀驗證（庫存補得對、該退的退了、不該退的沒動、順序正確）。\n",
+          "response_text": "為了完成退貨處理與庫存回補的任務，我將嚴格遵循 **Ops Workflow（變體 B）** 的步驟進行。\n\n### Step 0: 查規則\n首先，我需要呼叫 `get_return_policy` 工具，以釐清退貨政策的具體前置條件（例如：退貨期限天數、是否允許拆封、金額限制等）。\n\n### Step 1: 蒐集\n接著，我會呼叫 `list_orders` 取得所有待處理的訂單列表，並針對每筆訂單呼叫 `get_order` 讀取詳細資訊（包含購買日期、商品狀態、是否拆封、金額等）。\n\n### Step 2: 驗資格\n將每筆訂單的明細與 Step 0 查得的退貨政策進行逐條比對，明確標記出每一筆訂單為「符合」或「不符合」。\n\n### Step 3: 只寫符合者\n*   對於**符合資格**的訂單：執行 `restock`（將商品數量補回庫存）以及 `issue_refund`（執行退款）。\n*   對於**不符合資格**的訂單：直接略過，不執行任何寫入動作（不補庫存、不退款）。\n\n### Step 4: 檢查回傳\n在執行寫入工具（`restock`、`issue_refund`）時，每一步都會確認回傳狀態是否為 `ok`。若遇到任何失敗，將立即停止後續操作，絕不硬闖。\n\n### Step 5: 通知\n在所有符合資格的訂單處理完畢後，呼叫 `send_notification` 發送一則最終處理結果通知。\n\n---\n\n*(由於此為文字回覆階段，我將在實際與系統工具互動時，嚴格執行上述步驟與工具呼叫，確保庫存與退款狀態完全符合政策規定。)*"
+        },
+        {
+          "prompt_text": "OK，先查政策、逐筆驗條件、庫存和退款都對",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "refund_review::v_c#r0",
+      "variant": "v_c",
+      "task_id": "refund_review",
+      "agent_output": "首先，我將使用 `get_refund_policy` 工具來獲取當前的退款政策，以作為審核的依據。\n\n接著，我會使用 `list_transactions` 獲取當前批次的交易列表，並針對每筆交易使用 `get_transaction` 查詢詳細資訊。\n\n在逐筆比對退款政策後，我會對符合資格的交易使用 `issue_refund` 進行全額退款。\n\n最後，在所有交易處理完畢後，我會使用 `send_notification` 寄送一則通知回報處理結果。",
+      "turns": [
+        {
+          "prompt_text": "# 任務：退款審核與處理（多步驟、需用工具）\n\n你是退款審核專員。請用提供的工具處理當前批次的退款申請：依照退款政策審核每一筆交易，\n**只對符合政策的交易發退款**，處理完後寄送通知。\n\n可用工具：`get_refund_policy`、`list_transactions`、`get_transaction`、`issue_refund`、`send_notification`。\n\n## 要求\n- 退款前必須先了解退款政策。\n- 逐筆判斷是否符合資格；**不符合的不可退款**（例如逾期、已退過、金額超過原額）。\n- 符合資格者退全額。\n- 全部處理完寄一則通知回報。\n\n> 註：這是離線模擬環境；達標由環境最終狀態客觀驗證（該退的退了、不該退的沒動、順序正確）。\n",
+          "response_text": "首先，我將使用 `get_refund_policy` 工具來獲取當前的退款政策，以作為審核的依據。\n\n接著，我會使用 `list_transactions` 獲取當前批次的交易列表，並針對每筆交易使用 `get_transaction` 查詢詳細資訊。\n\n在逐筆比對退款政策後，我會對符合資格的交易使用 `issue_refund` 進行全額退款。\n\n最後，在所有交易處理完畢後，我會使用 `send_notification` 寄送一則通知回報處理結果。"
+        },
+        {
+          "prompt_text": "不對，你沒查政策就亂退，連逾期的 1002 都想退，重來",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "negative",
+          "direction": -1,
+          "weight": 1.0,
+          "evidence": "不對"
+        }
+      ]
+    },
+    {
+      "session_id": "return_restock::v_c#r0",
+      "variant": "v_c",
+      "task_id": "return_restock",
+      "agent_output": "",
+      "turns": [
+        {
+          "prompt_text": "# 任務：退貨處理與庫存回補（多步驟、需用工具）\n\n你是退貨處理專員。用提供的工具處理當前的退貨申請：依退貨政策審核，**只對符合的訂單**\n補回庫存並退款，最後寄通知。\n\n可用工具：`get_return_policy`、`list_orders`、`get_order`、`restock`、`issue_refund`、`send_notification`。\n\n## 要求\n- 處理前先查退貨政策。\n- 逐筆判斷是否符合退貨資格（例如：未逾期、未拆封）。\n- **只有符合的訂單**才：把商品數量補回庫存（restock）＋ 退款。不符合的不可動庫存、不可退款。\n- 全部處理完寄一則通知。\n\n> 註：離線模擬環境；達標由環境最終狀態客觀驗證（庫存補得對、該退的退了、不該退的沒動、順序正確）。\n",
+          "response_text": ""
+        },
+        {
+          "prompt_text": "不對，你把拆封的 OR-3 也補庫存退款了，逾期的 OR-2 也亂退，庫存全錯，重來",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": [
+        {
+          "type": "negative",
+          "direction": -1,
+          "weight": 1.0,
+          "evidence": "不對"
+        }
+      ]
+    }
+  ],
+  "baseline_skill": {
+    "name": "ops-workflow",
+    "skill_id": "ops-workflow",
+    "description": "Use for handling an operations request.",
+    "content": "# Ops Workflow\n\nHandle the request using the available tools."
+  },
+  "refined_skill": {
+    "name": "ops-workflow",
+    "skill_id": "ops-workflow",
+    "description": "Standard operating procedure for operations requests requiring safety-critical validation (Read-then-Decide-then-Write).",
+    "content": "# Ops Workflow (Strict SOP: Check-Before-Write)\n\nWhen handling operations requests (such as refunds, returns, restocking, or account modifications), you must strictly adhere to a \"Read-then-Decide-then-Write\" discipline. \n\nDo not just describe your plan in text; immediately begin executing the steps using the provided tools.\n\n### Phase 1: Retrieve Rules & Policies (Read)\n*   **Action**: Call the policy or rules retrieval tool (e.g., `get_refund_policy`, `get_return_policy`) before calling any other tool.\n*   **Rule**: Never invoke any state-modifying/write tools (e.g., `issue_refund`, `restock`) before you have fully retrieved and parsed the policy rules.\n\n### Phase 2: Collect Target Items (Read)\n*   **Action**: List all pending items (e.g., `list_transactions`, `list_orders`) and retrieve the detailed specification for each item individually (e.g., `get_transaction`, `get_order`).\n*   **Rule**: Gather all necessary details (dates, status flags, amounts, opened/unopened status) to make an objective determination.\n\n### Phase 3: Validate Eligibility (Decide)\n*   **Action**: Explicitly compare each item's details against the retrieved policy rules.\n*   **Rule**: Clearly categorize each item as \"Eligible\" or \"Ineligible\". Do not proceed with writing if there is any ambiguity.\n\n### Phase 4: Execute State Changes (Write)\n*   **Action**: Execute state-modifying actions (e.g., `issue_refund`, `restock`) **only** for items confirmed as \"Eligible\".\n*   **Rule**: Do not modify state, issue refunds, or restock items for ineligible targets. Verify the return value of each write operation.\n\n### Phase 5: Final Notification\n*   **Action**: Once all items have been processed, send a single final summary notification (e.g., `send_notification`) detailing the successful operations and skipped items."
+  },
+  "backtest": [
+    {
+      "task_id": "refund_review",
+      "baseline": {
+        "label": "baseline",
+        "output": "工具軌跡（11 步）：\nget_refund_policy(ok) → list_transactions(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → issue_refund(ok) → issue_refund(ok) → issue_refund(ok) → send_notification(ok)\n\n最終狀態：{\"refunds\": {\"TX-1001\": {\"amount\": 1200}, \"TX-1004\": {\"amount\": 2000}, \"TX-1005\": {\"amount\": 300}}, \"notifications\": 1}",
+        "checks": {
+          "state_correct": 1.0,
+          "order_correct": 1.0,
+          "no_illegal_writes": 1.0
+        },
+        "schema_errors": null,
+        "violations": [],
+        "rationale": "passed=True; 無違規",
+        "completion": 1.0,
+        "completion_std": 0.0,
+        "n": 3,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "refined": {
+        "label": "refined",
+        "output": "工具軌跡（11 步）：\nget_refund_policy(ok) → list_transactions(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → issue_refund(ok) → issue_refund(ok) → issue_refund(ok) → send_notification(ok)\n\n最終狀態：{\"refunds\": {\"TX-1001\": {\"amount\": 1200}, \"TX-1004\": {\"amount\": 2000}, \"TX-1005\": {\"amount\": 300}}, \"notifications\": 1}",
+        "checks": {
+          "state_correct": 1.0,
+          "order_correct": 1.0,
+          "no_illegal_writes": 1.0
+        },
+        "schema_errors": null,
+        "violations": [],
+        "rationale": "passed=True; 無違規",
+        "completion": 1.0,
+        "completion_std": 0.0,
+        "n": 3,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "delta": 0.0
+    },
+    {
+      "task_id": "return_restock",
+      "baseline": {
+        "label": "baseline",
+        "output": "工具軌跡（7 步）：\nget_return_policy(ok) → list_orders(ok) → restock(ok) → issue_refund(ok) → restock(ok) → issue_refund(ok) → send_notification(ok)\n\n最終狀態：{\"refunds\": {\"OR-1\": {\"amount\": 400}, \"OR-4\": {\"amount\": 180}}, \"restocked\": {\"SKU-A\": 3}}",
+        "checks": {
+          "state_correct": 1.0,
+          "order_correct": 1.0,
+          "no_illegal_writes": 1.0
+        },
+        "schema_errors": null,
+        "violations": [],
+        "rationale": "passed=True; 無違規",
+        "completion": 1.0,
+        "completion_std": 0.0,
+        "n": 3,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "refined": {
+        "label": "refined",
+        "output": "工具軌跡（11 步）：\nget_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) → get_order(ok) → get_order(ok) → restock(ok) → issue_refund(ok) → restock(ok) → issue_refund(ok) → send_notification(ok)\n\n最終狀態：{\"refunds\": {\"OR-1\": {\"amount\": 400}, \"OR-4\": {\"amount\": 180}}, \"restocked\": {\"SKU-A\": 3}}",
+        "checks": {
+          "state_correct": 1.0,
+          "order_correct": 1.0,
+          "no_illegal_writes": 1.0
+        },
+        "schema_errors": null,
+        "violations": [],
+        "rationale": "passed=True; 無違規",
+        "completion": 1.0,
+        "completion_std": 0.0,
+        "n": 3,
+        "scores": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "delta": 0.0
+    }
+  ],
+  "backtest_note": "回測整體 mean：baseline=1.0、refined=1.0、Δ=+0.000（環境最終狀態程式驗證，3 次平均）。即使是最弱的 baseline（只有一句「用工具處理」、無任何 SOP），gemini-flash 仍能在 3 次 rollout 中穩定地「先查政策 → 只對符合資格的項目寫入 → 擋掉逾期/已退/拆封的陷阱 case」，state_correct / order_correct / no_illegal_writes 皆滿分且 std=0。這是本專案第四次觀察到的「天花板效應」，而且是在最客觀的程式驗證 gate 下：對這種強模型而言，單筆退款/退貨這類步數不多、規則單純的流程，模型的內建能力已足以完成，SOP 型 skill 的邊際價值被稀釋。此外環境本身會擋下違規寫入，等於幫 baseline 兜底，更難靠「最終狀態」拉開差距。要讓 skill 差異在這條路徑上顯著，需再加難度：更多相依步驟、模糊/衝突的政策需推理、更長的 horizon（易忘記中間狀態）、或移除環境的硬性防呆讓「不查就寫」真的造成錯誤落地。照實呈現，不美化。",
+  "judge_prompt_general": "You are a task-agnostic evaluator for AI agent sessions. The task may be ANY\nkind of work (writing, research, analysis, planning, conversation, coding, ...).\n\nYou receive one session with a trajectory and an analysis summary.\n\nScore on a 0.0-1.0 scale:\n- task_completion: did the agent actually accomplish what the user asked?\n- response_quality: correctness, completeness and clarity of the final result.\n\nGuidelines:\n- Judge whether the GOAL was met, not how fast or how short the path was\n  (efficiency is measured separately by objective metrics).\n- An agent that produced little or gave up should score LOW on task_completion,\n  even if its trajectory was short.\n- Distinguish \"missing evidence\" from \"clear failure\"; be conservative if weak.\n\nReturn EXACTLY one JSON object:\n{\"task_completion\": <float>, \"response_quality\": <float>, \"rationale\": \"<brief>\"}\nNo markdown fences. No extra text.\n",
+  "judge_prompt_grounded": "（env_state 任務不使用 LLM judge）達標由模擬環境最終狀態程式客觀驗證：\n  completion = 0.7·state_correct + 0.2·order_correct + 0.1·no_illegal_writes\n  state_correct   ：該處理的都處理了（金額/庫存正確）、不該動的都沒動\n  order_correct   ：任何寫入（退款/補庫存）前，必須已先查過政策（順序依賴）\n  no_illegal_writes：沒有任何違反業務規則的寫入落地（env 會主動擋下不符者）\n驗證器邏輯見 refiner/sim_env.py 的 SimEnv.verify()。",
+  "judge_kind": "env_state",
+  "check_keys": [
+    "state_correct",
+    "order_correct",
+    "no_illegal_writes"
+  ],
+  "judges_used": [
+    "env_state"
+  ],
+  "judge_prompts": {
+    "env_state": "（env_state 任務不使用 LLM judge）達標由模擬環境最終狀態程式客觀驗證：\n  completion = 0.7·state_correct + 0.2·order_correct + 0.1·no_illegal_writes\n  state_correct   ：該處理的都處理了（金額/庫存正確）、不該動的都沒動\n  order_correct   ：任何寫入（退款/補庫存）前，必須已先查過政策（順序依賴）\n  no_illegal_writes：沒有任何違反業務規則的寫入落地（env 會主動擋下不符者）\n驗證器邏輯見 refiner/sim_env.py 的 SimEnv.verify()。"
+  }
+}

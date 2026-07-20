@@ -1,0 +1,11 @@
+{
+  "scenario": "restock",
+  "policy": {"max_days": 14},
+  "inventory": {"SKU-A": 10, "SKU-B": 3, "SKU-C": 0},
+  "orders": [
+    {"id": "OR-1", "sku": "SKU-A", "qty": 2, "amount": 400, "days_since": 3, "opened": false},
+    {"id": "OR-2", "sku": "SKU-B", "qty": 1, "amount": 250, "days_since": 20, "opened": false},
+    {"id": "OR-3", "sku": "SKU-C", "qty": 5, "amount": 900, "days_since": 1, "opened": true},
+    {"id": "OR-4", "sku": "SKU-A", "qty": 1, "amount": 180, "days_since": 10, "opened": false}
+  ]
+}

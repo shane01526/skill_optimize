@@ -1,0 +1,7 @@
+{
+  "task_type": "general",
+  "judge": "env_state",
+  "scenario": "refund",
+  "difficulty": "hard",
+  "note": "多步驟工具流程：查政策→查交易→依資格判斷→符合才退→通知。達標由模擬環境最終狀態程式驗證（非 LLM）。case.json 含『不該退但看似該退』陷阱。"
+}
