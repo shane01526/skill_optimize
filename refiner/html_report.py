@@ -99,6 +99,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <div class="sub">從多個 skill 變體的使用紀錄中，篩選出更有效率、效用的版本，精煉成標準化共用 Skill。</div>
   <div class="sub mut">個人版 MVP · 實驗驅動（Phase 1）＋ Log 探勘（Phase 2）· 基礎參考：SkillClaw（AMAP-ML）</div>
   <div class="sub mut">本頁數字為 <b>api 模式實跑</b>：<b>Gemini（gemini-flash-latest）同時擔任 runner（實際執行任務、修 code）與 judge（評分）</b>；版本 B 對照為離線 mock。</div>
+  <div class="sub mut">評分機制已從 coding／general 擴展為<b>可插拔的 judge 家族</b>（grounded／ppt_outline／cross_doc／json_schema／env_state），並支援<b>多步驟 agentic 工具型任務</b>（真 function-calling ＋ 最終狀態程式驗證）。詳見 §4、§8。</div>
   <nav class="toc">
     <a href="#s1">1 總覽</a>
     <a href="#s2">2 Pipeline 流程</a>
@@ -107,6 +108,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
     <a href="#s5">5 精煉前/後對照</a>
     <a href="#s6">6 與 SkillClaw 差異</a>
     <a href="#s7">7 陷阱與擴展</a>
+    <a href="#s8">8 E2E 場景與報告</a>
   </nav>
 </div></header>
 
@@ -155,6 +157,10 @@ _TEMPLATE = r"""<!DOCTYPE html>
       {% if report.winner %}<div class="box"><div class="n ok">{{ report.winner.variant }}</div><div class="l">勝出變體</div></div>{% endif %}
     </div>
     <div class="callout"><b>預計產出：</b>① 可執行的 Skill 精煉流程　② 精煉前 / 精煉後對照表（見第 5 節）　③ 本說明 HTML。</div>
+    <div class="callout good"><b>場景已擴展：</b>coding 只是首個實驗場景（好判斷好壞）。同一套後段（摘要→分組→精煉→驗證→registry）
+    現在已跑過多種 general 場景（新聞綜整、論文→PPT 大綱、嚴格 JSON schema、跨文獻交叉比對），
+    以及<b>需要工具＋外部狀態的 agentic 任務</b>（退款/退貨/退款核准）——後者達標由<b>模擬環境最終狀態程式客觀驗證</b>，
+    不靠 LLM 自評。各場景的 E2E 報告見 §8。</div>
   </div>
 </section>
 
@@ -207,6 +213,10 @@ _TEMPLATE = r"""<!DOCTYPE html>
   </div>
   <div class="callout warn"><b>本機現況：</b>這台是 Codex Desktop app（狀態存 SQLite），目前無 rollout log；
   Phase 2 需先安裝經典 CLI 累積對話。故本頁實跑走 Phase 1 的 <b>api 模式（真 Gemini 執行任務 + 評分）</b>。</div>
+  <div class="callout"><b>同一套後段、多種場景：</b>這條後段流程之上，建了一個 <b>E2E 測試矩陣</b>。
+  runner 支援兩種型態：<b>單次生成</b>（一般 general 任務）與 <b>agentic 工具迴圈</b>
+  （真 Gemini function-calling 對 in-memory 模擬環境一步步操作）。評分的 <b>judge 可依 task 插拔</b>
+  （<code>task.json</code> 的 <code>judge</code> 欄位決定），達標從「LLM 對照」到「程式硬驗證」都有。詳見 §4.2 judge 家族與 §8 場景矩陣。</div>
 </section>
 
 <!-- ============ 3 registry ============ -->
@@ -276,7 +286,10 @@ description: ...
   應改用 <b>mock runner（固定不同 pass_rate 模擬好壞產出）＋ 真 Gemini judge</b>。</span></div>
 
   <div class="card">
-    <h3>4.1 評分分流（決策樹）</h3>
+    <h3>4.1 兩層評分架構總覽（決策樹）</h3>
+    <p class="mut">每個 session 先算<b>通用效率</b>（任何場景都算），再依 <code>resolve_task_type</code> 與 task 指定的 <b>judge</b> 分流評分，
+    最後合成綜合分、跨 task 平均選 winner。下圖畫的是最早的 coding／general 兩分支；實際上「general」那條已擴展成
+    一整個<b>可插拔的 judge 家族</b>（見 4.2），每種 judge 有自己的 check 欄位與達標方式。</p>
     <figure class="fig">
       <svg viewBox="0 0 980 340" width="100%" role="img" aria-label="評分分流決策樹">
         <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
@@ -313,7 +326,34 @@ description: ...
   </div>
 
   <div class="card">
-    <h3>4.2 通用效率指標（不依賴 LLM、任何場景都能算）</h3>
+    <h3>4.2 評測 judge 家族（場景無關的達標判定）</h3>
+    <p class="mut">達標（completion）不是只有一種算法。<code>task.json</code> 的 <code>judge</code> 欄位決定該任務用哪個 judge，
+    對應 <code>refiner/e2e_general.py::_CHECK_KEYS</code>。從「LLM 對照來源材料」到「程式硬驗證（零 LLM）」都有——
+    任務越能程式驗證，達標判定就越客觀。</p>
+    <table>
+      <tr><th>judge</th><th>適用場景</th><th>check 欄位</th><th>達標方式（硬 / 軟）</th></tr>
+      <tr><td><span class="badge b-general">grounded</span></td><td>依來源材料綜整（新聞彙整）</td>
+        <td><code>coverage / faithfulness / conflict_handling / format</code></td><td>LLM 對照來源材料評分</td></tr>
+      <tr><td><span class="badge b-general">ppt_outline</span></td><td>論文 → PPT 大綱</td>
+        <td><code>coverage / structure / granularity / faithfulness</code></td><td>LLM（重結構/顆粒度）</td></tr>
+      <tr><td><span class="badge b-general">cross_doc</span></td><td>跨多份長文獻交叉比對</td>
+        <td><code>coverage / cross_reference / conflict_handling / faithfulness</code></td><td>LLM（重跨文引用/衝突）</td></tr>
+      <tr><td><span class="badge b-rule">json_schema</span></td><td>嚴格結構化輸出</td>
+        <td><code>schema_valid / required_coverage / content_faithfulness</code></td>
+        <td><b>jsonschema 程式硬 gate（0.7）</b> ＋ LLM 內容忠實度（0.3）</td></tr>
+      <tr><td><span class="badge b-rule">env_state</span></td><td>多步驟 agentic 工具流程</td>
+        <td><code>state_correct / order_correct / no_illegal_writes</code></td>
+        <td><b>模擬環境最終狀態程式驗證（零 LLM）</b></td></tr>
+    </table>
+    <ul>
+      <li><b>coding 是特例</b>：可視為「pytest judge」——有客觀 ground truth（測試通過率），見 4.5。</li>
+      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge；回測對每個 (skill×task) 跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 LLM variance。</li>
+      <li><b>硬 gate 為王</b>：<code>json_schema</code>／<code>env_state</code> 的達標主要由程式決定（像 coding 的 pytest），最能拉開弱 baseline；純 LLM judge 在強模型 × 偏易任務時容易全員高分（天花板）。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>4.3 通用效率指標（不依賴 LLM、任何場景都能算）</h3>
     <p class="mut">對應 <code>refiner/generic_metrics.py</code>，全部從 session 既有欄位取得。「越少越好」→ 在 cohort 內反向正規化。</p>
     <table>
       <tr><th>指標</th><th>來源</th><th>方向</th><th>權重</th></tr>
@@ -348,7 +388,7 @@ efficiency = Σ(norm_i × 權重_i) / Σ(有值項的權重)</pre>
   </div>
 
   <div class="card">
-    <h3>4.3 達標判定：規則式 detector（使用者行為訊號，零 LLM）＋ LLM 後備</h3>
+    <h3>4.4 general 達標判定：規則式 detector（使用者行為訊號，零 LLM）＋ LLM 後備</h3>
     <p class="mut">對應 <code>refiner/completion_detector.py</code>。思路來自 IR／推薦系統的 implicit feedback——不問「滿意嗎」，
     看使用者<b>接下來的回覆</b>。純關鍵詞／正則／<code>difflib</code>，不呼叫 LLM。</p>
     <div class="grid">
@@ -398,7 +438,8 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
   </div>
 
   <div class="card">
-    <h3>4.4 coding 專用：pytest 硬指標 + 四維 LLM judge 軟指標</h3>
+    <h3>4.5 coding judge：pytest 硬指標 + 四維 LLM judge 軟指標</h3>
+    <p class="mut" style="margin-top:0">judge 家族中「有客觀 ground truth」的一員——測試通過率是硬證據。</p>
 
     <h4 style="margin:6px 0 6px;color:#cdd6e6">硬指標（客觀 ground truth）— <code>run_pytest</code></h4>
     <p class="mut">在該 (變體×task) 的獨立 workspace 跑 <code>pytest -q</code>，用 regex 抓 <code>N passed / N failed / N error</code>：</p>
@@ -431,7 +472,61 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
   </div>
 
   <div class="card">
-    <h3>4.5 合成綜合分（依任務類型）＋ 實算範例</h3>
+    <h3>4.6 agentic env_state judge：工具迴圈 + 最終狀態程式驗證</h3>
+    <p class="mut">最難、也最客觀的一類任務：不是單次生成，而是讓 Gemini 用<b>真正的 function-calling</b>
+    （<code>refiner/tool_agent.py::run_tool_agent</code>）對一個 <b>in-memory 模擬環境</b>
+    （<code>refiner/sim_env.py</code>）一步步操作，跑完後由 <code>env.verify()</code> 檢查最終狀態。<b>達標完全不經 LLM。</b></p>
+    <figure class="fig">
+      <svg viewBox="0 0 900 74" width="100%" role="img" aria-label="agentic 工具迴圈">
+        <defs><marker id="a7" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6fdd8b"/></marker></defs>
+        <g font-size="11.5" fill="#e7eaf0" text-anchor="middle">
+          <rect x="4"   y="20" width="150" height="38" rx="8" fill="#171a21" stroke="#3a4560"/><text x="79"  y="43">查政策 get_policy</text>
+          <rect x="182" y="20" width="150" height="38" rx="8" fill="#171a21" stroke="#3a4560"/><text x="257" y="43">列出/讀取 list·get</text>
+          <rect x="360" y="20" width="150" height="38" rx="8" fill="#131a28" stroke="#24405f"/><text x="435" y="43" fill="#8ab4ff">逐筆判資格</text>
+          <rect x="538" y="20" width="176" height="38" rx="8" fill="#171a21" stroke="#3a4560"/><text x="626" y="38">寫入（符合才做）</text><text x="626" y="52" fill="#9aa3b2" font-size="9">issue_refund/restock/deduct_loyalty</text>
+          <rect x="742" y="20" width="150" height="38" rx="8" fill="#132116" stroke="#235537"/><text x="817" y="43" fill="#6fdd8b">通知 → verify()</text>
+          <line x1="154" y1="39" x2="180" y2="39" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a7)"/>
+          <line x1="332" y1="39" x2="358" y2="39" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a7)"/>
+          <line x1="510" y1="39" x2="536" y2="39" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a7)"/>
+          <line x1="714" y1="39" x2="740" y2="39" stroke="#6fdd8b" stroke-width="1.5" marker-end="url(#a7)"/>
+        </g>
+      </svg>
+      <figcaption>真 function-calling 工具迴圈：查 → 讀 → 判 → 寫 → 驗；最終狀態程式客觀驗證</figcaption>
+    </figure>
+    <pre># env_state 達標（純程式，零 LLM）
+completion = 0.7 × state_correct      # 該做的做了、金額/庫存/扣點對、不該動的沒動
+           + 0.2 × order_correct      # 任何寫入前，必須已先查政策（順序依賴）
+           + 0.1 × no_illegal_writes  # 沒有任何違反業務規則的寫入落地</pre>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">兩種環境：有防呆 vs 無防呆</h4>
+    <table>
+      <tr><th>環境</th><th>情境</th><th>env 是否把關</th><th>意義</th></tr>
+      <tr><td><code>ops-workflow</code></td><td>退款審核 / 退貨庫存（refund/restock）</td><td class="ok">有硬性防呆</td>
+        <td>違規寫入被 env 擋下、不改狀態；<code>no_illegal_writes</code> 幾乎恆為 1 → 幫弱 baseline 兜底</td></tr>
+      <tr><td><code>ops-approval</code></td><td>退款核准（approval，四軸難度）</td><td class="no">移除防呆</td>
+        <td><code>issue_refund</code>/<code>deduct_loyalty</code> 照單全收，「不查就寫」的錯誤<b>真的落地</b>，verify 事後才抓</td></tr>
+    </table>
+    <p class="mut"><b>四軸難度</b>（ops-approval）：① 多相依步驟（查政策→判資格→排序→受預算核銷→連動扣點→通知）；
+    ② 政策衝突需推理（fraud &gt; FINAL 不可退 &gt; VIP 窗 &gt; 基本窗）；③ 長 horizon（每日預算上限，須累計、超過 defer）；④ 無防呆。</p>
+
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">關鍵發現：通用 SOP vs 領域專用 skill（實跑對照）</h4>
+    <p class="mut">同一個深難退款核准任務，用兩套 skill 家族各跑一次完整精煉＋回測（真 Gemini、3 rollout、env_state 程式驗證）：</p>
+    <table>
+      <tr><th>skill 家族</th><th>baseline mean</th><th>refined mean</th><th>Δ</th><th>結論</th></tr>
+      <tr><td><b>通用</b> <code>ops-workflow</code>（泛用 SOP：先讀後寫、逐條核對）</td>
+        <td>0.467</td><td>0.20</td><td class="no"><b>−0.267</b></td><td>精煉沒幫上、甚至退步</td></tr>
+      <tr class="win"><td><b>專用</b> <code>ops-approval</code>（領域規則寫進 skill）</td>
+        <td>0.348</td><td class="ok"><b>1.0</b></td><td class="ok"><b>+0.652</b></td><td>refined 全對（verify 0.95 accept）</td></tr>
+    </table>
+    <div class="callout good"><b>核心洞見：</b>兩套家族的<b>弱 baseline 都遠低於天花板</b>（state_correct=0、no_illegal_writes=0，錯誤真的落地）——
+    這是本專案<b>首次成功拉開弱 baseline</b>（前四輪皆天花板）。<b>移除環境防呆</b>是關鍵。更重要的是：
+    對規則明確的領域任務，光有「先讀後寫、逐條核對」的<b>通用紀律不夠</b>（通用家族精煉後甚至退步 −0.267）；
+    <b>必須把領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>，精煉才有效（專用家族 +0.652、達滿分）。
+    詳見 <a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report.html</a>。</div>
+  </div>
+
+  <div class="card">
+    <h3>4.7 合成綜合分（依任務類型）＋ 實算範例</h3>
     <pre># coding：原 pytest+judge 為主體，效率僅 ±5% 微調（向後相容）
 base  = 0.6 × pass_rate + 0.4 × judge.overall
 score = base × (0.95 + 0.05 × efficiency)
@@ -467,12 +562,15 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
   </div>
 
   <div class="card">
-    <h3>4.6 兩個容易混淆的點</h3>
+    <h3>4.8 容易混淆的點</h3>
     <div class="callout"><b>三種 judge 來源，公式相同：</b>① 版本 A 真實 LLM（<code>JUDGE_SYSTEM</code>）
     ② 版本 A 離線 mock（base=0.8）③ 版本 B SkillClaw 原生 <code>session_judge</code>——同一組四維權重。</div>
     <div class="callout warn"><b>「評分閘」≠「發布閘」：</b>綜合分用來<b>比較變體選 winner</b>；
     <code>verifier.py</code> 的 <b>0.75 門檻</b>是另一道獨立的「精煉版能否發布」閘
     （grounded / preserves value / specificity / safe 四 check）。</div>
+    <div class="callout good"><b>客觀性光譜：</b>同為「達標判定」，客觀程度不同——<code>env_state</code>／<code>json_schema</code>
+    由<b>程式硬驗證（完全不經 LLM）</b>最客觀；general 的規則式 detector 次之（零 LLM，但靠行為訊號）；
+    grounded／ppt_outline／cross_doc 仍需 LLM 對照。任務越能程式驗證，skill 差異的量測就越可信。</div>
   </div>
 </section>
 
@@ -679,10 +777,42 @@ score = completion × (0.6 + 0.4 × efficiency)</pre>
   </div>
 </section>
 
+<!-- ============ 8 E2E 場景與報告 ============ -->
+<section id="s8">
+  <div class="sechead"><span class="secno">8</span><h2>E2E 測試場景矩陣與報告</h2></div>
+  <p class="lead">除了本頁的 coding 主線，同一套 pipeline 已跑過多種場景的端到端測試，每份都是獨立 HTML 報告（真 Gemini 實跑）。
+  任務越難、環境越不兜底，skill 差異越顯著。</p>
+  <div class="card">
+    <table>
+      <tr><th>報告</th><th>場景</th><th>judge</th><th>runner 型態</th><th>在驗證什麼</th></tr>
+      <tr><td><a href="e2e_general_test_report.html">e2e_general_test_report</a></td>
+        <td>新聞查詢與綜整</td><td><span class="badge b-general">grounded</span></td><td>單次生成</td>
+        <td>依來源材料綜整的涵蓋度/忠實度</td></tr>
+      <tr><td><a href="e2e_ppt_outline_report.html">e2e_ppt_outline_report</a></td>
+        <td>論文 → PPT 大綱</td><td><span class="badge b-general">ppt_outline</span></td><td>單次生成</td>
+        <td>大綱結構/顆粒度/忠實度</td></tr>
+      <tr><td><a href="e2e_strict_tasks_report.html">e2e_strict_tasks_report</a></td>
+        <td>嚴格 JSON schema + 跨文獻交叉比對</td><td><span class="badge b-rule">json_schema</span> / <span class="badge b-general">cross_doc</span></td><td>單次生成</td>
+        <td><b>程式硬 gate</b>（jsonschema）＋跨文引用/衝突</td></tr>
+      <tr><td><a href="e2e_agentic_workflow_report.html">e2e_agentic_workflow_report</a></td>
+        <td>退款審核 / 退貨庫存（多步驟）</td><td><span class="badge b-rule">env_state</span></td><td><b>agentic 工具迴圈</b></td>
+        <td>模擬環境最終狀態（env <b>有</b>防呆）</td></tr>
+      <tr class="win"><td><a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report</a></td>
+        <td>退款核准（深難、四軸）</td><td><span class="badge b-rule">env_state</span></td><td><b>agentic（env 無防呆）</b></td>
+        <td><b>通用 vs 專用 skill 對照</b>（見 4.6）</td></tr>
+    </table>
+    <div class="callout warn"><b>誠實小結：</b>前四份（含 agentic_workflow）多次撞到<b>天花板</b>——強模型連籠統 baseline 都能做對，
+    skill 差異顯不出來。直到第五份 <b>agentic_hard（退款核准，移除環境防呆）</b>才<b>首次成功拉開弱 baseline</b>，
+    且證明「領域專用 skill」精煉有效、「通用 SOP」精煉反而退步（詳見 §4.6）。這條軌跡本身就是重要結論：
+    <b>skill 精煉的價值在「任務夠難 × 達標能程式客觀驗證」時最明確</b>。</div>
+  </div>
+</section>
+
 </main>
 <footer class="wrap">
   Skill 精煉機制 · 版本 A（自建 pipeline）· 本頁由 <code>refiner/html_report.py</code> 自動產生（單一檔、內嵌 SVG/CSS、離線可開）。
   本次實跑：api 模式，Gemini <code>gemini-flash-latest</code> 同時當 runner（執行任務）與 judge（評分）。
+  評分涵蓋 coding／general 與可插拔的 judge 家族（含 agentic <code>env_state</code> 程式驗證）；各 E2E 場景詳見 §8 連結報告。
   資料來源：<code>output/before_after.json</code> · <code>skillclaw_result</code> · <code>publish_result.json</code>。基礎參考：AMAP-ML/SkillClaw。
 </footer>
 </body>
