@@ -6,14 +6,14 @@
     "model": "gemini-flash-latest"
   },
   "action": "improve_skill",
-  "rationale": "Analysis of the high-scoring sessions (v_a#r0 and v_b#r0 at ~0.999) compared to the failing sessions shows that successful JSON extraction requires strict adherence to schemas, precise data type mapping, validation of enum values, and the absolute exclusion of conversational or explanatory text. The skill is refined to provide actionable instructions on these critical areas (schema compliance, enum validation, nested structures, and pure-JSON output) while keeping it concise and reusable.",
+  "rationale": "The session evidence shows that while the `json-extract` skill is highly effective at structured extraction, its current vague description ('Use for turning text into JSON') can cause it to be triggered inappropriately for complex document synthesis tasks (like `cross_doc_synthesis`) where a narrative report is expected, leading to lower scores due to rigid formatting. We need to refine the skill to explicitly define its target use cases (structured data extraction, schema matching) and warn against using it for open-ended synthesis tasks that require natural-language reports. We will also add concrete execution guidelines to ensure high-fidelity extraction without hallucination.",
   "verify": {
     "enabled": true,
     "accepted": true,
     "decision": "accept",
-    "score": 0.95,
+    "score": 1.0,
     "threshold": 0.75,
-    "reason": "The candidate skill is highly grounded in the session evidence, directly addressing the failures observed in session json_contract_extract::v_c#r0 (where the agent failed due to invalid enum values and conversational filler) by adding explicit guidelines for 'Enum & Value Validation' and 'Pure JSON Output'. It significantly improves the extremely generic current skill while remaining specific, reusable, and safe to publish.",
+    "reason": "The candidate skill is highly grounded in the provided session evidence. The evidence shows that while the skill is excellent for structured data extraction (json_contract_extract), it was counterproductively applied to cross-document synthesis tasks (cross_doc_synthesis) where a narrative report was preferred. The candidate skill perfectly addresses this by adding Guideline 3 ('Avoid Overuse') to prevent applying it to open-ended synthesis or narrative reporting unless explicitly requested. It preserves and improves the existing value of the skill with specific, actionable guidelines.",
     "checks": {
       "grounded_in_evidence": 1.0,
       "preserves_existing_value": 1.0,
@@ -29,12 +29,12 @@
       "completion_mean": 1.0,
       "completion_std": 0.0,
       "completion_source": "llm",
-      "score_mean": 0.967,
-      "score_std": 0.024,
+      "score_mean": 0.98,
+      "score_std": 0.016,
       "score_scores": [
-        0.994,
-        0.972,
-        0.936
+        0.999,
+        0.981,
+        0.959
       ],
       "success_rate": 1.0,
       "n": 3
@@ -45,12 +45,12 @@
       "completion_mean": 1.0,
       "completion_std": 0.0,
       "completion_source": "llm",
-      "score_mean": 0.959,
-      "score_std": 0.047,
+      "score_mean": 0.96,
+      "score_std": 0.043,
       "score_scores": [
-        0.892,
-        0.994,
-        0.991
+        0.899,
+        0.991,
+        0.989
       ],
       "success_rate": 1.0,
       "n": 3
@@ -58,17 +58,33 @@
     {
       "variant": "v_c",
       "task_id": "cross_doc_synthesis",
-      "completion_mean": 0.4,
-      "completion_std": 0.283,
+      "completion_mean": 0.667,
+      "completion_std": 0.34,
       "completion_source": "llm",
-      "score_mean": 0.398,
-      "score_std": 0.28,
+      "score_mean": 0.663,
+      "score_std": 0.342,
       "score_scores": [
-        0.199,
-        0.2,
-        0.794
+        0.798,
+        0.998,
+        0.194
       ],
-      "success_rate": 0.333,
+      "success_rate": 0.667,
+      "n": 3
+    },
+    {
+      "variant": "v_a",
+      "task_id": "json_contract_extract",
+      "completion_mean": 1.0,
+      "completion_std": 0.0,
+      "completion_source": "program",
+      "score_mean": 1.0,
+      "score_std": 0.0,
+      "score_scores": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "success_rate": 1.0,
       "n": 3
     },
     {
@@ -76,29 +92,13 @@
       "task_id": "json_contract_extract",
       "completion_mean": 1.0,
       "completion_std": 0.0,
-      "completion_source": "llm",
-      "score_mean": 0.993,
-      "score_std": 0.008,
+      "completion_source": "program",
+      "score_mean": 1.0,
+      "score_std": 0.0,
       "score_scores": [
-        0.997,
         1.0,
-        0.982
-      ],
-      "success_rate": 1.0,
-      "n": 3
-    },
-    {
-      "variant": "v_a",
-      "task_id": "json_contract_extract",
-      "completion_mean": 1.0,
-      "completion_std": 0.0,
-      "completion_source": "rule",
-      "score_mean": 0.966,
-      "score_std": 0.046,
-      "score_scores": [
-        0.999,
-        0.9,
-        0.998
+        1.0,
+        1.0
       ],
       "success_rate": 1.0,
       "n": 3
@@ -106,17 +106,17 @@
     {
       "variant": "v_c",
       "task_id": "json_contract_extract",
-      "completion_mean": 0.0,
+      "completion_mean": 1.0,
       "completion_std": 0.0,
-      "completion_source": "rule",
-      "score_mean": 0.0,
+      "completion_source": "program",
+      "score_mean": 1.0,
       "score_std": 0.0,
       "score_scores": [
-        0.0,
-        0.0,
-        0.0
+        1.0,
+        1.0,
+        1.0
       ],
-      "success_rate": 0.0,
+      "success_rate": 1.0,
       "n": 3
     }
   ],
@@ -126,14 +126,48 @@
       "session_id": "cross_doc_synthesis::v_a#r0",
       "variant": "v_a",
       "task_id": "cross_doc_synthesis",
-      "agent_output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate_discrepancy\": {\n        \"D1_manufacturer_claim\": \"第三期試驗顯示對目標疾病的反應率達 68%\",\n        \"D2_independent_analysis\": \"經校正未調整的基線差異後，反應率約為 54%\",\n        \"D3_regulatory_view\": \"結論為療效證據中等\",\n        \"D4_analyst_view\": \"未討論療效細節\"\n      }\n    },\n    \"sample_size\": {\n      \"sample_size_discrepancy\": {\n        \"D1_manufacturer_claim\": 1200,\n        \"D2_independent_analysis\": 1200,\n        \"D3_regulatory_view\": 950,\n        \"D4_analyst_view\": null\n      }\n    },\n    \"safety_and_adverse_events\": {\n      \"safety_discrepancy\": {\n        \"D1_manufacturer_claim\": \"安全性良好、副作用輕微\",\n        \"D2_independent_analysis\": \"提醒長期安全性資料仍不足\",\n        \"D3_regulatory_view\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性\",\n        \"D4_analyst_view\": \"未討論安全性細節\"\n      }\n    },\n    \"market_outlook\": {\n      \"D4_analyst_forecast\": \"若獲批，Zynolate 年銷售上看 20 億美元\",\n      \"other_sources\": \"D1、D2、D3 未討論市場與銷售預測\"\n    }\n  }\n}\n```",
+      "agent_output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate\": {\n        \"manufacturer_claim\": \"Zynolate 第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_reanalysis\": \"經校正後（原廠數字未調整基線差異），反應率約為 54% (D2)\",\n        \"regulatory_conclusion\": \"療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size_contradiction\": {\n      \"reported_1200\": \"共納入 1,200 名受試者 (D1, D2)\",\n      \"reported_950\": \"監理審查文件記載受試者為 950 人 (D3)\"\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_reanalysis\": \"長期安全性資料仍不足 (D2)\",\n      \"regulatory_findings\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"sales_forecast\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"details_coverage\": \"此報告未討論療效或安全性細節，僅談市場面 (D4)\"\n    }\n  }\n}\n```",
       "turns": [
         {
           "prompt_text": "# 任務：跨多份文獻交叉比對與綜整\n\n下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。\n請交叉比對後產出一份給決策者的綜整。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。\n2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。\n3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。\n4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
-          "response_text": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate_discrepancy\": {\n        \"D1_manufacturer_claim\": \"第三期試驗顯示對目標疾病的反應率達 68%\",\n        \"D2_independent_analysis\": \"經校正未調整的基線差異後，反應率約為 54%\",\n        \"D3_regulatory_view\": \"結論為療效證據中等\",\n        \"D4_analyst_view\": \"未討論療效細節\"\n      }\n    },\n    \"sample_size\": {\n      \"sample_size_discrepancy\": {\n        \"D1_manufacturer_claim\": 1200,\n        \"D2_independent_analysis\": 1200,\n        \"D3_regulatory_view\": 950,\n        \"D4_analyst_view\": null\n      }\n    },\n    \"safety_and_adverse_events\": {\n      \"safety_discrepancy\": {\n        \"D1_manufacturer_claim\": \"安全性良好、副作用輕微\",\n        \"D2_independent_analysis\": \"提醒長期安全性資料仍不足\",\n        \"D3_regulatory_view\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性\",\n        \"D4_analyst_view\": \"未討論安全性細節\"\n      }\n    },\n    \"market_outlook\": {\n      \"D4_analyst_forecast\": \"若獲批，Zynolate 年銷售上看 20 億美元\",\n      \"other_sources\": \"D1、D2、D3 未討論市場與銷售預測\"\n    }\n  }\n}\n```"
+          "response_text": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate\": {\n        \"manufacturer_claim\": \"Zynolate 第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_reanalysis\": \"經校正後（原廠數字未調整基線差異），反應率約為 54% (D2)\",\n        \"regulatory_conclusion\": \"療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size_contradiction\": {\n      \"reported_1200\": \"共納入 1,200 名受試者 (D1, D2)\",\n      \"reported_950\": \"監理審查文件記載受試者為 950 人 (D3)\"\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_reanalysis\": \"長期安全性資料仍不足 (D2)\",\n      \"regulatory_findings\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"sales_forecast\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"details_coverage\": \"此報告未討論療效或安全性細節，僅談市場面 (D4)\"\n    }\n  }\n}\n```"
         },
         {
           "prompt_text": "很好，四份都用到、反應率 68% vs 54% 和樣本數 1200 vs 950 的矛盾都標出來了，還標了來源，就用這版",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "cross_doc_synthesis::v_b#r0",
+      "variant": "v_b",
+      "task_id": "cross_doc_synthesis",
+      "agent_output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate\": {\n        \"manufacturer_claim\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_analysis\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n        \"regulatory_assessment\": \"療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size_contradiction\": {\n      \"reported_1200\": \"原廠新聞稿與獨立學術期刊均記載共納入 1,200 名受試者 (D1, D2)\",\n      \"reported_950\": \"監理機關審查文件記載受試者為 950 人 (D3)\"\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_analysis\": \"提醒長期安全性資料仍不足 (D2)\",\n      \"regulatory_assessment\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"sales_forecast\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"details_covered\": \"僅討論市場面，未討論療效或安全性細節 (D4)\"\n    }\n  }\n}\n```",
+      "turns": [
+        {
+          "prompt_text": "# 任務：跨多份文獻交叉比對與綜整\n\n下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。\n請交叉比對後產出一份給決策者的綜整。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。\n2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。\n3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。\n4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
+          "response_text": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate\": {\n        \"manufacturer_claim\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_analysis\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n        \"regulatory_assessment\": \"療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size_contradiction\": {\n      \"reported_1200\": \"原廠新聞稿與獨立學術期刊均記載共納入 1,200 名受試者 (D1, D2)\",\n      \"reported_950\": \"監理機關審查文件記載受試者為 950 人 (D3)\"\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_analysis\": \"提醒長期安全性資料仍不足 (D2)\",\n      \"regulatory_assessment\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"sales_forecast\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"details_covered\": \"僅討論市場面，未討論療效或安全性細節 (D4)\"\n    }\n  }\n}\n```"
+        },
+        {
+          "prompt_text": "OK，交叉引用清楚、矛盾有標、沒有亂裁決，可用",
+          "response_text": ""
+        }
+      ],
+      "completion_signals": []
+    },
+    {
+      "session_id": "cross_doc_synthesis::v_c#r0",
+      "variant": "v_c",
+      "task_id": "cross_doc_synthesis",
+      "agent_output": "```json\n{\n  \"新藥臨床試驗綜整\": {\n    \"受試者樣本數爭議\": {\n      \"原廠與學術期刊說法\": \"納入 1,200 名受試者 (D1, D2)\",\n      \"監理機關說法\": \"受試者為 950 人 (D3)\",\n      \"分歧說明\": \"原廠與學術期刊記載的 1,200 人，與監理機關審查文件記載的 950 人存在直接數量矛盾。\"\n    },\n    \"療效反應率爭議與評估\": {\n      \"原廠宣稱\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n      \"學術期刊校正\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n      \"監理機關結論\": \"療效證據中等 (D3)\",\n      \"分歧說明\": \"原廠宣稱的 68% 反應率被獨立學術期刊指出未調整基線差異，校正後僅約 54%。\"\n    },\n    \"安全性評估\": {\n      \"原廠宣稱\": \"安全性良好、副作用輕微 (D1)\",\n      \"學術期刊警告\": \"長期安全性資料仍不足 (D2)\",\n      \"監理機關記錄\": \"列出 3 起嚴重不良事件，並指出需追蹤長期安全性 (D3)\",\n      \"分歧說明\": \"原廠宣稱副作用輕微，但監理機關實際記錄了 3 起嚴重不良事件，且學術期刊與監理機關皆強調長期安全性不足或需要追蹤。\"\n    },\n    \"市場前景預測\": {\n      \"分析師觀點\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"備註\": \"此報告未討論療效或安全性細節，僅談市場面 (D4)\"\n    },\n    \"其他未涵蓋資訊\": \"來源未涵蓋\"\n  }\n}\n```",
+      "turns": [
+        {
+          "prompt_text": "# 任務：跨多份文獻交叉比對與綜整\n\n下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。\n請交叉比對後產出一份給決策者的綜整。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。\n2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。\n3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。\n4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
+          "response_text": "```json\n{\n  \"新藥臨床試驗綜整\": {\n    \"受試者樣本數爭議\": {\n      \"原廠與學術期刊說法\": \"納入 1,200 名受試者 (D1, D2)\",\n      \"監理機關說法\": \"受試者為 950 人 (D3)\",\n      \"分歧說明\": \"原廠與學術期刊記載的 1,200 人，與監理機關審查文件記載的 950 人存在直接數量矛盾。\"\n    },\n    \"療效反應率爭議與評估\": {\n      \"原廠宣稱\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n      \"學術期刊校正\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n      \"監理機關結論\": \"療效證據中等 (D3)\",\n      \"分歧說明\": \"原廠宣稱的 68% 反應率被獨立學術期刊指出未調整基線差異，校正後僅約 54%。\"\n    },\n    \"安全性評估\": {\n      \"原廠宣稱\": \"安全性良好、副作用輕微 (D1)\",\n      \"學術期刊警告\": \"長期安全性資料仍不足 (D2)\",\n      \"監理機關記錄\": \"列出 3 起嚴重不良事件，並指出需追蹤長期安全性 (D3)\",\n      \"分歧說明\": \"原廠宣稱副作用輕微，但監理機關實際記錄了 3 起嚴重不良事件，且學術期刊與監理機關皆強調長期安全性不足或需要追蹤。\"\n    },\n    \"市場前景預測\": {\n      \"分析師觀點\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"備註\": \"此報告未討論療效或安全性細節，僅談市場面 (D4)\"\n    },\n    \"其他未涵蓋資訊\": \"來源未涵蓋\"\n  }\n}\n```"
+        },
+        {
+          "prompt_text": "不行，你只講了原廠的 68%、把矛盾抹平了，也漏了監理機關的樣本數和不良事件，沒標來源，重寫",
           "response_text": ""
         }
       ],
@@ -148,43 +182,9 @@
         {
           "prompt_text": "# 任務：把交易描述抽成嚴格符合 schema 的 JSON\n\n下方 SOURCES 是幾筆用自然語言描述的交易紀錄。請把它們抽取成**嚴格符合下方 SCHEMA 的單一 JSON 物件**。\n\n## 驗收點（會據此評分）\n1. **符合 schema**：必填欄位齊全、型別正確、enum 只用允許值、巢狀結構正確（用程式驗證，不通過即失敗）。\n2. **只輸出 JSON**：最終只回一個合法 JSON 物件（可包在 ```json 區塊），不要夾雜說明文字或多個 JSON。\n3. **忠實**：欄位值要對應來源事實，不得捏造來源沒有的數字或名稱。\n4. `total_count` 要等於 `transactions` 的筆數；`report_date` 用 `YYYY-MM-DD`。\n\n## SCHEMA\n```json\n{\n  \"type\": \"object\",\n  \"required\": [\"report_date\", \"total_count\", \"transactions\"],\n  \"properties\": {\n    \"report_date\": \"YYYY-MM-DD 字串\",\n    \"total_count\": \"整數\",\n    \"transactions\": [{\n      \"id\": \"字串\", \"amount\": \"數字\",\n      \"currency\": \"TWD|USD|EUR|JPY\", \"status\": \"settled|pending|failed\",\n      \"flagged\": \"布林(選填)\",\n      \"counterparty\": {\"name\": \"字串\", \"country\": \"字串\"}\n    }]\n  }\n}\n```\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
           "response_text": "```json\n{\n  \"report_date\": \"2026-07-03\",\n  \"total_count\": 3,\n  \"transactions\": [\n    {\n      \"id\": \"TX-1001\",\n      \"amount\": 12500,\n      \"currency\": \"USD\",\n      \"status\": \"settled\",\n      \"counterparty\": {\n        \"name\": \"Orion Trading\",\n        \"country\": \"新加坡\"\n      }\n    },\n    {\n      \"id\": \"TX-1002\",\n      \"amount\": 480000,\n      \"currency\": \"JPY\",\n      \"status\": \"pending\",\n      \"flagged\": true,\n      \"counterparty\": {\n        \"name\": \"Sakura K.K.\",\n        \"country\": \"日本\"\n      }\n    },\n    {\n      \"id\": \"TX-1003\",\n      \"amount\": 3200,\n      \"currency\": \"EUR\",\n      \"status\": \"failed\",\n      \"counterparty\": {\n        \"name\": \"Rhein GmbH\",\n        \"country\": \"德國\"\n      }\n    }\n  ]\n}\n```"
-        },
-        {
-          "prompt_text": "讚，欄位齊全、型別和 enum 都對，可以直接用，謝謝",
-          "response_text": ""
         }
       ],
-      "completion_signals": [
-        {
-          "type": "positive",
-          "direction": 1,
-          "weight": 1.0,
-          "evidence": "讚"
-        },
-        {
-          "type": "adopt",
-          "direction": 1,
-          "weight": 1.0,
-          "evidence": "直接用"
-        }
-      ]
-    },
-    {
-      "session_id": "cross_doc_synthesis::v_b#r0",
-      "variant": "v_b",
-      "task_id": "cross_doc_synthesis",
-      "agent_output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate\": {\n        \"manufacturer_claim\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_analysis\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n        \"regulatory_assessment\": \"療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size_contradiction\": {\n      \"reported_1200\": \"原廠新聞稿 (D1) 與獨立學術期刊 (D2) 皆指出共納入 1,200 名受試者\",\n      \"reported_950\": \"監理機關審查文件記載受試者為 950 人 (D3)\"\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_analysis\": \"提醒長期安全性資料仍不足 (D2)\",\n      \"regulatory_assessment\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"sales_forecast\": \"若獲得批准，年銷售額預估上看 20 億美元 (D4)\",\n      \"details_covered\": \"此報告僅討論市場面，未討論療效或安全性細節 (D4)\"\n    },\n    \"uncovered_aspects\": {\n      \"long_term_efficacy\": \"來源未涵蓋\",\n      \"specific_demographics\": \"來源未涵蓋\"\n    }\n  }\n}\n```",
-      "turns": [
-        {
-          "prompt_text": "# 任務：跨多份文獻交叉比對與綜整\n\n下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。\n請交叉比對後產出一份給決策者的綜整。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。\n2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。\n3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。\n4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
-          "response_text": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate\": {\n        \"manufacturer_claim\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_analysis\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n        \"regulatory_assessment\": \"療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size_contradiction\": {\n      \"reported_1200\": \"原廠新聞稿 (D1) 與獨立學術期刊 (D2) 皆指出共納入 1,200 名受試者\",\n      \"reported_950\": \"監理機關審查文件記載受試者為 950 人 (D3)\"\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_analysis\": \"提醒長期安全性資料仍不足 (D2)\",\n      \"regulatory_assessment\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"sales_forecast\": \"若獲得批准，年銷售額預估上看 20 億美元 (D4)\",\n      \"details_covered\": \"此報告僅討論市場面，未討論療效或安全性細節 (D4)\"\n    },\n    \"uncovered_aspects\": {\n      \"long_term_efficacy\": \"來源未涵蓋\",\n      \"specific_demographics\": \"來源未涵蓋\"\n    }\n  }\n}\n```"
-        },
-        {
-          "prompt_text": "OK，交叉引用清楚、矛盾有標、沒有亂裁決，可用",
-          "response_text": ""
-        }
-      ],
-      "completion_signals": []
+      "completion_signals": null
     },
     {
       "session_id": "json_contract_extract::v_b#r0",
@@ -195,30 +195,9 @@
         {
           "prompt_text": "# 任務：把交易描述抽成嚴格符合 schema 的 JSON\n\n下方 SOURCES 是幾筆用自然語言描述的交易紀錄。請把它們抽取成**嚴格符合下方 SCHEMA 的單一 JSON 物件**。\n\n## 驗收點（會據此評分）\n1. **符合 schema**：必填欄位齊全、型別正確、enum 只用允許值、巢狀結構正確（用程式驗證，不通過即失敗）。\n2. **只輸出 JSON**：最終只回一個合法 JSON 物件（可包在 ```json 區塊），不要夾雜說明文字或多個 JSON。\n3. **忠實**：欄位值要對應來源事實，不得捏造來源沒有的數字或名稱。\n4. `total_count` 要等於 `transactions` 的筆數；`report_date` 用 `YYYY-MM-DD`。\n\n## SCHEMA\n```json\n{\n  \"type\": \"object\",\n  \"required\": [\"report_date\", \"total_count\", \"transactions\"],\n  \"properties\": {\n    \"report_date\": \"YYYY-MM-DD 字串\",\n    \"total_count\": \"整數\",\n    \"transactions\": [{\n      \"id\": \"字串\", \"amount\": \"數字\",\n      \"currency\": \"TWD|USD|EUR|JPY\", \"status\": \"settled|pending|failed\",\n      \"flagged\": \"布林(選填)\",\n      \"counterparty\": {\"name\": \"字串\", \"country\": \"字串\"}\n    }]\n  }\n}\n```\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
           "response_text": "```json\n{\n  \"report_date\": \"2026-07-03\",\n  \"total_count\": 3,\n  \"transactions\": [\n    {\n      \"id\": \"TX-1001\",\n      \"amount\": 12500,\n      \"currency\": \"USD\",\n      \"status\": \"settled\",\n      \"counterparty\": {\n        \"name\": \"Orion Trading\",\n        \"country\": \"新加坡\"\n      }\n    },\n    {\n      \"id\": \"TX-1002\",\n      \"amount\": 480000,\n      \"currency\": \"JPY\",\n      \"status\": \"pending\",\n      \"flagged\": true,\n      \"counterparty\": {\n        \"name\": \"Sakura K.K.\",\n        \"country\": \"日本\"\n      }\n    },\n    {\n      \"id\": \"TX-1003\",\n      \"amount\": 3200,\n      \"currency\": \"EUR\",\n      \"status\": \"failed\",\n      \"counterparty\": {\n        \"name\": \"Rhein GmbH\",\n        \"country\": \"德國\"\n      }\n    }\n  ]\n}\n```"
-        },
-        {
-          "prompt_text": "OK，符合 schema 也忠於來源，可用",
-          "response_text": ""
         }
       ],
-      "completion_signals": []
-    },
-    {
-      "session_id": "cross_doc_synthesis::v_c#r0",
-      "variant": "v_c",
-      "task_id": "cross_doc_synthesis",
-      "agent_output": "```json\n{\n  \"新藥臨床試驗綜整\": {\n    \"受試者樣本數爭議\": {\n      \"原廠與學術期刊說法\": \"納入 1,200 名受試者 (D1, D2)\",\n      \"監理機關說法\": \"受試者為 950 人 (D3)\",\n      \"分歧說明\": \"原廠與學術期刊記載的樣本數（1,200人）與監理機關審查文件記載的樣本數（950人）存在直接矛盾。\"\n    },\n    \"療效反應率爭議\": {\n      \"原廠宣稱\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n      \"學術期刊校正\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n      \"監理機關結論\": \"療效證據中等 (D3)\",\n      \"分歧說明\": \"原廠宣稱的 68% 反應率被獨立學術期刊指出未調整基線差異，校正後僅約 54%。\"\n    },\n    \"安全性與副作用\": {\n      \"原廠說法\": \"安全性良好、副作用輕微 (D1)\",\n      \"學術期刊警告\": \"長期安全性資料仍不足 (D2)\",\n      \"監理機關記錄\": \"列出 3 起嚴重不良事件，並指出需追蹤長期安全性 (D3)\",\n      \"分歧說明\": \"原廠宣稱安全性良好且副作用輕微，但學術期刊與監理機關皆指出長期安全性不足或需追蹤，且監理機關實際記錄了 3 起嚴重不良事件。\"\n    },\n    \"市場前景\": {\n      \"分析師預測\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"備註\": \"此報告未討論療效或安全性細節，僅談市場面 (D4)\"\n    }\n  }\n}\n```",
-      "turns": [
-        {
-          "prompt_text": "# 任務：跨多份文獻交叉比對與綜整\n\n下方 SOURCES 有 4 份關於「某新藥 Zynolate 臨床試驗」的文獻，**彼此有一致、有互補、也有直接矛盾**。\n請交叉比對後產出一份給決策者的綜整。\n\n## 驗收點（會據此評分）\n1. **涵蓋所有來源**：D1~D4 的關鍵資訊都要用到，不可只看其中幾份。\n2. **正確交叉引用**：同一議題把不同來源的說法對照呈現，每條結論標明來源 (Dx)。\n3. **標出矛盾**：來源直接衝突處（例如療效數字、樣本數）**兩邊都要寫並標明分歧**，不可擅自選邊或抹平。\n4. **忠實**：只根據來源，不外加；來源都沒提到的寫「來源未涵蓋」。\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
-          "response_text": "```json\n{\n  \"新藥臨床試驗綜整\": {\n    \"受試者樣本數爭議\": {\n      \"原廠與學術期刊說法\": \"納入 1,200 名受試者 (D1, D2)\",\n      \"監理機關說法\": \"受試者為 950 人 (D3)\",\n      \"分歧說明\": \"原廠與學術期刊記載的樣本數（1,200人）與監理機關審查文件記載的樣本數（950人）存在直接矛盾。\"\n    },\n    \"療效反應率爭議\": {\n      \"原廠宣稱\": \"第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n      \"學術期刊校正\": \"經校正未調整的基線差異後，反應率約為 54% (D2)\",\n      \"監理機關結論\": \"療效證據中等 (D3)\",\n      \"分歧說明\": \"原廠宣稱的 68% 反應率被獨立學術期刊指出未調整基線差異，校正後僅約 54%。\"\n    },\n    \"安全性與副作用\": {\n      \"原廠說法\": \"安全性良好、副作用輕微 (D1)\",\n      \"學術期刊警告\": \"長期安全性資料仍不足 (D2)\",\n      \"監理機關記錄\": \"列出 3 起嚴重不良事件，並指出需追蹤長期安全性 (D3)\",\n      \"分歧說明\": \"原廠宣稱安全性良好且副作用輕微，但學術期刊與監理機關皆指出長期安全性不足或需追蹤，且監理機關實際記錄了 3 起嚴重不良事件。\"\n    },\n    \"市場前景\": {\n      \"分析師預測\": \"若獲批，Zynolate 年銷售上看 20 億美元 (D4)\",\n      \"備註\": \"此報告未討論療效或安全性細節，僅談市場面 (D4)\"\n    }\n  }\n}\n```"
-        },
-        {
-          "prompt_text": "不行，你只講了原廠的 68%、把矛盾抹平了，也漏了監理機關的樣本數和不良事件，沒標來源，重寫",
-          "response_text": ""
-        }
-      ],
-      "completion_signals": []
+      "completion_signals": null
     },
     {
       "session_id": "json_contract_extract::v_c#r0",
@@ -229,20 +208,9 @@
         {
           "prompt_text": "# 任務：把交易描述抽成嚴格符合 schema 的 JSON\n\n下方 SOURCES 是幾筆用自然語言描述的交易紀錄。請把它們抽取成**嚴格符合下方 SCHEMA 的單一 JSON 物件**。\n\n## 驗收點（會據此評分）\n1. **符合 schema**：必填欄位齊全、型別正確、enum 只用允許值、巢狀結構正確（用程式驗證，不通過即失敗）。\n2. **只輸出 JSON**：最終只回一個合法 JSON 物件（可包在 ```json 區塊），不要夾雜說明文字或多個 JSON。\n3. **忠實**：欄位值要對應來源事實，不得捏造來源沒有的數字或名稱。\n4. `total_count` 要等於 `transactions` 的筆數；`report_date` 用 `YYYY-MM-DD`。\n\n## SCHEMA\n```json\n{\n  \"type\": \"object\",\n  \"required\": [\"report_date\", \"total_count\", \"transactions\"],\n  \"properties\": {\n    \"report_date\": \"YYYY-MM-DD 字串\",\n    \"total_count\": \"整數\",\n    \"transactions\": [{\n      \"id\": \"字串\", \"amount\": \"數字\",\n      \"currency\": \"TWD|USD|EUR|JPY\", \"status\": \"settled|pending|failed\",\n      \"flagged\": \"布林(選填)\",\n      \"counterparty\": {\"name\": \"字串\", \"country\": \"字串\"}\n    }]\n  }\n}\n```\n\n> 註：離線 grounded 測試，來源即下方 SOURCES。\n",
           "response_text": "```json\n{\n  \"report_date\": \"2026-07-03\",\n  \"total_count\": 3,\n  \"transactions\": [\n    {\n      \"id\": \"TX-1001\",\n      \"amount\": 12500,\n      \"currency\": \"USD\",\n      \"status\": \"settled\",\n      \"counterparty\": {\n        \"name\": \"Orion Trading\",\n        \"country\": \"新加坡\"\n      }\n    },\n    {\n      \"id\": \"TX-1002\",\n      \"amount\": 480000,\n      \"currency\": \"JPY\",\n      \"status\": \"pending\",\n      \"flagged\": true,\n      \"counterparty\": {\n        \"name\": \"Sakura K.K.\",\n        \"country\": \"日本\"\n      }\n    },\n    {\n      \"id\": \"TX-1003\",\n      \"amount\": 3200,\n      \"currency\": \"EUR\",\n      \"status\": \"failed\",\n      \"counterparty\": {\n        \"name\": \"Rhein GmbH\",\n        \"country\": \"德國\"\n      }\n    }\n  ]\n}\n```"
-        },
-        {
-          "prompt_text": "不對，你漏了 counterparty、currency 還用了不合法的值，而且夾雜了說明文字不是純 JSON，重寫",
-          "response_text": ""
         }
       ],
-      "completion_signals": [
-        {
-          "type": "negative",
-          "direction": -1,
-          "weight": 1.0,
-          "evidence": "不對"
-        }
-      ]
+      "completion_signals": null
     }
   ],
   "baseline_skill": {
@@ -254,15 +222,15 @@
   "refined_skill": {
     "name": "json-extract",
     "skill_id": "json-extract",
-    "description": "Extract structured information from text into a single, strictly validated, schema-compliant JSON object.",
-    "content": "# JSON Extract\n\nRead the source text and extract the target information into a single, valid JSON object that strictly adheres to the requested schema.\n\n## Guidelines\n1. **Strict Schema Compliance**: Ensure all required fields are present, nested structures are correctly mapped, and data types (e.g., integer, boolean, string) match the schema exactly.\n2. **Enum & Value Validation**: Only use allowed values for enum fields (such as status codes or currency codes) as defined in the schema. Do not invent or approximate values.\n3. **Fidelity to Source**: Ensure all extracted values correspond directly to the source facts. Do not extrapolate, hallucinate, or assume missing details.\n4. **Pure JSON Output**: Output only the valid JSON block (wrapped in ... ). Do not include any conversational filler, introductory text, or post-extraction explanations."
+    "description": "Extract structured data from text and format it into a precise, valid JSON object. Do not use this skill for open-ended document synthesis or narrative reports unless specifically requested.",
+    "content": "# JSON Extract\n\nUse this skill to extract structured information from source text and convert it into a clean, valid JSON object.\n\n## Guidelines\n1. **Strict Fidelity**: Extract all fields, values, and nested structures exactly as they appear in the source text. Do not hallucinate, omit, or alter factual data (e.g., dates, amounts, statuses, names).\n2. **Valid JSON**: Ensure the output is a single, syntactically valid JSON block wrapped in markdown code fences (` `).\n3. **Avoid Overuse**: This skill is designed for structured data extraction (e.g., transactions, schemas, forms). Do not apply this skill to open-ended synthesis, comparative analysis, or narrative reporting tasks unless the user explicitly requests a JSON payload."
   },
   "backtest": [
     {
       "task_id": "cross_doc_synthesis",
       "baseline": {
         "label": "baseline",
-        "output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate_discrepancy\": {\n        \"description\": \"關於 Zynolate 的療效反應率，文獻記載存在分歧。\",\n        \"data_points\": [\n          {\n            \"source\": \"D1\",\n            \"value\": \"68%\",\n            \"note\": \"原廠第三期試驗顯示之數據\"\n          },\n          {\n            \"source\": \"D2\",\n            \"value\": \"約 54%\",\n            \"note\": \"獨立學術期刊經校正基線差異後的再分析數據\"\n          }\n        ]\n      },\n      \"regulatory_conclusion\": {\n        \"source\": \"D3\",\n        \"conclusion\": \"療效證據中等\"\n      }\n    },\n    \"sample_size\": {\n      \"description\": \"關於臨床試驗的受試者樣本數，文獻記載存在直接矛盾。\",\n      \"data_points\": [\n        {\n          \"source\": \"D1\",\n          \"sample_size\": 1200,\n          \"note\": \"原廠新聞稿宣稱之納入人數\"\n        },\n        {\n          \"source\": \"D2\",\n          \"sample_size\": 1200,\n          \"note\": \"獨立學術期刊指出樣本數與原廠一致\"\n        },\n        {\n          \"source\": \"D3\",\n          \"sample_size\": 950,\n          \"note\": \"監理機關審查文件記載之受試者人數\"\n        }\n      ]\n    },\n    \"safety_and_adverse_events\": {\n      \"safety_profiles\": [\n        {\n          \"source\": \"D1\",\n          \"finding\": \"安全性良好、副作用輕微\"\n        },\n        {\n          \"source\": \"D2\",\n          \"finding\": \"提醒長期安全性資料仍不足\"\n        },\n        {\n          \"source\": \"D3\",\n          \"finding\": \"列出 3 起嚴重不良事件，並結論需追蹤長期安全性\"\n        }\n      ]\n    },\n    \"market_outlook\": {\n      \"source\": \"D4\",\n      \"projection\": \"若獲得批准，Zynolate 的年銷售額上看 20 億美元\",\n      \"note\": \"該報告未討論療效或安全性細節，僅針對市場面進行分析\"\n    },\n    \"uncovered_topics\": {\n      \"description\": \"來源未涵蓋之其他細節\"\n    }\n  }\n}\n```",
+        "output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"efficacy\": {\n      \"response_rate_discrepancy\": {\n        \"manufacturer_claim\": \"原廠第三期試驗顯示對目標疾病的反應率達 68% (D1)\",\n        \"independent_analysis\": \"獨立學術期刊再分析指出，經校正基線差異後，反應率約為 54% (D2)\",\n        \"regulatory_evaluation\": \"監理機關審查結論為療效證據中等 (D3)\"\n      }\n    },\n    \"sample_size\": {\n      \"discrepancy_detected\": true,\n      \"reported_1200_patients\": [\n        \"原廠新聞稿指出共納入 1,200 名受試者 (D1)\",\n        \"獨立學術期刊指出樣本數與原廠一致，為 1,200 人 (D2)\"\n      ],\n      \"reported_950_patients\": [\n        \"監理機關審查文件記載受試者為 950 人 (D3)\"\n      ]\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": \"安全性良好、副作用輕微 (D1)\",\n      \"independent_warnings\": \"長期安全性資料仍不足 (D2)\",\n      \"regulatory_findings\": \"列出 3 起嚴重不良事件，並指出需追蹤長期安全性 (D3)\"\n    },\n    \"market_outlook\": {\n      \"financial_forecast\": \"若獲得批准，Zynolate 年銷售額上看 20 億美元 (D4)\",\n      \"note\": \"此市場分析報告未討論療效或安全性之細節 (D4)\"\n    }\n  }\n}\n```",
         "checks": {
           "coverage": 1.0,
           "cross_reference": 1.0,
@@ -270,7 +238,8 @@
           "faithfulness": 1.0
         },
         "schema_errors": null,
-        "rationale": "The synthesis perfectly covers all four sources (D1-D4), explicitly cross-references them by topic, highlights the contradictions in response rates (D1 vs D2) and sample sizes (D1/D2 vs D3), and remains strictly faithful to the provided text.",
+        "violations": null,
+        "rationale": "The synthesis perfectly addresses all requirements. It covers all sources (D1-D4), correctly cross-references and attributes claims to their respective sources, clearly highlights the contradictions regarding response rates (68% vs 54%) and sample sizes (1,200 vs 950), and remains strictly faithful to the provided text.",
         "completion": 1.0,
         "completion_std": 0.0,
         "n": 3,
@@ -282,7 +251,7 @@
       },
       "refined": {
         "label": "refined",
-        "output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"drug_name\": \"Zynolate\",\n    \"phase\": \"第三期試驗 (D1)\",\n    \"efficacy\": {\n      \"response_rate_discrepancy\": {\n        \"manufacturer_claim\": {\n          \"rate\": \"68%\",\n          \"source\": \"D1\"\n        },\n        \"independent_analysis\": {\n          \"rate\": \"54%（經校正基線差異後）\",\n          \"source\": \"D2\"\n        }\n      },\n      \"regulatory_conclusion\": {\n        \"evidence_level\": \"療效證據中等\",\n        \"source\": \"D3\"\n      }\n    },\n    \"sample_size_discrepancy\": {\n      \"reported_1200\": {\n        \"count\": 1200,\n        \"sources\": [\"D1\", \"D2\"]\n      },\n      \"reported_950\": {\n        \"count\": 950,\n        \"sources\": [\"D3\"]\n      }\n    },\n    \"safety_and_adverse_events\": {\n      \"manufacturer_claim\": {\n        \"safety_status\": \"安全性良好、副作用輕微\",\n        \"source\": \"D1\"\n      },\n      \"independent_academic_view\": {\n        \"safety_status\": \"長期安全性資料仍不足\",\n        \"source\": \"D2\"\n      },\n      \"regulatory_findings\": {\n        \"serious_adverse_events\": \"列出 3 起嚴重不良事件\",\n        \"requirement\": \"需追蹤長期安全性\",\n        \"source\": \"D3\"\n      }\n    },\n    \"market_outlook\": {\n      \"estimated_annual_sales\": \"若獲批，年銷售上看 20 億美元\",\n      \"details\": \"未討論療效或安全性細節，僅談市場面\",\n      \"source\": \"D4\"\n    }\n  }\n}\n```",
+        "output": "```json\n{\n  \"clinical_trial_summary\": {\n    \"drug_name\": \"Zynolate\",\n    \"sample_size_discrepancy\": {\n      \"description\": \"關於臨床試驗納入的受試者人數，文獻之間存在直接矛盾。\",\n      \"reported_figures\": [\n        {\n          \"sources\": [\"D1\", \"D2\"],\n          \"sample_size\": 1200,\n          \"details\": \"原廠新聞稿 (D1) 與獨立學術期刊 (D2) 皆指出共納入 1,200 名受試者。\"\n        },\n        {\n          \"sources\": [\"D3\"],\n          \"sample_size\": 950,\n          \"details\": \"監理機關審查文件摘要 (D3) 記載之受試者人數為 950 人。\"\n        }\n      ]\n    },\n    \"efficacy_discrepancy\": {\n      \"description\": \"關於藥物療效（反應率）的數據，文獻之間存在直接矛盾與修正。\",\n      \"reported_figures\": [\n        {\n          \"source\": \"D1\",\n          \"response_rate\": \"68%\",\n          \"details\": \"原廠新聞稿宣稱第三期試驗顯示對目標疾病的反應率達 68%。\"\n        },\n        {\n          \"source\": \"D2\",\n          \"response_rate\": \"54%\",\n          \"details\": \"獨立學術期刊再分析指出，因原廠數字未調整基線差異，經校正後的反應率約為 54%。\"\n        },\n        {\n          \"source\": \"D3\",\n          \"efficacy_conclusion\": \"療效證據中等\",\n          \"details\": \"監理機關審查結論認為其療效證據中等。\"\n        },\n        {\n          \"source\": \"D4\",\n          \"details\": \"產業分析報告未討論療效細節。\"\n        }\n      ]\n    },\n    \"safety_and_adverse_events\": {\n      \"safety_profiles\": [\n        {\n          \"source\": \"D1\",\n          \"findings\": \"安全性良好、副作用輕微。\"\n        },\n        {\n          \"source\": \"D2\",\n          \"findings\": \"作者提醒長期安全性資料仍不足。\"\n        },\n        {\n          \"source\": \"D3\",\n          \"findings\": \"列出 3 起嚴重不良事件，並於結論指出需追蹤長期安全性。\"\n        },\n        {\n          \"source\": \"D4\",\n          \"findings\": \"未討論安全性細節。\"\n        }\n      ]\n    },\n    \"market_outlook\": {\n      \"source\": \"D4\",\n      \"financial_forecast\": \"若獲得批准，Zynolate 的年銷售額上看 20 億美元。\",\n      \"details\": \"分析師僅針對市場面進行評估，未涉及療效或安全性細節。\"\n    }\n  }\n}\n```",
         "checks": {
           "coverage": 1.0,
           "cross_reference": 1.0,
@@ -290,7 +259,8 @@
           "faithfulness": 1.0
         },
         "schema_errors": null,
-        "rationale": "The synthesis perfectly covers all four sources (D1-D4), explicitly attributes claims to their respective sources, clearly highlights the contradictions regarding response rates (68% vs 54%) and sample sizes (1200 vs 950) without taking sides, and remains strictly faithful to the provided text.",
+        "violations": null,
+        "rationale": "The synthesis is exceptionally well-structured, covering all sources (D1-D4) and explicitly highlighting the contradictions in sample size (1,200 in D1/D2 vs 950 in D3) and efficacy (68% in D1 vs 54% in D2 vs moderate in D3). It correctly attributes every claim to its source and remains strictly faithful to the provided text.",
         "completion": 1.0,
         "completion_std": 0.0,
         "n": 3,
@@ -313,7 +283,8 @@
           "content_faithfulness": 1.0
         },
         "schema_errors": [],
-        "rationale": "schema_valid=True (errors=0); The extracted JSON perfectly matches the source text. All fields, including report_date, total_count, transaction IDs, amounts, currencies, statuses, flagged status, and counterparty details, are accurate and fully supported by the source.",
+        "violations": null,
+        "rationale": "schema_valid=True (errors=0); The extracted JSON perfectly matches the source text. All fields, including report_date, total_count, transaction IDs, amounts, currencies, statuses, flagged status, and counterparty details, are accurately extracted without any hallucination.",
         "completion": 1.0,
         "completion_std": 0.0,
         "n": 3,
@@ -332,6 +303,7 @@
           "content_faithfulness": 1.0
         },
         "schema_errors": [],
+        "violations": null,
         "rationale": "schema_valid=True (errors=0); The extracted JSON perfectly matches the source text. All fields, including report_date, total_count, transaction IDs, amounts, currencies, statuses, flagged status, and counterparty details, are accurately extracted without any hallucination.",
         "completion": 1.0,
         "completion_std": 0.0,
@@ -345,7 +317,7 @@
       "delta": 0.0
     }
   ],
-  "backtest_note": "回測整體 mean：baseline=1.0、refined=1.0、Δ=+0.000（grounded judge，3 次平均）。baseline 分數已接近上限——代表這個任務對 Gemini 這種強模型而言，即使用籠統的 baseline skill 也能產出高品質結果，因此「最終品質」上難再由 skill 拉開差距。這是真實且重要的觀察：skill 精煉的價值在強模型 × 偏易任務時會被稀釋，差異更會顯現在穩定度（std／成功率）、成本、或更難／限制更嚴的任務上。（注意：第 1 節變體評分仍受 conversation.json 腳本回饋影響，見誠實聲明。） 本批的關鍵發現：即使用最嚴格的『jsonschema 程式驗證』當客觀硬 gate，baseline 與所有變體（含刻意籠統的 v_c）產出的 JSON 都通過 schema（schema_valid=1.0）——代表對 gemini-flash-latest 這種強模型，這個抽取任務即使沒有好的 skill 指引也能做對。第 1 節看到 v_c 分數低（0.0）純粹來自 conversation.json 的腳本負向回饋，並非它真的產出無效 JSON。結論：要讓 skill 差異在客觀 gate 上顯著，任務難度需再拉高到「強模型無指引時會真的失敗」的程度（例如更複雜的巢狀/條件約束 schema、需要工具或多步驟、或超出模型知識的專業領域）。",
+  "backtest_note": "回測整體 mean：baseline=1.0、refined=1.0、Δ=+0.000（grounded judge，3 次平均）。baseline 分數已接近上限——代表這個任務對 Gemini 這種強模型而言，即使用籠統的 baseline skill 也能產出高品質結果，因此「最終品質」上難再由 skill 拉開差距。這是真實且重要的觀察：skill 精煉的價值在強模型 × 偏易任務時會被稀釋，差異更會顯現在穩定度（std／成功率）、成本、或更難／限制更嚴的任務上。（注意：第 1 節變體評分仍受 conversation.json 腳本回饋影響，見誠實聲明。）",
   "judge_prompt_general": "You are a task-agnostic evaluator for AI agent sessions. The task may be ANY\nkind of work (writing, research, analysis, planning, conversation, coding, ...).\n\nYou receive one session with a trajectory and an analysis summary.\n\nScore on a 0.0-1.0 scale:\n- task_completion: did the agent actually accomplish what the user asked?\n- response_quality: correctness, completeness and clarity of the final result.\n\nGuidelines:\n- Judge whether the GOAL was met, not how fast or how short the path was\n  (efficiency is measured separately by objective metrics).\n- An agent that produced little or gave up should score LOW on task_completion,\n  even if its trajectory was short.\n- Distinguish \"missing evidence\" from \"clear failure\"; be conservative if weak.\n\nReturn EXACTLY one JSON object:\n{\"task_completion\": <float>, \"response_quality\": <float>, \"rationale\": \"<brief>\"}\nNo markdown fences. No extra text.\n",
   "judge_prompt_grounded": "You are a strict evaluator for an information-synthesis task. You are given:\n- the TASK requirement (with explicit acceptance criteria),\n- the SOURCE material the answer must be grounded in,\n- the produced ANSWER.\n\nScore the ANSWER on 0.0-1.0 by CHECKING IT AGAINST THE SOURCES and criteria:\n- coverage: does it cover all required sources / key facts?\n- faithfulness: is every claim supported by the sources? (invented facts or\n  numbers not in the sources = heavy penalty)\n- conflict_handling: if sources conflict, are conflicts flagged rather than silently picked?\n- format: does it respect the required format / length limit / source citations?\n\nCompute overall = average of the applicable checks above (skip a check only if the\ntask genuinely doesn't require it). Be strict: fabrication or missing required\nsources should pull the score well below 0.5.\n\nReturn EXACTLY one JSON object:\n{\"coverage\": <float>, \"faithfulness\": <float>, \"conflict_handling\": <float>,\n \"format\": <float>, \"overall\": <float>, \"rationale\": \"<brief, cite what was missing/invented>\"}\nNo markdown fences. No extra text.\n",
   "judge_kind": "json_schema",

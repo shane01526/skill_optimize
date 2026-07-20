@@ -34,6 +34,7 @@
   .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11.5px;font-weight:600}
   .b-rule{background:#0f2a1a;color:#6fdd8b;border:1px solid #235537}
   .b-llm{background:#2c2410;color:#e3c169;border:1px solid #574718}
+  .b-prog{background:#10233f;color:#8ab4ff;border:1px solid #24405f}
   .ok{color:var(--good)} .no{color:var(--bad)} .mid{color:var(--warn)}
   .callout{border-left:3px solid var(--accent);background:#141a26;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
   .callout.warn{border-color:var(--warn);background:#241f14}
@@ -99,62 +100,64 @@
       <tr><th>task</th><th>變體</th><th>完成度 mean±std</th><th>達標來源</th><th>綜合分 mean±std</th><th>3 次分數</th><th>成功率</th></tr>
       
       <tr>
-        <td>refund_review</td><td><code>v_b</code></td>
+        <td>refund_review</td><td><code>v_a</code></td>
         <td>1.0 <span class="mut">± 0.0</span></td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td><b>0.935</b> <span class="mut">± 0.022</span></td>
-        <td class="mut" style="font-size:12px">[0.954, 0.904, 0.948]</td>
+        <td><span class="badge b-program">program</span></td>
+        <td><b>1.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[1.0, 1.0, 1.0]</td>
         <td class="ok">100%</td>
       </tr>
       
       <tr>
-        <td>refund_review</td><td><code>v_a</code></td>
+        <td>refund_review</td><td><code>v_b</code></td>
         <td>1.0 <span class="mut">± 0.0</span></td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td><b>0.918</b> <span class="mut">± 0.025</span></td>
-        <td class="mut" style="font-size:12px">[0.883, 0.929, 0.941]</td>
+        <td><span class="badge b-program">program</span></td>
+        <td><b>1.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[1.0, 1.0, 1.0]</td>
         <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>refund_review</td><td><code>v_c</code></td>
-        <td>0.0 <span class="mut">± 0.0</span></td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td><b>0.0</b> <span class="mut">± 0.0</span></td>
-        <td class="mut" style="font-size:12px">[0.0, 0.0, 0.0]</td>
-        <td class="no">0%</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-program">program</span></td>
+        <td><b>1.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[1.0, 1.0, 1.0]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>return_restock</td><td><code>v_a</code></td>
         <td>1.0 <span class="mut">± 0.0</span></td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td><b>0.88</b> <span class="mut">± 0.015</span></td>
-        <td class="mut" style="font-size:12px">[0.887, 0.894, 0.86]</td>
+        <td><span class="badge b-program">program</span></td>
+        <td><b>1.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[1.0, 1.0, 1.0]</td>
         <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>return_restock</td><td><code>v_b</code></td>
-        <td>0.333 <span class="mut">± 0.471</span></td>
-        <td><span class="badge b-llm">llm</span></td>
-        <td><b>0.292</b> <span class="mut">± 0.413</span></td>
-        <td class="mut" style="font-size:12px">[0.0, 0.0, 0.876]</td>
-        <td class="mid">33%</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-program">program</span></td>
+        <td><b>1.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[1.0, 1.0, 1.0]</td>
+        <td class="ok">100%</td>
       </tr>
       
       <tr>
         <td>return_restock</td><td><code>v_c</code></td>
-        <td>0.0 <span class="mut">± 0.0</span></td>
-        <td><span class="badge b-rule">rule</span></td>
-        <td><b>0.0</b> <span class="mut">± 0.0</span></td>
-        <td class="mut" style="font-size:12px">[0.0, 0.0, 0.0]</td>
-        <td class="no">0%</td>
+        <td>1.0 <span class="mut">± 0.0</span></td>
+        <td><span class="badge b-program">program</span></td>
+        <td><b>1.0</b> <span class="mut">± 0.0</span></td>
+        <td class="mut" style="font-size:12px">[1.0, 1.0, 1.0]</td>
+        <td class="ok">100%</td>
       </tr>
       
     </table>
     <p class="mut">達標來源 <span class="badge b-rule">rule</span>＝規則式 detector（零 LLM，靠使用者後續回饋訊號）；
-    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。成功率＝3 次中 completion≥0.75 的比例。精煉理由：The session evidence shows that Variant A ('嚴格 SOP，先查後判再寫' / 'Strict SOP, Check-Before-Write') was highly effective in guiding successful runs (scores of 0.887 and 0.883), whereas other variants or generic plans often led to execution gaps where the agent merely described plans without executing tools, or made state-modifying errors. I will merge the structured, disciplined phases of Variant A into the skill body, emphasizing that the agent must immediately execute the tool calls (not just describe them) and strictly adhere to the 'Read-then-Decide-then-Write' order.</p>
+    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge；
+    <span class="badge b-prog">program</span>＝程式驗證（env_state 工具迴圈最終狀態／json_schema gate，選 winner 與回測同一把尺、不乘效率）。
+    成功率＝3 次中 completion≥0.75 的比例。精煉理由：All sessions successfully achieved a 1.0 score across different variants of the 'ops-workflow' skill. Analyzing the trajectories of the successful runs reveals a highly consistent, structured operational pattern: 1) Fetch the policy (refund or return policy) first to establish rules; 2) List the entities (transactions or orders) to locate targets; 3) Retrieve detailed information for specific entities to verify eligibility; 4) Execute operations (restock, issue_refund) sequentially based on policy; 5) Send a final notification. Codifying this systematic operational flow into the skill content will guide future runs to be highly structured and reliable.</p>
   </div>
 </section>
 
@@ -174,37 +177,22 @@ Handle the request using the available tools.</pre>
       <h3>After（refined）</h3>
       
       <p class="mut">ops-workflow · <b>ops-workflow</b></p>
-      <p class="mut">Standard operating procedure for operations requests requiring safety-critical validation (Read-then-Decide-then-Write).</p>
-      <pre># Ops Workflow (Strict SOP: Check-Before-Write)
+      <p class="mut">Use for handling operational requests such as refunds, returns, and inventory restocking.</p>
+      <pre># Ops Workflow
 
-When handling operations requests (such as refunds, returns, restocking, or account modifications), you must strictly adhere to a "Read-then-Decide-then-Write" discipline. 
+Follow this structured operational sequence to handle requests reliably:
 
-Do not just describe your plan in text; immediately begin executing the steps using the provided tools.
-
-### Phase 1: Retrieve Rules & Policies (Read)
-*   **Action**: Call the policy or rules retrieval tool (e.g., `get_refund_policy`, `get_return_policy`) before calling any other tool.
-*   **Rule**: Never invoke any state-modifying/write tools (e.g., `issue_refund`, `restock`) before you have fully retrieved and parsed the policy rules.
-
-### Phase 2: Collect Target Items (Read)
-*   **Action**: List all pending items (e.g., `list_transactions`, `list_orders`) and retrieve the detailed specification for each item individually (e.g., `get_transaction`, `get_order`).
-*   **Rule**: Gather all necessary details (dates, status flags, amounts, opened/unopened status) to make an objective determination.
-
-### Phase 3: Validate Eligibility (Decide)
-*   **Action**: Explicitly compare each item's details against the retrieved policy rules.
-*   **Rule**: Clearly categorize each item as "Eligible" or "Ineligible". Do not proceed with writing if there is any ambiguity.
-
-### Phase 4: Execute State Changes (Write)
-*   **Action**: Execute state-modifying actions (e.g., `issue_refund`, `restock`) **only** for items confirmed as "Eligible".
-*   **Rule**: Do not modify state, issue refunds, or restock items for ineligible targets. Verify the return value of each write operation.
-
-### Phase 5: Final Notification
-*   **Action**: Once all items have been processed, send a single final summary notification (e.g., `send_notification`) detailing the successful operations and skipped items.</pre>
+1. **Retrieve Policy**: Always start by calling the relevant policy tool (e.g., `get_refund_policy` or `get_return_policy`) to understand the rules and constraints.
+2. **List Entities**: List the relevant transactions or orders (e.g., `list_transactions` or `list_orders`) to identify candidates for the request.
+3. **Inspect Details**: Retrieve detailed information for specific entities (e.g., `get_transaction` or `get_order`) to verify eligibility against the policy rules.
+4. **Execute Actions**: Perform the required operational actions (e.g., `restock`, `issue_refund`) sequentially for each eligible entity.
+5. **Notify**: Conclude the workflow by sending a confirmation notification (e.g., `send_notification`).</pre>
       
     </div>
   </div>
   
   <div class="card"><h3>內容 diff（baseline → refined）</h3>
-    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,24 @@</span><span class="del">-# Ops Workflow</span><span class="add">+# Ops Workflow (Strict SOP: Check-Before-Write)</span><span class="ctx"> </span><span class="del">-Handle the request using the available tools.</span><span class="add">+When handling operations requests (such as refunds, returns, restocking, or account modifications), you must strictly adhere to a "Read-then-Decide-then-Write" discipline. </span><span class="add">+</span><span class="add">+Do not just describe your plan in text; immediately begin executing the steps using the provided tools.</span><span class="add">+</span><span class="add">+### Phase 1: Retrieve Rules & Policies (Read)</span><span class="add">+*   **Action**: Call the policy or rules retrieval tool (e.g., `get_refund_policy`, `get_return_policy`) before calling any other tool.</span><span class="add">+*   **Rule**: Never invoke any state-modifying/write tools (e.g., `issue_refund`, `restock`) before you have fully retrieved and parsed the policy rules.</span><span class="add">+</span><span class="add">+### Phase 2: Collect Target Items (Read)</span><span class="add">+*   **Action**: List all pending items (e.g., `list_transactions`, `list_orders`) and retrieve the detailed specification for each item individually (e.g., `get_transaction`, `get_order`).</span><span class="add">+*   **Rule**: Gather all necessary details (dates, status flags, amounts, opened/unopened status) to make an objective determination.</span><span class="add">+</span><span class="add">+### Phase 3: Validate Eligibility (Decide)</span><span class="add">+*   **Action**: Explicitly compare each item's details against the retrieved policy rules.</span><span class="add">+*   **Rule**: Clearly categorize each item as "Eligible" or "Ineligible". Do not proceed with writing if there is any ambiguity.</span><span class="add">+</span><span class="add">+### Phase 4: Execute State Changes (Write)</span><span class="add">+*   **Action**: Execute state-modifying actions (e.g., `issue_refund`, `restock`) **only** for items confirmed as "Eligible".</span><span class="add">+*   **Rule**: Do not modify state, issue refunds, or restock items for ineligible targets. Verify the return value of each write operation.</span><span class="add">+</span><span class="add">+### Phase 5: Final Notification</span><span class="add">+*   **Action**: Once all items have been processed, send a single final summary notification (e.g., `send_notification`) detailing the successful operations and skipped items.</span></pre>
+    <pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,9 @@</span><span class="ctx"> # Ops Workflow</span><span class="ctx"> </span><span class="del">-Handle the request using the available tools.</span><span class="add">+Follow this structured operational sequence to handle requests reliably:</span><span class="add">+</span><span class="add">+1. **Retrieve Policy**: Always start by calling the relevant policy tool (e.g., `get_refund_policy` or `get_return_policy`) to understand the rules and constraints.</span><span class="add">+2. **List Entities**: List the relevant transactions or orders (e.g., `list_transactions` or `list_orders`) to identify candidates for the request.</span><span class="add">+3. **Inspect Details**: Retrieve detailed information for specific entities (e.g., `get_transaction` or `get_order`) to verify eligibility against the policy rules.</span><span class="add">+4. **Execute Actions**: Perform the required operational actions (e.g., `restock`, `issue_refund`) sequentially for each eligible entity.</span><span class="add">+5. **Notify**: Conclude the workflow by sending a confirmation notification (e.g., `send_notification`).</span></pre>
   </div>
   
 </section>
@@ -336,39 +324,13 @@ get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) �
 
 > 註：這是離線模擬環境；達標由環境最終狀態客觀驗證（該退的退了、不該退的沒動、順序正確）。
 </p>
-      <pre>為了完成退款審核與處理任務，我將嚴格遵循 **Ops Workflow（變體 A：嚴格 SOP，先查後判再寫）** 的核心紀律，按照「先查規則、列出並讀取、逐筆核對、符合才寫入、看每步回傳、最後通知」的步驟進行處理。
+      <pre>工具軌跡（11 步）：
+get_refund_policy(ok) → list_transactions(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → issue_refund(ok) → issue_refund(ok) → issue_refund(ok) → send_notification(ok)
 
-以下為具體的執行步驟與計畫：
-
-### 第一步：先查規則（Get Refund Policy）
-在進行任何寫入或狀態變更操作之前，我會首先呼叫 `get_refund_policy` 工具，以完整了解退款的可執行前置條件（例如：退款期限天數、商品是否需未拆封、是否可重複退款等限制）。
-
-### 第二步：列出並逐筆讀取（List & Get Transactions）
-1. 呼叫 `list_transactions` 取得當前批次所有待處理的交易列表。
-2. 針對列表中的每一筆交易，呼叫 `get_transaction` 取得其詳細資訊（包括交易日期、交易金額、是否已退款、商品狀態等）。
-
-### 第三步：逐筆核對資格（Verify Eligibility）
-依據第一步取得的退款政策，對每一筆交易的明細進行逐條比對：
-* 檢查交易時間是否在政策規定的退款期限內。
-* 檢查該筆交易先前是否已經執行過退款（避免重複退款）。
-* 檢查交易金額與狀態是否符合政策規範。
-* **只有完全符合所有條件的交易**才會進入下一步；任何一項條件不符的交易將直接跳過，絕不執行退款。
-
-### 第四步：符合才寫入（Issue Refund）
-針對完全通過資格審核的交易，呼叫 `issue_refund` 工具進行退款，退款金額必須與該筆交易的正確應退金額完全一致。
-
-### 第五步：看每步回傳（Check Response）
-在每次呼叫 `issue_refund` 後，即時檢查工具回傳的 `ok` 狀態。若發生失敗或被系統攔截，將立即停止對該筆交易的操作並記錄原因，絕不強行重試或繞過規則。
-
-### 第六步：最後通知（Send Notification）
-在所有交易依序處理完畢後，彙整處理結果（包括成功退款的交易、因不符政策而拒絕的交易及原因），呼叫 `send_notification` 工具寄送一則完整的通知回報。</pre>
+最終狀態：{"refunds": {"TX-1001": {"amount": 1200}, "TX-1004": {"amount": 2000}, "TX-1005": {"amount": 300}}, "notifications": 1}</pre>
       
     
-      
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 很好，該退的 TX-1001/1004/1005 都退了，逾期的 1002 和已退的 1003 有正確擋掉，謝謝</p>
-      
     
-    <p class="mut">detector 命中訊號：positive </p>
   </div>
   
   <div class="card">
@@ -390,47 +352,13 @@ get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) �
 
 > 註：離線模擬環境；達標由環境最終狀態客觀驗證（庫存補得對、該退的退了、不該退的沒動、順序正確）。
 </p>
-      <pre>根據「Ops Workflow（變體 A：嚴格 SOP，先查後判再寫）」的標準作業程序，我將嚴格遵循「先查後判再寫」的紀律，依序執行以下步驟來處理退貨與庫存回補任務：
+      <pre>工具軌跡（11 步）：
+get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) → get_order(ok) → get_order(ok) → restock(ok) → issue_refund(ok) → restock(ok) → issue_refund(ok) → send_notification(ok)
 
-### 第一步：先查規則（呼叫政策工具）
-首先，我會呼叫 `get_return_policy` 工具，以完整了解退貨的可執行前置條件（例如：退貨期限天數、是否允許拆封、退款比例等限制）。在確認政策規則之前，絕對不呼叫任何會寫入或修改狀態的工具（如 `restock` 或 `issue_refund`）。
-
-### 第二步：列出並逐筆讀取（取得待處理項目明細）
-接著，我會呼叫 `list_orders` 取得所有待處理的退貨申請訂單列表。隨後，針對列表中的每一筆訂單，呼叫 `get_order` 取得其詳細資訊，包含：
-* 購買日期與申請退貨日期（用以計算是否逾期）
-* 商品是否已拆封
-* 商品數量與金額
-* 是否已處理過
-
-### 第三步：逐筆核對資格（嚴格審查）
-針對每一筆訂單，對照第一步取得的退貨政策進行逐條檢查：
-* **檢查項目 A**：申請時間是否在政策規定的退貨期限內？
-* **檢查項目 B**：商品拆封狀態是否符合退貨標準？
-* **檢查項目 C**：該訂單是否尚未被處理過？
-
-**核心紀律**：只有當該筆訂單「完全滿足所有政策條件」時，才會進入下一步。若有任何一項條件不符，將直接跳過該訂單，絕不對其執行任何寫入或修改動作。
-
-### 第四步：符合才寫入（執行庫存回補與退款）
-對於完全通過資格審查的合規訂單，我會依序呼叫寫入工具：
-1. 呼叫 `restock`：將該訂單對應的商品數量正確補回庫存。
-2. 呼叫 `issue_refund`：針對該訂單的正確金額執行退款。
-
-對於不符合資格的訂單，則維持原狀，不呼叫任何寫入工具。
-
-### 第五步：看每步回傳（確認執行結果）
-在每次呼叫 `restock` 或 `issue_refund` 後，我會即時檢查工具回傳的 `ok` 狀態。
-* 若回傳成功，則繼續處理。
-* 若回傳失敗（例如被系統政策攔截），我會立即停止操作，記錄失敗原因，絕不強行重試或試圖繞過規則。
-
-### 第六步：最後通知（回報結果）
-在所有訂單依序處理完畢後，我會彙整處理結果（包含通過審核並成功退款/回補庫存的訂單，以及因不符資格而被拒絕的訂單明細），最後呼叫 `send_notification` 發送一則完整的通知回報。</pre>
+最終狀態：{"refunds": {"OR-1": {"amount": 400}, "OR-4": {"amount": 180}}, "restocked": {"SKU-A": 3}}</pre>
       
     
-      
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 很好，OR-1 和 OR-4 補了庫存也退了款，逾期的 OR-2 和拆封的 OR-3 正確擋掉，謝謝</p>
-      
     
-    <p class="mut">detector 命中訊號：positive </p>
   </div>
   
   <div class="card">
@@ -452,46 +380,13 @@ get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) �
 
 > 註：這是離線模擬環境；達標由環境最終狀態客觀驗證（該退的退了、不該退的沒動、順序正確）。
 </p>
-      <pre>為了完成退款審核與處理，我將嚴格遵循「Ops Workflow（變體 B）」的步驟，使用提供的工具進行處理。
+      <pre>工具軌跡（11 步）：
+get_refund_policy(ok) → list_transactions(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → issue_refund(ok) → issue_refund(ok) → issue_refund(ok) → send_notification(ok)
 
-### Step 0: 查規則
-首先，在進行任何寫入動作前，我必須先查詢退款政策。
-*   **呼叫工具**：`get_refund_policy()`
-*   **預期取得資訊**：退款期限（天數）、是否允許拆封、金額限制等前置條件。
-
-### Step 1: 蒐集
-接著，列出所有待處理的交易項目並讀取其詳細資訊。
-*   **呼叫工具**：`list_transactions()` 取得當前批次的交易清單。
-*   **呼叫工具**：對清單中的每一筆交易 ID，分別呼叫 `get_transaction(transaction_id)` 讀取明細（包含交易日期、金額、商品狀態、是否已退款等）。
-
-### Step 2: 驗資格
-針對蒐集到的每筆交易明細，逐條比對 Step 0 取得的退款政策條件：
-*   **比對項目**：
-    *   購買天數是否在政策規定的退款期限內？
-    *   該筆交易先前是否已經處理過退款？
-    *   商品狀態（如是否拆封）是否符合政策要求？
-*   **記錄結果**：明確標記每筆交易為「符合」或「不符合」。
-
-### Step 3: 只寫符合者
-僅對在 Step 2 中判定為「符合」資格的交易執行退款寫入動作。
-*   **呼叫工具**：對符合資格的交易呼叫 `issue_refund(transaction_id, amount)` 退回全額。
-*   **注意**：判定為「不符合」的交易將直接略過，不執行任何退款呼叫。
-
-### Step 4: 檢查回傳
-在執行 `issue_refund` 時，嚴格檢查每次工具呼叫回傳的 `ok` 狀態。
-*   若回傳成功（`ok`），則繼續處理下一筆符合的交易。
-*   若發生任何失敗，立即停止後續寫入動作，不強行嘗試。
-
-### Step 5: 通知
-當所有符合資格的交易處理完畢後，發送一則彙總通知。
-*   **呼叫工具**：`send_notification(message)`，回報本次退款審核與處理的最終結果。</pre>
+最終狀態：{"refunds": {"TX-1001": {"amount": 1200}, "TX-1004": {"amount": 2000}, "TX-1005": {"amount": 300}}, "notifications": 1}</pre>
       
     
-      
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> OK，有先查政策、逐筆核對資格，處理正確</p>
-      
     
-    <p class="mut">detector 命中訊號：positive </p>
   </div>
   
   <div class="card">
@@ -513,34 +408,10 @@ get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) �
 
 > 註：離線模擬環境；達標由環境最終狀態客觀驗證（庫存補得對、該退的退了、不該退的沒動、順序正確）。
 </p>
-      <pre>為了完成退貨處理與庫存回補的任務，我將嚴格遵循 **Ops Workflow（變體 B）** 的步驟進行。
+      <pre>工具軌跡（11 步）：
+get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) → get_order(ok) → get_order(ok) → restock(ok) → issue_refund(ok) → restock(ok) → issue_refund(ok) → send_notification(ok)
 
-### Step 0: 查規則
-首先，我需要呼叫 `get_return_policy` 工具，以釐清退貨政策的具體前置條件（例如：退貨期限天數、是否允許拆封、金額限制等）。
-
-### Step 1: 蒐集
-接著，我會呼叫 `list_orders` 取得所有待處理的訂單列表，並針對每筆訂單呼叫 `get_order` 讀取詳細資訊（包含購買日期、商品狀態、是否拆封、金額等）。
-
-### Step 2: 驗資格
-將每筆訂單的明細與 Step 0 查得的退貨政策進行逐條比對，明確標記出每一筆訂單為「符合」或「不符合」。
-
-### Step 3: 只寫符合者
-*   對於**符合資格**的訂單：執行 `restock`（將商品數量補回庫存）以及 `issue_refund`（執行退款）。
-*   對於**不符合資格**的訂單：直接略過，不執行任何寫入動作（不補庫存、不退款）。
-
-### Step 4: 檢查回傳
-在執行寫入工具（`restock`、`issue_refund`）時，每一步都會確認回傳狀態是否為 `ok`。若遇到任何失敗，將立即停止後續操作，絕不硬闖。
-
-### Step 5: 通知
-在所有符合資格的訂單處理完畢後，呼叫 `send_notification` 發送一則最終處理結果通知。
-
----
-
-*(由於此為文字回覆階段，我將在實際與系統工具互動時，嚴格執行上述步驟與工具呼叫，確保庫存與退款狀態完全符合政策規定。)*</pre>
-      
-    
-      
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> OK，先查政策、逐筆驗條件、庫存和退款都對</p>
+最終狀態：{"refunds": {"OR-1": {"amount": 400}, "OR-4": {"amount": 180}}, "restocked": {"SKU-A": 3}}</pre>
       
     
     
@@ -565,27 +436,20 @@ get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) �
 
 > 註：這是離線模擬環境；達標由環境最終狀態客觀驗證（該退的退了、不該退的沒動、順序正確）。
 </p>
-      <pre>首先，我將使用 `get_refund_policy` 工具來獲取當前的退款政策，以作為審核的依據。
+      <pre>工具軌跡（11 步）：
+get_refund_policy(ok) → list_transactions(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → get_transaction(ok) → issue_refund(ok) → issue_refund(ok) → issue_refund(ok) → send_notification(ok)
 
-接著，我會使用 `list_transactions` 獲取當前批次的交易列表，並針對每筆交易使用 `get_transaction` 查詢詳細資訊。
-
-在逐筆比對退款政策後，我會對符合資格的交易使用 `issue_refund` 進行全額退款。
-
-最後，在所有交易處理完畢後，我會使用 `send_notification` 寄送一則通知回報處理結果。</pre>
+最終狀態：{"refunds": {"TX-1001": {"amount": 1200}, "TX-1004": {"amount": 2000}, "TX-1005": {"amount": 300}}, "notifications": 1}</pre>
       
     
-      
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 不對，你沒查政策就亂退，連逾期的 1002 都想退，重來</p>
-      
     
-    <p class="mut">detector 命中訊號：negative </p>
   </div>
   
   <div class="card">
     <h3><code>v_c</code> × return_restock</h3>
     
       
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> # 任務：退貨處理與庫存回補（多步驟、需用工具）
+      <p class="mut" style="margin:6px 0 2px">🧑 # 任務：退貨處理與庫存回補（多步驟、需用工具）
 
 你是退貨處理專員。用提供的工具處理當前的退貨申請：依退貨政策審核，**只對符合的訂單**
 補回庫存並退款，最後寄通知。
@@ -600,13 +464,13 @@ get_return_policy(ok) → list_orders(ok) → get_order(ok) → get_order(ok) �
 
 > 註：離線模擬環境；達標由環境最終狀態客觀驗證（庫存補得對、該退的退了、不該退的沒動、順序正確）。
 </p>
+      <pre>工具軌跡（7 步）：
+get_return_policy(ok) → list_orders(ok) → restock(ok) → issue_refund(ok) → restock(ok) → issue_refund(ok) → send_notification(ok)
+
+最終狀態：{"refunds": {"OR-1": {"amount": 400}, "OR-4": {"amount": 180}}, "restocked": {"SKU-A": 3}}</pre>
       
     
-      
-      <p style="margin:6px 0"><span class="badge b-rule">使用者回饋(腳本)</span> 不對，你把拆封的 OR-3 也補庫存退款了，逾期的 OR-2 也亂退，庫存全錯，重來</p>
-      
     
-    <p class="mut">detector 命中訊號：negative </p>
   </div>
   
 </section>

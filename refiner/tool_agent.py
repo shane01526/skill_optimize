@@ -37,7 +37,7 @@ def run_tool_agent(llm, system: str, task_prompt: str, env: SimEnv, *, max_steps
     config = types.GenerateContentConfig(
         system_instruction=system,
         tools=tools,
-        temperature=0.1,
+        temperature=0.0,  # 決定性：讓「證據生成」與「打分」的工具迴圈可重現，回測 Δ 才不被採樣雜訊主導
         max_output_tokens=2048,
         thinking_config=types.ThinkingConfig(thinking_budget=0),
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),

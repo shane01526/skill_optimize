@@ -58,8 +58,14 @@ def evolve_skill_from_sessions(
     sessions: list[dict[str, Any]],
     current_skill: Optional[dict[str, Any]],
     existing_skill_names: list[str],
+    *,
+    temperature: float = 0.0,
 ) -> Optional[dict[str, Any]]:
-    """對一個 skill 群組做「決策 + 執行」，回傳 {action, rationale, skill?}。"""
+    """對一個 skill 群組做「決策 + 執行」，回傳 {action, rationale, skill?}。
+
+    temperature：控制精煉生成的隨機性。預設 0.0——降低 run-to-run 變異、使回測 Δ 可重現
+    （見 evolve 變異實驗：temp=0.4 時同一份證據精煉出的 skill 品質會擺盪，temp=0.0 才穩定）。
+    """
     system = EVOLVE_SYSTEM.replace("{skill_name}", skill_name)
     skill_section = _build_skill_block(current_skill) if current_skill else ""
     evidence = _build_session_evidence(sessions)
@@ -74,7 +80,7 @@ def evolve_skill_from_sessions(
     # 造成精煉版被靜默丟棄（action=None、報告 §2 空白）。重試數次直到拿到可解析結果。
     result: Optional[dict[str, Any]] = None
     for _ in range(3):
-        raw = llm.chat(system, user, temperature=0.4, max_tokens=8192)
+        raw = llm.chat(system, user, temperature=temperature, max_tokens=8192)
         result = _parse_evolve_result(raw, skill_name)
         if result is not None:
             break

@@ -316,9 +316,11 @@ description: ...
         <td><b>通用 vs 專用 skill 對照</b>（見「評分機制詳解」分頁）</td></tr>
     </table>
     <div class="callout warn"><b>誠實小結：</b>前四份（含 agentic_workflow）多次撞到<b>天花板</b>——強模型連籠統 baseline 都能做對，
-    skill 差異顯不出來。直到第五份 <b>agentic_hard（退款核准，移除環境防呆）</b>才<b>首次成功拉開弱 baseline</b>，
-    且證明「領域專用 skill」精煉有效、「通用 SOP」精煉反而退步（詳見「評分機制詳解」分頁）。這條軌跡本身就是重要結論：
-    <b>skill 精煉的價值在「任務夠難 × 達標能程式客觀驗證」時最明確</b>。</div>
+    skill 差異顯不出來。第五份 <b>agentic_hard（退款核准，移除環境防呆）</b>才讓 baseline 不再滿分、差異得以顯現。
+    但要下「專用 skill 較好」的結論，得先<b>把整條鏈（evolve 與工具迴圈）降到 temp=0</b> 壓住採樣雜訊：
+    之後專用 skill 精煉穩定達 1.0（std=0、Δ+0.726），通用毫無改善（Δ0）（詳見評分分頁範例 ③）。
+    <b>單次回測 Δ 不可靠</b>——降溫前它被三層 LLM 採樣主導、在 +0.65↔−0.22 間擺盪。
+    兩個真正站得住的結論：<b>①「任務夠難 × 達標能程式客觀驗證」時 skill 差異才顯現；② 量測 skill 優劣必須壓住採樣雜訊（降溫/重複），不能只看一次</b>。</div>
   </div>
 </section>
 
@@ -779,21 +781,27 @@ score = completion × (0.6 + 0.4 × efficiency)
     <p class="mut"><b>看點</b>：v_c 效率其實跟 v_b 一樣（0.65），但因使用者說「不對、重寫」→ completion=0 →
     綜合分直接歸 0。這證明<b>「擺爛防呆」有效——不會因為做得快就勝出</b>。（若任務無後續回覆，detector 信心不足會退回 LLM judge，見 4.1。）</p>
 
-    <h4 style="margin:14px 0 6px;color:#cdd6e6">🧪 範例 ③ agentic · ops-approval（有 tool call、成功拉開弱 baseline）</h4>
-    <p class="mut">同一個深難退款核准任務，用兩套 skill 家族各跑一次完整精煉＋回測（真 Gemini、3 rollout、env_state 程式驗證）。
-    這是本專案<b>唯一一次把弱 baseline 真正拉開</b>的實驗，故列為代表範例之一：</p>
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">🧪 範例 ③ agentic · ops-approval（有 tool call；壓住採樣雜訊後專用 skill 較好）</h4>
+    <p class="mut">深難退款核准任務（env 無防呆、四軸難度），比較<b>通用 SOP skill</b>（ops-workflow）與<b>領域專用 skill</b>
+    （ops-approval，把政策優先序/預算/扣點寫進 skill）。這個任務卡在模型能力臨界點，端到端有<b>三層 LLM 採樣雜訊</b>
+    （證據生成的工具迴圈 → evolve 生 refined skill → 打分的工具迴圈），早期只跑一次時回測 Δ 會在 <b>+0.65 ↔ −0.22</b> 間擺盪。
+    把三層溫度全壓到 <code>temp=0</code> 後，訊號才浮出來（下為 temp=0、ROLLOUTS=3 的實跑）：</p>
     <table>
-      <tr><th>skill 家族</th><th>baseline mean</th><th>refined mean</th><th>Δ</th><th>結論</th></tr>
-      <tr><td><b>通用</b> <code>ops-workflow</code>（泛用 SOP：先讀後寫、逐條核對）</td>
-        <td>0.467</td><td>0.20</td><td class="no"><b>−0.267</b></td><td>精煉沒幫上、甚至退步</td></tr>
+      <tr><th>skill 家族</th><th>baseline</th><th>refined（3 rollout）</th><th>Δ</th><th>結論</th></tr>
+      <tr><td><b>通用</b> <code>ops-workflow</code>（泛用 SOP）</td>
+        <td>0.733</td><td>0.733</td><td class="mut"><b>0.000</b></td><td>精煉沒改善（refined 仍踩超預算/漏擋）</td></tr>
       <tr class="win"><td><b>專用</b> <code>ops-approval</code>（領域規則寫進 skill）</td>
-        <td>0.348</td><td class="ok"><b>1.0</b></td><td class="ok"><b>+0.652</b></td><td>refined 全對（verify 0.95 accept）</td></tr>
+        <td>0.274</td><td class="ok"><b>1.0</b>（std=0）</td><td class="ok"><b>+0.726</b></td><td>refined 三次皆滿分、三項 check 全過（verify 0.95）</td></tr>
     </table>
-    <div class="callout good"><b>核心洞見：</b>兩套家族的<b>弱 baseline 都遠低於天花板</b>（state_correct=0、no_illegal_writes=0，錯誤真的落地）——
-    這是本專案<b>首次成功拉開弱 baseline</b>（前四輪皆天花板）。<b>移除環境防呆</b>是關鍵。更重要的是：
-    對規則明確的領域任務，光有「先讀後寫、逐條核對」的<b>通用紀律不夠</b>（通用家族精煉後甚至退步 −0.267）；
-    <b>必須把領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>，精煉才有效（專用家族 +0.652、達滿分）。
-    詳見 <a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report.html</a>。</div>
+    <div class="callout good"><b>核心洞見：</b>壓住採樣雜訊後，<b>專用 skill 的精煉可靠地把 approval 任務做到滿分</b>
+    （refined 1.0、3 rollout std=0、Δ+0.726），通用 SOP 精煉則<b>毫無改善</b>（Δ0）。對規則明確的領域任務，
+    光有「先讀後寫、逐條核對」的通用紀律不夠，<b>必須把領域規則（優先序、預算累計、連動扣點）寫進 skill</b>。
+    移除環境防呆是讓 baseline 不再天花板、差異得以顯現的前提。詳見 <a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report.html</a>。</div>
+    <div class="callout warn"><b>方法論誠實補充（本專案踩過的坑）：</b>① <b>單次回測 Δ 不可靠</b>——此任務端到端有三層 LLM 採樣，
+    只跑一次時 Δ 在 +0.65↔−0.22 間擺盪，那不是「專用一定贏」而是抽到好/壞籤。② 雜訊源不只 evolve：<b>固定同一份 refined skill
+    打分 6 次得 6/6 相同</b>（打分本身穩定），變異主要來自<b>上游證據採樣→evolve 生出不同 skill</b>；故「重複 rollout」擋不住，
+    得把<b>整條鏈（evolve 與工具迴圈）都降到 temp=0</b>（已設為預設）。③ 即便 temp=0，Gemini 仍非完全決定性
+    （通用 baseline 仍見 std=0.377）；此處專用 refined 的 std=0＋Δ+0.726 才構成可信訊號。此為已知限制，照實揭露。</div>
   </div>
 
   <div class="card" id="sc-7">

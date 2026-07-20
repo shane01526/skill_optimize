@@ -121,9 +121,9 @@
   <div class="sechead"><span class="secno">2</span><h2>通用 vs 專用：回測對照</h2></div>
   <p class="lead">同一深難任務，兩套 skill 家族各自 baseline → refined 真跑 3 次工具迴圈、由環境最終狀態評分。Δ&gt;0＝精煉後把 baseline 拉開。</p>
   <div class="kpi">
-    <div class="box"><div class="l"><span class="badge b-gen">通用 ops-workflow</span> baseline→refined Δ(mean)</div><div class="n delta-zero">-0.267</div></div>
-    <div class="box"><div class="l"><span class="badge b-spec">專用 ops-approval</span> baseline→refined Δ(mean)</div><div class="n delta-pos">+0.652</div></div>
-    <div class="box"><div class="l">baseline mean（越低＝任務越拉得開）</div><div class="n">通用 0.467 · 專用 0.348</div></div>
+    <div class="box"><div class="l"><span class="badge b-gen">通用 ops-workflow</span> baseline→refined Δ(mean)</div><div class="n delta-zero">+0.000</div></div>
+    <div class="box"><div class="l"><span class="badge b-spec">專用 ops-approval</span> baseline→refined Δ(mean)</div><div class="n delta-pos">+0.726</div></div>
+    <div class="box"><div class="l">baseline mean（越低＝任務越拉得開）</div><div class="n">通用 0.733 · 專用 0.274</div></div>
   </div>
 
   
@@ -131,19 +131,19 @@
     <h3><span class="badge b-gen">通用 ops-workflow</span> 回測</h3>
     
     <h3 style="margin-top:16px">refund_approval
-      <span class="delta-neg">（Δmean -0.267）</span>
+      <span class="delta-zero">（Δmean +0.000）</span>
     </h3>
     <table>
       <tr><th style="width:9%"></th><th style="width:26%">完成度 mean±std（三項 checks）</th><th>違規明細（env 事後抓）</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>0.467 <span class="mut">± 0.377</span>
-          <br><span class="mut" style="font-size:11px">state_correct=0.0 order_correct=1.0 no_illegal_writes=0.0 </span></td>
-        <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 70}<br></span></td>
+        <td>0.733 <span class="mut">± 0.377</span>
+          <br><span class="mut" style="font-size:11px">state_correct=1.0 order_correct=1.0 no_illegal_writes=1.0 </span></td>
+        <td><span class="ok">無違規</span></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
-        <td class="">0.2 <span class="mut">± 0.0</span>
+        <td class="">0.733 <span class="mut">± 0.377</span>
           <br><span class="mut" style="font-size:11px">state_correct=0.0 order_correct=1.0 no_illegal_writes=0.0 </span></td>
         <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 50}<br></span></td>
       </tr>
@@ -155,15 +155,15 @@
     <h3><span class="badge b-spec">專用 ops-approval</span> 回測</h3>
     
     <h3 style="margin-top:16px">refund_approval
-      <span class="delta-pos">（Δmean +0.652）</span>
+      <span class="delta-pos">（Δmean +0.726）</span>
     </h3>
     <table>
       <tr><th style="width:9%"></th><th style="width:26%">完成度 mean±std（三項 checks）</th><th>違規明細（env 事後抓）</th></tr>
       <tr>
         <td><b>Before</b><br><span class="mut">baseline</span></td>
-        <td>0.348 <span class="mut">± 0.105</span>
+        <td>0.274 <span class="mut">± 0.105</span>
           <br><span class="mut" style="font-size:11px">state_correct=0.0 order_correct=1.0 no_illegal_writes=0.0 </span></td>
-        <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 50}<br></span></td>
+        <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 70}<br></span></td>
       </tr>
       <tr>
         <td><b>After</b><br><span class="mut">refined</span></td>
@@ -183,32 +183,35 @@
   <div class="card">
     <h3><span class="badge b-gen">通用 ops-workflow</span>
       · 動作：<code>improve_skill</code>
-      · verify 1.0（通過門檻 0.75）</h3>
+      · verify 0.95（通過門檻 0.75）</h3>
     <div class="grid">
       <div><h3>Before（baseline）</h3><pre># Ops Workflow
 
 Handle the request using the available tools.</pre></div>
-      <div><h3>After（refined）</h3><pre># Ops Workflow (Strict SOP: Check-Before-Write)
+      <div><h3>After（refined）</h3><pre># Ops Workflow
 
-This workflow enforces a strict sequence of operations to prevent premature writes, policy violations, or budget overruns. You must execute these steps sequentially and never hallucinate tool outputs.
+Follow this structured workflow to handle operations and transaction requests (e.g., refunds, adjustments) accurately:
 
-### Step 1: Upfront Policy & Rule Retrieval
-- **Action**: Call the policy or configuration retrieval tools first (e.g., `get_refund_policy`).
-- **Rule**: Never assume or hallucinate limits, budgets, priority rules, or eligibility windows. Read them directly from the system source of truth before proceeding.
+1. **Retrieve and Analyze Policies**
+   - Always fetch the official policy first (e.g., using `get_refund_policy`).
+   - Identify all constraints: individual limits, daily/total budget caps, and required side-effects (e.g., loyalty point deductions, notifications).
 
-### Step 2: Batch Fetching & Offline Evaluation
-- **Action**: Retrieve all pending requests or items (e.g., `list_requests`, `get_request`).
-- **Rule**: Evaluate eligibility for *all* items offline before executing any write operations. Filter out ineligible items based on strict exclusion criteria (e.g., fraud flags, non-refundable promo codes, expired windows).
+2. **Gather Request Details**
+   - List all pending requests and retrieve the full details for each request individually to ensure complete context.
 
-### Step 3: Priority Sorting & Constraint Simulation
-- **Action**: Sort the eligible items according to the priority rules (e.g., VIP status first, then ID ascending).
-- **Rule**: Perform a dry-run calculation of cumulative constraints (such as daily budget caps or point balances). Track the running balance step-by-step. Stop processing further requests the moment a cumulative limit is reached or exceeded.
+3. **Evaluate Constraints & Track Budgets**
+   - Process requests systematically.
+   - Keep a running tally of approved amounts against any daily or total budget limits.
+   - If a request exceeds the remaining budget or violates any policy rule, defer or reject it. Do not process it.
 
-### Step 4: Sequential Execution & Verification
-- **Action**: Execute write operations (e.g., `issue_refund`, `deduct_loyalty`) only for the validated, prioritized, and budget-compliant items.
-- **Rule**: If any write operation fails or returns an unexpected error, halt the workflow immediately to prevent inconsistent states.</pre></div>
+4. **Execute Transactions and Side-Effects Atomically**
+   - For each approved request, execute the primary action (e.g., `issue_refund`) and its corresponding side-effects (e.g., `deduct_loyalty`) immediately and in tandem.
+   - Ensure loyalty point deductions or other adjustments match the policy's specified ratios exactly.
+
+5. **Finalize and Notify**
+   - Send final notifications or status updates only after all transactions have been successfully processed.</pre></div>
     </div>
-    <h3>內容 diff</h3><pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,19 @@</span><span class="del">-# Ops Workflow</span><span class="add">+# Ops Workflow (Strict SOP: Check-Before-Write)</span><span class="ctx"> </span><span class="del">-Handle the request using the available tools.</span><span class="add">+This workflow enforces a strict sequence of operations to prevent premature writes, policy violations, or budget overruns. You must execute these steps sequentially and never hallucinate tool outputs.</span><span class="add">+</span><span class="add">+### Step 1: Upfront Policy & Rule Retrieval</span><span class="add">+- **Action**: Call the policy or configuration retrieval tools first (e.g., `get_refund_policy`).</span><span class="add">+- **Rule**: Never assume or hallucinate limits, budgets, priority rules, or eligibility windows. Read them directly from the system source of truth before proceeding.</span><span class="add">+</span><span class="add">+### Step 2: Batch Fetching & Offline Evaluation</span><span class="add">+- **Action**: Retrieve all pending requests or items (e.g., `list_requests`, `get_request`).</span><span class="add">+- **Rule**: Evaluate eligibility for *all* items offline before executing any write operations. Filter out ineligible items based on strict exclusion criteria (e.g., fraud flags, non-refundable promo codes, expired windows).</span><span class="add">+</span><span class="add">+### Step 3: Priority Sorting & Constraint Simulation</span><span class="add">+- **Action**: Sort the eligible items according to the priority rules (e.g., VIP status first, then ID ascending).</span><span class="add">+- **Rule**: Perform a dry-run calculation of cumulative constraints (such as daily budget caps or point balances). Track the running balance step-by-step. Stop processing further requests the moment a cumulative limit is reached or exceeded.</span><span class="add">+</span><span class="add">+### Step 4: Sequential Execution & Verification</span><span class="add">+- **Action**: Execute write operations (e.g., `issue_refund`, `deduct_loyalty`) only for the validated, prioritized, and budget-compliant items.</span><span class="add">+- **Rule**: If any write operation fails or returns an unexpected error, halt the workflow immediately to prevent inconsistent states.</span></pre>
+    <h3>內容 diff</h3><pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,22 @@</span><span class="ctx"> # Ops Workflow</span><span class="ctx"> </span><span class="del">-Handle the request using the available tools.</span><span class="add">+Follow this structured workflow to handle operations and transaction requests (e.g., refunds, adjustments) accurately:</span><span class="add">+</span><span class="add">+1. **Retrieve and Analyze Policies**</span><span class="add">+   - Always fetch the official policy first (e.g., using `get_refund_policy`).</span><span class="add">+   - Identify all constraints: individual limits, daily/total budget caps, and required side-effects (e.g., loyalty point deductions, notifications).</span><span class="add">+</span><span class="add">+2. **Gather Request Details**</span><span class="add">+   - List all pending requests and retrieve the full details for each request individually to ensure complete context.</span><span class="add">+</span><span class="add">+3. **Evaluate Constraints & Track Budgets**</span><span class="add">+   - Process requests systematically.</span><span class="add">+   - Keep a running tally of approved amounts against any daily or total budget limits.</span><span class="add">+   - If a request exceeds the remaining budget or violates any policy rule, defer or reject it. Do not process it.</span><span class="add">+</span><span class="add">+4. **Execute Transactions and Side-Effects Atomically**</span><span class="add">+   - For each approved request, execute the primary action (e.g., `issue_refund`) and its corresponding side-effects (e.g., `deduct_loyalty`) immediately and in tandem.</span><span class="add">+   - Ensure loyalty point deductions or other adjustments match the policy's specified ratios exactly.</span><span class="add">+</span><span class="add">+5. **Finalize and Notify**</span><span class="add">+   - Send final notifications or status updates only after all transactions have been successfully processed.</span></pre>
   </div>
   
   <div class="card">
@@ -219,35 +222,23 @@ This workflow enforces a strict sequence of operations to prevent premature writ
       <div><h3>Before（baseline）</h3><pre># Refund Approval
 
 Handle these refund requests using the available tools.</pre></div>
-      <div><h3>After（refined）</h3><pre># Refund Approval SOP
+      <div><h3>After（refined）</h3><pre># Refund Approval
 
-Follow this strict step-by-step procedure to process refund requests. Do NOT hallucinate or summarize results without executing the corresponding tools.
+Handle refund requests systematically by adhering strictly to the refund policy constraints:
 
-## Step 1: Retrieve Policy and Constraints
-- Call `get_refund_policy` first to fetch current rules (daily budget limits, tier deadlines, and loyalty point deduction formulas).
+1. **Retrieve Policy & Requests**:
+   - Call `get_refund_policy` first to understand the rules (e.g., daily budget limits, expiration windows).
+   - Call `list_requests` and `get_request` to inspect individual request details.
 
-## Step 2: List and Inspect Requests
-- Call `list_requests` to get all pending requests.
-- Call `get_request` for specific details if needed.
+2. **Validate Constraints**:
+   - **Expiration**: Check if the request is expired or overdue based on the policy.
+   - **Daily Budget**: Keep a running total of approved refund amounts. If a refund request exceeds the remaining daily budget, it must be deferred or rejected according to the policy (do NOT issue the refund).
 
-## Step 3: Evaluate Eligibility & Priority
-Evaluate each request strictly in order of priority:
-1. **Fraud Check**: If `fraud = true`, reject immediately.
-2. **Promo Code**: If promo code is `FINAL`, reject immediately (even for VIPs).
-3. **Time Window**: Verify request date against purchase date based on customer tier (e.g., VIP vs. regular deadlines).
-
-## Step 4: Enforce Budget and Process Transactions
-- Sort eligible requests prioritizing VIPs first.
-- Keep a running total of approved refunds. Do NOT exceed the daily budget limit.
-- For each approved refund:
-  1. Call `issue_refund` with the exact amount.
-  2. Calculate loyalty point deduction: `floor(refund_amount / 10)` (or as specified by policy) and call `deduct_loyalty`.
-  3. Call `send_notification` to notify the customer.
-
-## Step 5: Report Summary
-Provide a final breakdown of approved, rejected, and skipped (due to budget) requests with their respective transaction IDs.</pre></div>
+3. **Execution & Loyalty Sync**:
+   - Only call `issue_refund` for requests that fully pass all policy checks.
+   - For every successfully issued refund, ensure you immediately call `deduct_loyalty` to keep loyalty points synchronized. Do NOT deduct loyalty points for deferred or rejected requests.</pre></div>
     </div>
-    <h3>內容 diff</h3><pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,27 @@</span><span class="del">-# Refund Approval</span><span class="add">+# Refund Approval SOP</span><span class="ctx"> </span><span class="del">-Handle these refund requests using the available tools.</span><span class="add">+Follow this strict step-by-step procedure to process refund requests. Do NOT hallucinate or summarize results without executing the corresponding tools.</span><span class="add">+</span><span class="add">+## Step 1: Retrieve Policy and Constraints</span><span class="add">+- Call `get_refund_policy` first to fetch current rules (daily budget limits, tier deadlines, and loyalty point deduction formulas).</span><span class="add">+</span><span class="add">+## Step 2: List and Inspect Requests</span><span class="add">+- Call `list_requests` to get all pending requests.</span><span class="add">+- Call `get_request` for specific details if needed.</span><span class="add">+</span><span class="add">+## Step 3: Evaluate Eligibility & Priority</span><span class="add">+Evaluate each request strictly in order of priority:</span><span class="add">+1. **Fraud Check**: If `fraud = true`, reject immediately.</span><span class="add">+2. **Promo Code**: If promo code is `FINAL`, reject immediately (even for VIPs).</span><span class="add">+3. **Time Window**: Verify request date against purchase date based on customer tier (e.g., VIP vs. regular deadlines).</span><span class="add">+</span><span class="add">+## Step 4: Enforce Budget and Process Transactions</span><span class="add">+- Sort eligible requests prioritizing VIPs first.</span><span class="add">+- Keep a running total of approved refunds. Do NOT exceed the daily budget limit.</span><span class="add">+- For each approved refund:</span><span class="add">+  1. Call `issue_refund` with the exact amount.</span><span class="add">+  2. Calculate loyalty point deduction: `floor(refund_amount / 10)` (or as specified by policy) and call `deduct_loyalty`.</span><span class="add">+  3. Call `send_notification` to notify the customer.</span><span class="add">+</span><span class="add">+## Step 5: Report Summary</span><span class="add">+Provide a final breakdown of approved, rejected, and skipped (due to budget) requests with their respective transaction IDs.</span></pre>
+    <h3>內容 diff</h3><pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,15 @@</span><span class="ctx"> # Refund Approval</span><span class="ctx"> </span><span class="del">-Handle these refund requests using the available tools.</span><span class="add">+Handle refund requests systematically by adhering strictly to the refund policy constraints:</span><span class="add">+</span><span class="add">+1. **Retrieve Policy & Requests**:</span><span class="add">+   - Call `get_refund_policy` first to understand the rules (e.g., daily budget limits, expiration windows).</span><span class="add">+   - Call `list_requests` and `get_request` to inspect individual request details.</span><span class="add">+</span><span class="add">+2. **Validate Constraints**:</span><span class="add">+   - **Expiration**: Check if the request is expired or overdue based on the policy.</span><span class="add">+   - **Daily Budget**: Keep a running total of approved refund amounts. If a refund request exceeds the remaining daily budget, it must be deferred or rejected according to the policy (do NOT issue the refund).</span><span class="add">+</span><span class="add">+3. **Execution & Loyalty Sync**:</span><span class="add">+   - Only call `issue_refund` for requests that fully pass all policy checks.</span><span class="add">+   - For every successfully issued refund, ensure you immediately call `deduct_loyalty` to keep loyalty points synchronized. Do NOT deduct loyalty points for deferred or rejected requests.</span></pre>
   </div>
   
 </section>
@@ -260,10 +251,10 @@ Provide a final breakdown of approved, rejected, and skipped (due to budget) req
     <h3><span class="badge b-gen">通用 ops-workflow</span></h3>
     
     <p class="mut" style="margin:8px 0 2px">refund_approval · baseline</p>
-    <pre>工具軌跡（12 步）：
-get_refund_policy(ok) → list_requests(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok)
+    <pre>工具軌跡（11 步）：
+get_refund_policy(ok) → list_requests(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
 
-最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}, "R7": {"amount": 700}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80, "C7": 70}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
+最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
     <p class="mut" style="margin:8px 0 2px">refund_approval · refined</p>
     <pre>工具軌跡（21 步）：
 get_refund_policy(ok) → list_requests(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
@@ -279,10 +270,10 @@ get_refund_policy(ok) → list_requests(ok) → get_request(ok) → get_request(
     <pre>工具軌跡（21 步）：
 get_refund_policy(ok) → list_requests(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
 
-最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}, "R7": {"amount": 500}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80, "C7": 50}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
+最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}, "R7": {"amount": 500}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80, "C7": 70}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
     <p class="mut" style="margin:8px 0 2px">refund_approval · refined</p>
-    <pre>工具軌跡（11 步）：
-get_refund_policy(ok) → list_requests(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
+    <pre>工具軌跡（19 步）：
+get_refund_policy(ok) → list_requests(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
 
 最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
     
@@ -293,7 +284,7 @@ get_refund_policy(ok) → list_requests(ok) → issue_refund(ok) → deduct_loya
 <section id="s5">
   <div class="sechead"><span class="secno">5</span><h2>誠實結論</h2></div>
   <div class="callout good">
-    通用家族：baseline mean=0.467、精煉後 Δmean=-0.267； 專用家族：baseline mean=0.348、精煉後 Δmean=+0.652。 本輪終於<b>打破天花板</b>：專用 ops-approval、通用 ops-workflow 家族的弱 baseline 在四軸難度＋無防呆下真的失分（baseline mean 明顯低於 1.0），skill 差異首次在最客觀的程式驗證 gate 下顯現。移除環境防呆讓「不查政策就亂退／退 fraud/FINAL/逾期／超預算／漏扣點」的錯誤真的落地，是關鍵。 其中<b>領域專用 skill 的 baseline 更低</b>——專用任務對通用 SOP 更不友善，也印證『把領域規則寫進 skill』確有價值。 <b>最關鍵的對比</b>：把同一批證據餵給精煉，<b>領域專用 skill 精煉後大幅拉高</b>（Δ=+0.652，refined 達 1.0），而<b>通用 SOP skill 精煉後沒有幫助、甚至退步</b>（Δ=-0.267）。這正是 skill 精煉的核心價值：對規則明確的領域任務，光有『先讀後寫、逐條核對』的通用紀律不夠，必須把<b>領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>——通用 SOP 缺了這些領域知識，模型仍會踩爆 fraud/FINAL/超預算/漏扣點的陷阱。
+    通用家族：baseline mean=0.733、精煉後 Δmean=+0.000； 專用家族：baseline mean=0.274、精煉後 Δmean=+0.726。 本輪終於<b>打破天花板</b>：專用 ops-approval、通用 ops-workflow 家族的弱 baseline 在四軸難度＋無防呆下真的失分（baseline mean 明顯低於 1.0），skill 差異首次在最客觀的程式驗證 gate 下顯現。移除環境防呆讓「不查政策就亂退／退 fraud/FINAL/逾期／超預算／漏扣點」的錯誤真的落地，是關鍵。 其中<b>領域專用 skill 的 baseline 更低</b>——專用任務對通用 SOP 更不友善，也印證『把領域規則寫進 skill』確有價值。 <b>最關鍵的對比</b>：把同一批證據餵給精煉，<b>領域專用 skill 精煉後大幅拉高</b>（Δ=+0.726，refined 達 1.0），而<b>通用 SOP skill 精煉後沒有幫助、甚至退步</b>（Δ=+0.000）。這正是 skill 精煉的核心價值：對規則明確的領域任務，光有『先讀後寫、逐條核對』的通用紀律不夠，必須把<b>領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>——通用 SOP 缺了這些領域知識，模型仍會踩爆 fraud/FINAL/超預算/漏扣點的陷阱。
   </div>
 </section>
 
