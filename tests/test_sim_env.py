@@ -9,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from refiner.sim_env import make_env, make_refund_env, make_restock_env
+from refiner.sim_env import make_approval_env, make_env, make_refund_env, make_restock_env
 from refiner.tool_agent import run_tool_agent
 
 _REFUND_CASE = {
@@ -137,4 +137,95 @@ def test_mock_agent_differentiates_restock():
     sv, wv = strong.verify(), weak.verify()
     assert sv["checks"]["state_correct"] >= wv["checks"]["state_correct"]
     assert sv["checks"]["order_correct"] == 1.0
+    assert wv["checks"]["order_correct"] == 0.0
+
+
+# --- approval env（深難：政策衝突＋預算＋連動扣點＋無防呆） ------------- #
+
+_APPROVAL_CASE = {
+    "scenario": "approval",
+    "policy": {"daily_budget": 5000, "vip_days": 60, "base_days": 30},
+    "requests": [
+        {"id": "R1", "customer": "C1", "tier": "normal", "days_since": 10, "amount": 800,  "promo": "",      "fraud": False},  # 退
+        {"id": "R2", "customer": "C2", "tier": "normal", "days_since": 45, "amount": 500,  "promo": "",      "fraud": False},  # 逾期
+        {"id": "R3", "customer": "C3", "tier": "vip",    "days_since": 45, "amount": 1200, "promo": "",      "fraud": False},  # 退(VIP窗)
+        {"id": "R4", "customer": "C4", "tier": "vip",    "days_since": 20, "amount": 900,  "promo": "FINAL", "fraud": False},  # FINAL
+        {"id": "R5", "customer": "C5", "tier": "normal", "days_since": 5,  "amount": 2000, "promo": "",      "fraud": True},   # fraud
+        {"id": "R6", "customer": "C6", "tier": "vip",    "days_since": 55, "amount": 1500, "promo": "",      "fraud": False},  # 退
+        {"id": "R7", "customer": "C7", "tier": "normal", "days_since": 25, "amount": 700,  "promo": "",      "fraud": False},  # defer(超預算)
+        {"id": "R8", "customer": "C8", "tier": "vip",    "days_since": 10, "amount": 1000, "promo": "",      "fraud": False},  # 退
+    ],
+}
+
+# 正解：VIP 先、按 id → R3(1200)+R6(1500)+R8(1000)+R1(800)=4500；R7 破 5000 → defer
+_EXPECTED_REFUNDS = {"R3", "R6", "R8", "R1"}
+_EXPECTED_LOYALTY = {"C3": 120, "C6": 150, "C8": 100, "C1": 80}
+
+
+def _process_correctly(env):
+    """依正解對 approval env 下正確工具呼叫（查政策 → 只退 eligible 且不破預算 → 連動扣點）。"""
+    env.call("get_refund_policy", {})
+    for oid, cust, amt in [("R3", "C3", 1200), ("R6", "C6", 1500), ("R8", "C8", 1000), ("R1", "C1", 800)]:
+        env.call("issue_refund", {"id": oid, "amount": amt})
+        env.call("deduct_loyalty", {"customer": cust, "points": amt // 10})
+    env.call("send_notification", {"to": "ops", "message": "done"})
+
+
+def test_approval_correct_flow_passes():
+    env = make_approval_env(_APPROVAL_CASE)
+    _process_correctly(env)
+    v = env.verify()
+    assert v["passed"] is True, v["violations"]
+    assert v["checks"] == {"state_correct": 1.0, "order_correct": 1.0, "no_illegal_writes": 1.0}
+    assert set(env.state["refunds"].keys()) == _EXPECTED_REFUNDS
+    assert v["final_state"]["expected_loyalty"] == _EXPECTED_LOYALTY
+
+
+def test_approval_env_has_no_guardrails():
+    """本輪關鍵：env 不擋任何寫入。對 fraud/逾期呼叫 issue_refund 仍回 ok 且狀態被寫入
+    （與 refund/restock 情境相反），但 verify() 事後標為違規、no_illegal_writes=0。"""
+    env = make_approval_env(_APPROVAL_CASE)
+    assert env.call("issue_refund", {"id": "R5", "amount": 2000})["ok"] is True   # fraud，卻照退
+    assert env.call("issue_refund", {"id": "R2", "amount": 500})["ok"] is True    # 逾期，卻照退
+    assert "R5" in env.state["refunds"] and "R2" in env.state["refunds"]          # 錯誤真的落地
+    v = env.verify()
+    assert v["checks"]["no_illegal_writes"] == 0.0
+    assert any("R5" in x for x in v["violations"])
+
+
+def test_approval_over_budget_refund_flagged():
+    """多退一筆使累計超預算（R7 本應 defer）→ state 不滿分且列違規。"""
+    env = make_approval_env(_APPROVAL_CASE)
+    _process_correctly(env)                              # 已退 4500
+    env.call("issue_refund", {"id": "R7", "amount": 700})  # 破 5000
+    env.call("deduct_loyalty", {"customer": "C7", "points": 70})
+    v = env.verify()
+    assert v["passed"] is False
+    assert v["checks"]["no_illegal_writes"] == 0.0
+    assert any("R7" in x and "預算" in x for x in v["violations"])
+
+
+def test_approval_missing_loyalty_flagged():
+    """連動扣點漏掉 → state_correct<1 且列違規（退款對但扣點錯）。"""
+    env = make_approval_env(_APPROVAL_CASE)
+    env.call("get_refund_policy", {})
+    for oid, amt in [("R3", 1200), ("R6", 1500), ("R8", 1000), ("R1", 800)]:
+        env.call("issue_refund", {"id": oid, "amount": amt})   # 只退不扣點
+    v = env.verify()
+    assert v["checks"]["state_correct"] < 1.0
+    assert any("扣點" in x for x in v["violations"])
+
+
+def test_mock_agent_differentiates_approval():
+    strong = make_env("approval", _APPROVAL_CASE)
+    weak = make_env("approval", _APPROVAL_CASE)
+    run_tool_agent(None, "s", "核准退款", strong, mode="mock",
+                   variant_content="先查政策，依優先序逐筆核對資格，累計預算，每退必扣點。")
+    run_tool_agent(None, "s", "核准退款", weak, mode="mock", variant_content="處理一下。")
+    sv, wv = strong.verify(), weak.verify()
+    assert sv["passed"] is True
+    assert sv["checks"]["state_correct"] == 1.0
+    # 弱 baseline：無防呆使違規退款落地 → 明顯被拉開
+    assert wv["checks"]["no_illegal_writes"] == 0.0
+    assert wv["checks"]["state_correct"] < sv["checks"]["state_correct"]
     assert wv["checks"]["order_correct"] == 0.0

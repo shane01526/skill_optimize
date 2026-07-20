@@ -1,0 +1,14 @@
+{
+  "scenario": "approval",
+  "policy": {"daily_budget": 5000, "vip_days": 60, "base_days": 30},
+  "requests": [
+    {"id": "R1", "customer": "C1", "tier": "normal", "days_since": 10, "amount": 800,  "promo": "",      "fraud": false},
+    {"id": "R2", "customer": "C2", "tier": "normal", "days_since": 45, "amount": 500,  "promo": "",      "fraud": false},
+    {"id": "R3", "customer": "C3", "tier": "vip",    "days_since": 45, "amount": 1200, "promo": "",      "fraud": false},
+    {"id": "R4", "customer": "C4", "tier": "vip",    "days_since": 20, "amount": 900,  "promo": "FINAL", "fraud": false},
+    {"id": "R5", "customer": "C5", "tier": "normal", "days_since": 5,  "amount": 2000, "promo": "",      "fraud": true},
+    {"id": "R6", "customer": "C6", "tier": "vip",    "days_since": 55, "amount": 1500, "promo": "",      "fraud": false},
+    {"id": "R7", "customer": "C7", "tier": "normal", "days_since": 25, "amount": 700,  "promo": "",      "fraud": false},
+    {"id": "R8", "customer": "C8", "tier": "vip",    "days_since": 10, "amount": 1000, "promo": "",      "fraud": false}
+  ]
+}

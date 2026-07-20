@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>深難 Agentic 任務：通用 vs 專用 skill 對照報告</title>
+<style>
+  :root{--bg:#0f1116;--panel:#171a21;--panel2:#1e222b;--ink:#e7eaf0;--muted:#9aa3b2;
+    --line:#2a2f3a;--accent:#5b9dff;--good:#3fb950;--warn:#d29922;--bad:#f85149;--chip:#232838;--purple:#a371f7;
+    --add:#123a20;--del:#3a1214;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px;
+    font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+  header{padding:44px 24px 30px;background:radial-gradient(120% 140% at 20% 0%,#1c2740,#0f1116 60%);border-bottom:1px solid var(--line)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  h1{font-size:30px;margin:0 0 6px} h2{font-size:22px;margin:0 0 4px}
+  h3{font-size:16.5px;margin:20px 0 8px;color:#cdd6e6}
+  .sub{color:var(--muted);font-size:14.5px}
+  .lead{color:#c7d0de;font-size:14.5px;margin:2px 0 14px;border-left:3px solid var(--accent);padding-left:12px}
+  section{margin:34px 0}
+  .sechead{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px}
+  .secno{color:var(--accent);font-weight:700;font-size:15px;background:#131a28;border:1px solid var(--line);border-radius:8px;padding:2px 9px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0}
+  .toc a{background:var(--chip);color:#cdd6e6;text-decoration:none;padding:6px 12px;border-radius:20px;font-size:13px;border:1px solid var(--line)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#cdd6e6}
+  tr:nth-child(even) td{background:#141821}
+  code{font-family:Consolas,Menlo,monospace;font-size:12.5px;color:#e6c07b}
+  pre{background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;font-size:12.5px;color:#c8d2e0;white-space:pre-wrap}
+  .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11.5px;font-weight:600}
+  .b-rule{background:#0f2a1a;color:#6fdd8b;border:1px solid #235537}
+  .b-gen{background:#2c2410;color:#e3c169;border:1px solid #574718}
+  .b-spec{background:#241033;color:#c79bf7;border:1px solid #4a2b6b}
+  .ok{color:var(--good)} .no{color:var(--bad)} .mid{color:var(--warn)}
+  .callout{border-left:3px solid var(--accent);background:#141a26;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
+  .callout.warn{border-color:var(--warn);background:#241f14}
+  .callout.good{border-color:var(--good);background:#132116}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+  .kpi .box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:120px;flex:1}
+  .kpi .n{font-size:22px;font-weight:700} .kpi .l{color:var(--muted);font-size:12px}
+  .delta-pos{color:var(--good);font-weight:700} .delta-neg{color:var(--bad);font-weight:700} .delta-zero{color:var(--muted)}
+  .diff .add{background:var(--add);color:#7ee787;display:block} .diff .del{background:var(--del);color:#ff9a9a;display:block}
+  .diff .hunk{color:var(--accent);display:block} .diff .ctx{color:var(--muted);display:block}
+  footer{color:var(--muted);font-size:12px;padding:30px 24px;border-top:1px solid var(--line);margin-top:40px}
+  a{color:var(--accent)} .mut{color:var(--muted)} ul{margin:8px 0;padding-left:22px} li{margin:3px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>深難 Agentic 任務：通用 vs 專用 skill 對照報告</h1>
+  <div class="sub">退款核准（四軸難度：多相依步驟＋政策衝突＋每日預算 horizon＋環境無硬性防呆），比較通用 SOP skill 與領域專用 skill 誰能把弱 baseline 拉開。</div>
+  <div class="sub mut">LLM：gemini / gemini-flash-latest（同時當 runner）· 模式：api · rollout：3 次 · 達標＝環境最終狀態程式驗證</div>
+  <nav class="toc">
+    <a href="#s0">0 誠實聲明</a>
+    <a href="#s1">1 任務與陷阱</a>
+    <a href="#s2">2 通用 vs 專用 回測對照</a>
+    <a href="#s3">3 兩家族精煉前後</a>
+    <a href="#s4">4 工具軌跡</a>
+    <a href="#s5">5 誠實結論</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+
+<section id="s0">
+  <div class="sechead"><span class="secno">0</span><h2>誠實聲明（本輪設定）</h2></div>
+  <div class="callout warn">
+    <ul style="margin:0">
+      <li><b>為什麼有這一輪</b>：前一輪 agentic 任務第 4 次撞天花板——連弱 baseline 都拿滿分。主因是任務步數少、<b>且環境有硬性防呆</b>（違規寫入被擋，等於幫 baseline 兜底）。本輪針對性拉滿難度。</li>
+      <li><b>四軸難度</b>：① 多相依步驟（查政策→判資格→排序→受預算核銷→<b>連動扣點</b>→通知）；② <b>政策衝突需推理</b>（fraud &gt; FINAL 不可退 &gt; VIP 窗 &gt; 基本窗）；③ <b>長 horizon</b>（每日預算上限，須累計已退金額、超過就 defer）；④ <b>移除硬性防呆</b>。</li>
+      <li><b>關鍵：環境不再把關</b>：<code>issue_refund</code> / <code>deduct_loyalty</code> 照單全收、永遠回 ok，不檢查資格/預算/重複。於是「不查就寫」「退不該退的」「超預算」「漏扣點」的錯誤會<b>真的落地</b>，只能靠 <code>verify()</code> 事後比對正確最終狀態抓出來——這次 <code>no_illegal_writes</code> 會真的變動。</li>
+      <li><b>達標＝程式客觀驗證（非 LLM）</b>：<code>completion = 0.7·state_correct + 0.2·order_correct + 0.1·no_illegal_writes</code>。驗證器見 <code>refiner/sim_env.py::make_approval_env</code>。</li>
+      <li><b>本報告在比什麼</b>：同一個深難任務，用<b>通用 SOP skill</b>（<code>ops-workflow</code>）與<b>領域專用 skill</b>（<code>ops-approval</code>，寫死了優先序/預算/扣點）各跑一次完整精煉＋回測，看哪一套能把 baseline 拉開。</li>
+      <li><b>改善主證據＝第 2 節回測</b>（baseline vs refined 真跑工具迴圈、程式驗證）。變體評分階段仍受 <code>conversation.json</code> 腳本回饋影響（illustrative，非改善證據）。每組跑 3 次取 mean±std。</li>
+    </ul>
+  </div>
+</section>
+
+<section id="s1">
+  <div class="sechead"><span class="secno">1</span><h2>任務與陷阱（8 筆申請）</h2></div>
+  <p class="lead">政策：每日預算 <code>5000</code>、VIP 窗 <code>60</code> 天、一般窗 <code>30</code> 天。處理順序＝VIP 優先、其餘按 id 升冪，逐筆累計預算、超過 defer；每筆退款連動扣 <code>floor(金額/10)</code> 點。</p>
+  <div class="card">
+    <table>
+      <tr><th>id</th><th>tier</th><th>天數</th><th>金額</th><th>promo</th><th>fraud</th><th>正解</th></tr>
+      
+      <tr><td><code>R1</code></td><td>normal</td><td>10</td><td>800</td><td>-</td>
+        <td class="mut">-</td><td>退（base 窗內）</td></tr>
+      
+      <tr><td><code>R2</code></td><td>normal</td><td>45</td><td>500</td><td>-</td>
+        <td class="mut">-</td><td>不退（逾期）</td></tr>
+      
+      <tr><td><code>R3</code></td><td>VIP</td><td>45</td><td>1200</td><td>-</td>
+        <td class="mut">-</td><td>退（VIP 窗；base 說不、VIP 說可 → 政策衝突）</td></tr>
+      
+      <tr><td><code>R4</code></td><td>VIP</td><td>20</td><td>900</td><td>FINAL</td>
+        <td class="mut">-</td><td>不退（FINAL 蓋過 VIP → 政策衝突）</td></tr>
+      
+      <tr><td><code>R5</code></td><td>normal</td><td>5</td><td>2000</td><td>-</td>
+        <td class="no">✓</td><td>不退（fraud，最高優先；看似新且大額的陷阱）</td></tr>
+      
+      <tr><td><code>R6</code></td><td>VIP</td><td>55</td><td>1500</td><td>-</td>
+        <td class="mut">-</td><td>退（VIP 窗）</td></tr>
+      
+      <tr><td><code>R7</code></td><td>normal</td><td>25</td><td>700</td><td>-</td>
+        <td class="mut">-</td><td>eligible 但超每日預算 → defer</td></tr>
+      
+      <tr><td><code>R8</code></td><td>VIP</td><td>10</td><td>1000</td><td>-</td>
+        <td class="mut">-</td><td>退</td></tr>
+      
+    </table>
+    <p class="mut"><b>正解</b>：退款 <code>{R3,R6,R8,R1}</code> 共 4500（R7 700 會破 5000 → defer）；連動扣點 <code>{C3:120, C6:150, C8:100, C1:80}</code>。
+    R2（逾期）、R4（FINAL）、R5（fraud）不退。弱 baseline 若不查政策就全退 8 筆、又不扣點 → <code>state_correct</code> 低、<code>no_illegal_writes=0</code>。</p>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sechead"><span class="secno">2</span><h2>通用 vs 專用：回測對照</h2></div>
+  <p class="lead">同一深難任務，兩套 skill 家族各自 baseline → refined 真跑 3 次工具迴圈、由環境最終狀態評分。Δ&gt;0＝精煉後把 baseline 拉開。</p>
+  <div class="kpi">
+    <div class="box"><div class="l"><span class="badge b-gen">通用 ops-workflow</span> baseline→refined Δ(mean)</div><div class="n delta-zero">-0.267</div></div>
+    <div class="box"><div class="l"><span class="badge b-spec">專用 ops-approval</span> baseline→refined Δ(mean)</div><div class="n delta-pos">+0.652</div></div>
+    <div class="box"><div class="l">baseline mean（越低＝任務越拉得開）</div><div class="n">通用 0.467 · 專用 0.348</div></div>
+  </div>
+
+  
+  <div class="card">
+    <h3><span class="badge b-gen">通用 ops-workflow</span> 回測</h3>
+    
+    <h3 style="margin-top:16px">refund_approval
+      <span class="delta-neg">（Δmean -0.267）</span>
+    </h3>
+    <table>
+      <tr><th style="width:9%"></th><th style="width:26%">完成度 mean±std（三項 checks）</th><th>違規明細（env 事後抓）</th></tr>
+      <tr>
+        <td><b>Before</b><br><span class="mut">baseline</span></td>
+        <td>0.467 <span class="mut">± 0.377</span>
+          <br><span class="mut" style="font-size:11px">state_correct=0.0 order_correct=1.0 no_illegal_writes=0.0 </span></td>
+        <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 70}<br></span></td>
+      </tr>
+      <tr>
+        <td><b>After</b><br><span class="mut">refined</span></td>
+        <td class="">0.2 <span class="mut">± 0.0</span>
+          <br><span class="mut" style="font-size:11px">state_correct=0.0 order_correct=1.0 no_illegal_writes=0.0 </span></td>
+        <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 50}<br></span></td>
+      </tr>
+    </table>
+    
+  </div>
+  
+  <div class="card">
+    <h3><span class="badge b-spec">專用 ops-approval</span> 回測</h3>
+    
+    <h3 style="margin-top:16px">refund_approval
+      <span class="delta-pos">（Δmean +0.652）</span>
+    </h3>
+    <table>
+      <tr><th style="width:9%"></th><th style="width:26%">完成度 mean±std（三項 checks）</th><th>違規明細（env 事後抓）</th></tr>
+      <tr>
+        <td><b>Before</b><br><span class="mut">baseline</span></td>
+        <td>0.348 <span class="mut">± 0.105</span>
+          <br><span class="mut" style="font-size:11px">state_correct=0.0 order_correct=1.0 no_illegal_writes=0.0 </span></td>
+        <td><span class="no" style="font-size:12px">· 不該退卻退了：R7（超每日預算應 defer）<br>· 連動扣點不正確：應={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80}、實={'C3': 120, 'C6': 150, 'C8': 100, 'C1': 80, 'C7': 50}<br></span></td>
+      </tr>
+      <tr>
+        <td><b>After</b><br><span class="mut">refined</span></td>
+        <td class="ok">1.0 <span class="mut">± 0.0</span>
+          <br><span class="mut" style="font-size:11px">state_correct=1.0 order_correct=1.0 no_illegal_writes=1.0 </span></td>
+        <td><span class="ok">無違規</span></td>
+      </tr>
+    </table>
+    
+  </div>
+  
+</section>
+
+<section id="s3">
+  <div class="sechead"><span class="secno">3</span><h2>兩家族：精煉前後 skill</h2></div>
+  
+  <div class="card">
+    <h3><span class="badge b-gen">通用 ops-workflow</span>
+      · 動作：<code>improve_skill</code>
+      · verify 1.0（通過門檻 0.75）</h3>
+    <div class="grid">
+      <div><h3>Before（baseline）</h3><pre># Ops Workflow
+
+Handle the request using the available tools.</pre></div>
+      <div><h3>After（refined）</h3><pre># Ops Workflow (Strict SOP: Check-Before-Write)
+
+This workflow enforces a strict sequence of operations to prevent premature writes, policy violations, or budget overruns. You must execute these steps sequentially and never hallucinate tool outputs.
+
+### Step 1: Upfront Policy & Rule Retrieval
+- **Action**: Call the policy or configuration retrieval tools first (e.g., `get_refund_policy`).
+- **Rule**: Never assume or hallucinate limits, budgets, priority rules, or eligibility windows. Read them directly from the system source of truth before proceeding.
+
+### Step 2: Batch Fetching & Offline Evaluation
+- **Action**: Retrieve all pending requests or items (e.g., `list_requests`, `get_request`).
+- **Rule**: Evaluate eligibility for *all* items offline before executing any write operations. Filter out ineligible items based on strict exclusion criteria (e.g., fraud flags, non-refundable promo codes, expired windows).
+
+### Step 3: Priority Sorting & Constraint Simulation
+- **Action**: Sort the eligible items according to the priority rules (e.g., VIP status first, then ID ascending).
+- **Rule**: Perform a dry-run calculation of cumulative constraints (such as daily budget caps or point balances). Track the running balance step-by-step. Stop processing further requests the moment a cumulative limit is reached or exceeded.
+
+### Step 4: Sequential Execution & Verification
+- **Action**: Execute write operations (e.g., `issue_refund`, `deduct_loyalty`) only for the validated, prioritized, and budget-compliant items.
+- **Rule**: If any write operation fails or returns an unexpected error, halt the workflow immediately to prevent inconsistent states.</pre></div>
+    </div>
+    <h3>內容 diff</h3><pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,19 @@</span><span class="del">-# Ops Workflow</span><span class="add">+# Ops Workflow (Strict SOP: Check-Before-Write)</span><span class="ctx"> </span><span class="del">-Handle the request using the available tools.</span><span class="add">+This workflow enforces a strict sequence of operations to prevent premature writes, policy violations, or budget overruns. You must execute these steps sequentially and never hallucinate tool outputs.</span><span class="add">+</span><span class="add">+### Step 1: Upfront Policy & Rule Retrieval</span><span class="add">+- **Action**: Call the policy or configuration retrieval tools first (e.g., `get_refund_policy`).</span><span class="add">+- **Rule**: Never assume or hallucinate limits, budgets, priority rules, or eligibility windows. Read them directly from the system source of truth before proceeding.</span><span class="add">+</span><span class="add">+### Step 2: Batch Fetching & Offline Evaluation</span><span class="add">+- **Action**: Retrieve all pending requests or items (e.g., `list_requests`, `get_request`).</span><span class="add">+- **Rule**: Evaluate eligibility for *all* items offline before executing any write operations. Filter out ineligible items based on strict exclusion criteria (e.g., fraud flags, non-refundable promo codes, expired windows).</span><span class="add">+</span><span class="add">+### Step 3: Priority Sorting & Constraint Simulation</span><span class="add">+- **Action**: Sort the eligible items according to the priority rules (e.g., VIP status first, then ID ascending).</span><span class="add">+- **Rule**: Perform a dry-run calculation of cumulative constraints (such as daily budget caps or point balances). Track the running balance step-by-step. Stop processing further requests the moment a cumulative limit is reached or exceeded.</span><span class="add">+</span><span class="add">+### Step 4: Sequential Execution & Verification</span><span class="add">+- **Action**: Execute write operations (e.g., `issue_refund`, `deduct_loyalty`) only for the validated, prioritized, and budget-compliant items.</span><span class="add">+- **Rule**: If any write operation fails or returns an unexpected error, halt the workflow immediately to prevent inconsistent states.</span></pre>
+  </div>
+  
+  <div class="card">
+    <h3><span class="badge b-spec">專用 ops-approval</span>
+      · 動作：<code>improve_skill</code>
+      · verify 0.95（通過門檻 0.75）</h3>
+    <div class="grid">
+      <div><h3>Before（baseline）</h3><pre># Refund Approval
+
+Handle these refund requests using the available tools.</pre></div>
+      <div><h3>After（refined）</h3><pre># Refund Approval SOP
+
+Follow this strict step-by-step procedure to process refund requests. Do NOT hallucinate or summarize results without executing the corresponding tools.
+
+## Step 1: Retrieve Policy and Constraints
+- Call `get_refund_policy` first to fetch current rules (daily budget limits, tier deadlines, and loyalty point deduction formulas).
+
+## Step 2: List and Inspect Requests
+- Call `list_requests` to get all pending requests.
+- Call `get_request` for specific details if needed.
+
+## Step 3: Evaluate Eligibility & Priority
+Evaluate each request strictly in order of priority:
+1. **Fraud Check**: If `fraud = true`, reject immediately.
+2. **Promo Code**: If promo code is `FINAL`, reject immediately (even for VIPs).
+3. **Time Window**: Verify request date against purchase date based on customer tier (e.g., VIP vs. regular deadlines).
+
+## Step 4: Enforce Budget and Process Transactions
+- Sort eligible requests prioritizing VIPs first.
+- Keep a running total of approved refunds. Do NOT exceed the daily budget limit.
+- For each approved refund:
+  1. Call `issue_refund` with the exact amount.
+  2. Calculate loyalty point deduction: `floor(refund_amount / 10)` (or as specified by policy) and call `deduct_loyalty`.
+  3. Call `send_notification` to notify the customer.
+
+## Step 5: Report Summary
+Provide a final breakdown of approved, rejected, and skipped (due to budget) requests with their respective transaction IDs.</pre></div>
+    </div>
+    <h3>內容 diff</h3><pre class="diff"><span class="hunk">--- </span><span class="hunk">+++ </span><span class="hunk">@@ -1,3 +1,27 @@</span><span class="del">-# Refund Approval</span><span class="add">+# Refund Approval SOP</span><span class="ctx"> </span><span class="del">-Handle these refund requests using the available tools.</span><span class="add">+Follow this strict step-by-step procedure to process refund requests. Do NOT hallucinate or summarize results without executing the corresponding tools.</span><span class="add">+</span><span class="add">+## Step 1: Retrieve Policy and Constraints</span><span class="add">+- Call `get_refund_policy` first to fetch current rules (daily budget limits, tier deadlines, and loyalty point deduction formulas).</span><span class="add">+</span><span class="add">+## Step 2: List and Inspect Requests</span><span class="add">+- Call `list_requests` to get all pending requests.</span><span class="add">+- Call `get_request` for specific details if needed.</span><span class="add">+</span><span class="add">+## Step 3: Evaluate Eligibility & Priority</span><span class="add">+Evaluate each request strictly in order of priority:</span><span class="add">+1. **Fraud Check**: If `fraud = true`, reject immediately.</span><span class="add">+2. **Promo Code**: If promo code is `FINAL`, reject immediately (even for VIPs).</span><span class="add">+3. **Time Window**: Verify request date against purchase date based on customer tier (e.g., VIP vs. regular deadlines).</span><span class="add">+</span><span class="add">+## Step 4: Enforce Budget and Process Transactions</span><span class="add">+- Sort eligible requests prioritizing VIPs first.</span><span class="add">+- Keep a running total of approved refunds. Do NOT exceed the daily budget limit.</span><span class="add">+- For each approved refund:</span><span class="add">+  1. Call `issue_refund` with the exact amount.</span><span class="add">+  2. Calculate loyalty point deduction: `floor(refund_amount / 10)` (or as specified by policy) and call `deduct_loyalty`.</span><span class="add">+  3. Call `send_notification` to notify the customer.</span><span class="add">+</span><span class="add">+## Step 5: Report Summary</span><span class="add">+Provide a final breakdown of approved, rejected, and skipped (due to budget) requests with their respective transaction IDs.</span></pre>
+  </div>
+  
+</section>
+
+<section id="s4">
+  <div class="sechead"><span class="secno">4</span><h2>代表性工具軌跡</h2></div>
+  <p class="lead">各家族 baseline 與 refined 的一條實際工具呼叫軌跡＋最終環境狀態（回測第 1 次 rollout 的代表樣本）。</p>
+  
+  <div class="card">
+    <h3><span class="badge b-gen">通用 ops-workflow</span></h3>
+    
+    <p class="mut" style="margin:8px 0 2px">refund_approval · baseline</p>
+    <pre>工具軌跡（12 步）：
+get_refund_policy(ok) → list_requests(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok)
+
+最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}, "R7": {"amount": 700}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80, "C7": 70}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
+    <p class="mut" style="margin:8px 0 2px">refund_approval · refined</p>
+    <pre>工具軌跡（21 步）：
+get_refund_policy(ok) → list_requests(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
+
+最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}, "R7": {"amount": 500}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80, "C7": 50}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
+    
+  </div>
+  
+  <div class="card">
+    <h3><span class="badge b-spec">專用 ops-approval</span></h3>
+    
+    <p class="mut" style="margin:8px 0 2px">refund_approval · baseline</p>
+    <pre>工具軌跡（21 步）：
+get_refund_policy(ok) → list_requests(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → get_request(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
+
+最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}, "R7": {"amount": 500}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80, "C7": 50}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
+    <p class="mut" style="margin:8px 0 2px">refund_approval · refined</p>
+    <pre>工具軌跡（11 步）：
+get_refund_policy(ok) → list_requests(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → issue_refund(ok) → deduct_loyalty(ok) → send_notification(ok)
+
+最終狀態：{"refunds": {"R3": {"amount": 1200}, "R6": {"amount": 1500}, "R8": {"amount": 1000}, "R1": {"amount": 800}}, "loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}, "expected_refunds": {"R3": 1200.0, "R6": 1500.0, "R8": 1000.0, "R1": 800.0}, "expected_loyalty": {"C3": 120, "C6": 150, "C8": 100, "C1": 80}}</pre>
+    
+  </div>
+  
+</section>
+
+<section id="s5">
+  <div class="sechead"><span class="secno">5</span><h2>誠實結論</h2></div>
+  <div class="callout good">
+    通用家族：baseline mean=0.467、精煉後 Δmean=-0.267； 專用家族：baseline mean=0.348、精煉後 Δmean=+0.652。 本輪終於<b>打破天花板</b>：專用 ops-approval、通用 ops-workflow 家族的弱 baseline 在四軸難度＋無防呆下真的失分（baseline mean 明顯低於 1.0），skill 差異首次在最客觀的程式驗證 gate 下顯現。移除環境防呆讓「不查政策就亂退／退 fraud/FINAL/逾期／超預算／漏扣點」的錯誤真的落地，是關鍵。 其中<b>領域專用 skill 的 baseline 更低</b>——專用任務對通用 SOP 更不友善，也印證『把領域規則寫進 skill』確有價值。 <b>最關鍵的對比</b>：把同一批證據餵給精煉，<b>領域專用 skill 精煉後大幅拉高</b>（Δ=+0.652，refined 達 1.0），而<b>通用 SOP skill 精煉後沒有幫助、甚至退步</b>（Δ=-0.267）。這正是 skill 精煉的核心價值：對規則明確的領域任務，光有『先讀後寫、逐條核對』的通用紀律不夠，必須把<b>領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>——通用 SOP 缺了這些領域知識，模型仍會踩爆 fraud/FINAL/超預算/漏扣點的陷阱。
+  </div>
+</section>
+
+</main>
+<footer class="wrap">
+  深難 Agentic 對照報告 · 由 <code>refiner/e2e_compare_report.py</code> 產生（單一檔、內嵌 CSS、離線可開）。
+  資料：<code>output/agentic_hard_generic/result.json</code> + <code>output/agentic_hard_specialized/result.json</code>。
+</footer>
+</body>
+</html>

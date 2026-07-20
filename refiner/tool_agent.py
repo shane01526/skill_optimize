@@ -117,5 +117,32 @@ def _run_mock_agent(system: str, task_prompt: str, env: SimEnv, variant_content:
                 rec("restock", {"sku": o["sku"], "qty": o["qty"]})
                 rec("issue_refund", {"id": o["id"], "amount": o.get("amount", 0)})
         rec("send_notification", {"to": "ops", "message": "processed"})
+    elif env.scenario == "approval":
+        pol = env.state["policy"]
+        budget = pol.get("daily_budget", 5000)
+        vip_days, base_days = pol.get("vip_days", 60), pol.get("base_days", 30)
+        if strong:
+            rec("get_refund_policy", {})
+        reqs = rec("list_requests", {}).get("requests", [])
+        if strong:
+            # 好流程：依優先序過濾 → VIP 優先排序 → 逐筆累計預算、超則停 → 連動扣點
+            def _elig(r):
+                if r.get("fraud") or r.get("promo") == "FINAL":
+                    return False
+                return r["days_since"] <= (vip_days if r.get("tier") == "vip" else base_days)
+            elig = sorted((r for r in reqs if _elig(r)),
+                          key=lambda r: (0 if r.get("tier") == "vip" else 1, r["id"]))
+            cum = 0.0
+            for r in elig:
+                if cum + r["amount"] > budget:
+                    continue  # defer
+                cum += r["amount"]
+                rec("issue_refund", {"id": r["id"], "amount": r["amount"]})
+                rec("deduct_loyalty", {"customer": r["customer"], "points": int(r["amount"] // 10)})
+        else:
+            # 壞流程：不查政策、對每一筆都退（含 fraud/FINAL/逾期/超預算）、不扣點
+            for r in reqs:
+                rec("issue_refund", {"id": r["id"], "amount": r["amount"]})
+        rec("send_notification", {"to": "ops", "message": "processed"})
 
     return {"final_text": "[MOCK agent] done", "steps": len(env.trajectory), "transcript": transcript}

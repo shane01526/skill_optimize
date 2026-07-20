@@ -1,0 +1,7 @@
+{
+  "task_type": "general",
+  "judge": "env_state",
+  "scenario": "approval",
+  "difficulty": "very_hard",
+  "note": "深難多步驟工具流程（四軸）：多相依步驟(查政策→判資格→排序→受預算核銷→連動扣點→通知)、政策衝突需推理(fraud>FINAL>VIP窗>基本窗)、長 horizon(每日預算需累計，超過 defer)、且環境『無硬性防呆』——issue_refund/deduct_loyalty 照單全收不擋，錯誤會真的落地。達標由環境最終狀態程式驗證，case.json 含跨四軸陷阱。"
+}
