@@ -129,17 +129,16 @@ _TEMPLATE = r"""<!DOCTYPE html>
   <a href="#s1">1 總覽</a>
   <a href="#s2">2 Pipeline 流程</a>
   <a href="#s3">3 skill_id / Registry</a>
-  <a href="#s4">4 精煉前/後對照</a>
+  <a href="#s4">4 E2E 場景與報告</a>
   <a href="#s5">5 與 SkillClaw 差異</a>
   <a href="#s6">6 陷阱與擴展</a>
-  <a href="#s7">7 E2E 場景與報告</a>
   <a href="#scoring" class="tabbtn" style="border-radius:20px;padding:6px 12px;font-weight:400;font-size:13px">評分機制詳解 ↗</a>
 </nav>
 
 <!-- ============ 1 總覽 ============ -->
 <section id="s1">
   <div class="sechead"><span class="secno">1</span><h2>總覽</h2></div>
-  <p class="lead">一句話：同一目標寫多個 skill 變體 → 讓它們跑同一批任務 → 用客觀+行為訊號評分 → 從勝出變體萃取做法 → 精煉成新版並產出對照表。</p>
+  <p class="lead">一句話：同一目標寫多個 skill 變體 → 讓它們跑同一批任務 → 用客觀+行為訊號評分 → 從勝出變體萃取做法 → 精煉成新版；前後效果由各場景的 E2E 測試報告呈現。</p>
   <div class="card">
     <p><b>需求：</b>從大量員工使用 Codex Skill 的紀錄中，透過 Log 分析找出可共用的有效做法，整理、合併、精煉成標準化 Skill。
     目前無集團 Log／同事 Skill，故先做<b>個人版 MVP</b>，以 coding 為首個實驗場景（好判斷好壞），流程可擴展到任何場景。</p>
@@ -178,11 +177,11 @@ _TEMPLATE = r"""<!DOCTYPE html>
       <div class="box"><div class="n {{ 'ok' if report.accepted else 'no' }}">{{ '採用' if report.accepted else '未採用' }}</div><div class="l">發布閘</div></div>
       {% if report.winner %}<div class="box"><div class="n ok">{{ report.winner.variant }}</div><div class="l">勝出變體</div></div>{% endif %}
     </div>
-    <div class="callout"><b>預計產出：</b>① 可執行的 Skill 精煉流程　② 精煉前 / 精煉後對照表（見第 4 節）　③ 本說明 HTML（分「機制總覽」與「評分機制詳解」兩個分頁）。</div>
+    <div class="callout"><b>預計產出：</b>① 可執行的 Skill 精煉流程　② 各場景 E2E 測試報告（見第 4 節）　③ 本說明 HTML（分「機制總覽」與「評分機制詳解」兩個分頁）。</div>
     <div class="callout good"><b>場景已擴展：</b>coding 只是首個實驗場景（好判斷好壞）。同一套後段（摘要→分組→精煉→驗證→registry）
     現在已跑過多種 general 場景（新聞綜整、論文→PPT 大綱、嚴格 JSON schema、跨文獻交叉比對），
     以及<b>需要工具＋外部狀態的 agentic 任務</b>（退款/退貨/退款核准）——後者達標由<b>模擬環境最終狀態程式客觀驗證</b>，
-    不靠 LLM 自評。各場景的 E2E 報告見第 7 節；評分細節見「評分機制詳解」分頁。</div>
+    不靠 LLM 自評。各場景的 E2E 報告見第 4 節；評分細節見「評分機制詳解」分頁。</div>
   </div>
 </section>
 
@@ -292,75 +291,35 @@ description: ...
   </div>
 </section>
 
-<!-- ============ 4 對照表 ============ -->
+<!-- ============ 4 E2E 場景與報告 ============ -->
 <section id="s4">
-  <div class="sechead"><span class="secno">4</span><h2>精煉前 / 精煉後對照表</h2></div>
-  <p class="lead">左側是各變體實測分數（綜合分以長條視覺化），右側是精煉前→後的 skill 內容與 diff。</p>
+  <div class="sechead"><span class="secno">4</span><h2>E2E 測試場景矩陣與報告</h2></div>
+  <p class="lead">除了本頁的 coding 主線，同一套 pipeline 已跑過多種場景的端到端測試，每份都是獨立 HTML 報告（真 Gemini 實跑）。
+  任務越難、環境越不兜底，skill 差異越顯著。</p>
   <div class="card">
-    {% if report.verify %}
-    <div class="callout {{ 'good' if report.accepted else 'warn' }}">發布閘：score = <b>{{ report.verify.score }}</b> / 門檻 {{ report.verify.threshold }}
-      → {{ report.verify.decision }}{% if report.verify.checks %}（{% for k,v in report.verify.checks.items() %}{{ k }}={{ v }} {% endfor %}）{% endif %}</div>
-    {% endif %}
-    <p><b>精煉理由：</b>{{ report.rationale }}</p>
-
-    <h3>各變體逐 task 表現</h3>
     <table>
-      <tr><th>變體</th><th>task</th><th>類型</th><th>pass_rate</th><th>judge</th><th>達標(來源)</th>
-        <th>輪數</th><th>tool錯誤率</th><th>效率</th><th>綜合分</th><th>成功</th></tr>
-      {% for r in report.variant_scores %}
-      <tr class="{{ 'win' if report.winner and r.session_id == report.winner.session_id else '' }}">
-        <td><code>{{ r.variant }}</code></td><td>{{ r.task_id }}</td>
-        <td><span class="badge b-{{ r.task_type }}">{{ r.task_type }}</span></td>
-        <td>{{ r.pass_rate if r.pass_rate is not none else '—' }}</td>
-        <td>{{ r.judge_overall if r.judge_overall is not none else '—' }}</td>
-        <td>{% if r.completion is not none %}{{ r.completion }}{% if r.completion_source %} <span class="badge b-{{ r.completion_source }}">{{ r.completion_source }}</span>{% endif %}{% else %}—{% endif %}</td>
-        <td>{{ r.num_turns }}</td><td>{{ r.tool_error_rate }}</td><td>{{ r.efficiency_score }}</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:{{ ((r.score or 0)*100)|round|int }}%"></div></div><span class="bar-n">{{ r.score }}</span></div></td>
-        <td class="{{ 'ok' if r.success else 'no' }}">{{ '✓' if r.success else '✗' }}</td>
-      </tr>
-      {% endfor %}
+      <tr><th>報告</th><th>場景</th><th>judge</th><th>runner 型態</th><th>在驗證什麼</th></tr>
+      <tr><td><a href="e2e_general_test_report.html">e2e_general_test_report</a></td>
+        <td>新聞查詢與綜整</td><td><span class="badge b-general">grounded</span></td><td>單次生成</td>
+        <td>依來源材料綜整的涵蓋度/忠實度</td></tr>
+      <tr><td><a href="e2e_ppt_outline_report.html">e2e_ppt_outline_report</a></td>
+        <td>論文 → PPT 大綱</td><td><span class="badge b-general">ppt_outline</span></td><td>單次生成</td>
+        <td>大綱結構/顆粒度/忠實度</td></tr>
+      <tr><td><a href="e2e_strict_tasks_report.html">e2e_strict_tasks_report</a></td>
+        <td>嚴格 JSON schema + 跨文獻交叉比對</td><td><span class="badge b-rule">json_schema</span> / <span class="badge b-general">cross_doc</span></td><td>單次生成</td>
+        <td><b>程式硬 gate</b>（jsonschema）＋跨文引用/衝突</td></tr>
+      <tr><td><a href="e2e_agentic_workflow_report.html">e2e_agentic_workflow_report</a></td>
+        <td>退款審核 / 退貨庫存（多步驟）</td><td><span class="badge b-rule">env_state</span></td><td><b>agentic 工具迴圈</b></td>
+        <td>模擬環境最終狀態（env <b>有</b>防呆）</td></tr>
+      <tr class="win"><td><a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report</a></td>
+        <td>退款核准（深難、四軸）</td><td><span class="badge b-rule">env_state</span></td><td><b>agentic（env 無防呆）</b></td>
+        <td><b>通用 vs 專用 skill 對照</b>（見「評分機制詳解」分頁）</td></tr>
     </table>
-    <p class="mut">「輪數/tool錯誤率/效率」為<b>通用</b>指標；「pass_rate/judge」為 <b>coding 專用</b>；
-    「達標(來源)」為 general 完成度＋判定來源（<span class="badge b-rule">rule</span>=零 LLM、<span class="badge b-llm">llm</span>=後備）。</p>
-
-    {% if report.variant_aggregate %}
-    <h3>各變體跨 task 平均（winner 依此選出）</h3>
-    <table>
-      <tr><th>變體</th><th>task 數</th><th>平均 pass_rate</th><th>平均輪數</th><th>平均效率</th><th>平均綜合分</th><th>全成功</th></tr>
-      {% for a in report.variant_aggregate %}
-      <tr class="{{ 'win' if report.winner and a.variant == report.winner.variant else '' }}">
-        <td><code>{{ a.variant }}</code></td><td>{{ a.num_tasks }}</td>
-        <td>{{ a.avg_pass_rate }}</td><td>{{ a.avg_num_turns }}</td><td>{{ a.avg_efficiency }}</td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar" style="width:{{ ((a.avg_score or 0)*100)|round|int }}%"></div></div><span class="bar-n">{{ a.avg_score }}</span></div></td>
-        <td class="{{ 'ok' if a.all_success else 'no' }}">{{ '✓' if a.all_success else '✗' }}</td></tr>
-      {% endfor %}
-    </table>
-    {% endif %}
-    {% if report.winner %}<p>勝出變體：<span class="chip ok">{{ report.winner.variant }}</span>（跨 {{ report.winner.num_tasks }} task 平均綜合分 {{ report.winner.avg_score }}）→ 送入 execution 萃取做法。</p>{% endif %}
+    <div class="callout warn"><b>誠實小結：</b>前四份（含 agentic_workflow）多次撞到<b>天花板</b>——強模型連籠統 baseline 都能做對，
+    skill 差異顯不出來。直到第五份 <b>agentic_hard（退款核准，移除環境防呆）</b>才<b>首次成功拉開弱 baseline</b>，
+    且證明「領域專用 skill」精煉有效、「通用 SOP」精煉反而退步（詳見「評分機制詳解」分頁）。這條軌跡本身就是重要結論：
+    <b>skill 精煉的價值在「任務夠難 × 達標能程式客觀驗證」時最明確</b>。</div>
   </div>
-
-  <div class="grid">
-    <div class="card">
-      <h3>Before（精煉前）</h3>
-      <p class="mut">{{ before.skill_id }} · <b>{{ before.name }}</b></p>
-      <p class="mut">{{ before.description }}</p>
-      <pre>{{ before.content }}</pre>
-    </div>
-    <div class="card">
-      <h3>After（精煉後{% if after %} · v{{ after.version }}{% endif %}）</h3>
-      {% if after %}
-      <p class="mut">{{ after.skill_id }} · <b>{{ after.name }}</b></p>
-      <p class="mut">{{ after.description }}</p>
-      <pre>{{ after.content }}</pre>
-      {% else %}<p class="mut">（未產生採用的精煉版——見 skip / reject 理由）</p>{% endif %}
-    </div>
-  </div>
-  {% if content_diff %}
-  <div class="card">
-    <h3>內容 diff（before → after）</h3>
-    <pre class="diff">{% for d in content_diff %}<span class="{{ d.kind }}">{{ d.text }}</span>{% endfor %}</pre>
-  </div>
-  {% endif %}
 </section>
 
 <!-- ============ 5 版本 A vs B ============ -->
@@ -369,7 +328,7 @@ description: ...
   <p class="lead">本專案借用 SkillClaw 的「精煉引擎」後段骨架，但在前端（實驗設計）與評分（去 LLM）兩頭做了它沒有的延伸。本節先講設計差異，再附版本 A／B 實跑對照。</p>
 
   <div class="card">
-    <h3>6.1 沿用的核心（後段精煉流程幾乎一致）</h3>
+    <h3>5.1 沿用的核心（後段精煉流程幾乎一致）</h3>
     <figure class="fig">
       <svg viewBox="0 0 900 96" width="100%" role="img" aria-label="共用的後段流程">
         <defs><marker id="a6" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#6fdd8b"/></marker></defs>
@@ -390,7 +349,7 @@ description: ...
   </div>
 
   <div class="card">
-    <h3>6.2 關鍵差異（本專案的延伸）</h3>
+    <h3>5.2 關鍵差異（本專案的延伸）</h3>
     <table>
       <tr><th>面向</th><th>SkillClaw 原生</th><th>本專案（版本 A）</th></tr>
       <tr>
@@ -429,7 +388,7 @@ description: ...
     在前端（實驗設計）與評分（去 LLM）兩頭延伸。</div>
   </div>
 
-  <h3>6.3 版本 A（自建）vs 版本 B（直接跑 SkillClaw）· 實作定位</h3>
+  <h3>5.3 版本 A（自建）vs 版本 B（直接跑 SkillClaw）· 實作定位</h3>
   <div class="card">
     <table>
       <tr><th></th><th>版本 A — 精簡自建</th><th>版本 B — 直接跑 SkillClaw</th></tr>
@@ -495,37 +454,6 @@ description: ...
   </div>
 </section>
 
-<!-- ============ 7 E2E 場景與報告 ============ -->
-<section id="s7">
-  <div class="sechead"><span class="secno">7</span><h2>E2E 測試場景矩陣與報告</h2></div>
-  <p class="lead">除了本頁的 coding 主線，同一套 pipeline 已跑過多種場景的端到端測試，每份都是獨立 HTML 報告（真 Gemini 實跑）。
-  任務越難、環境越不兜底，skill 差異越顯著。</p>
-  <div class="card">
-    <table>
-      <tr><th>報告</th><th>場景</th><th>judge</th><th>runner 型態</th><th>在驗證什麼</th></tr>
-      <tr><td><a href="e2e_general_test_report.html">e2e_general_test_report</a></td>
-        <td>新聞查詢與綜整</td><td><span class="badge b-general">grounded</span></td><td>單次生成</td>
-        <td>依來源材料綜整的涵蓋度/忠實度</td></tr>
-      <tr><td><a href="e2e_ppt_outline_report.html">e2e_ppt_outline_report</a></td>
-        <td>論文 → PPT 大綱</td><td><span class="badge b-general">ppt_outline</span></td><td>單次生成</td>
-        <td>大綱結構/顆粒度/忠實度</td></tr>
-      <tr><td><a href="e2e_strict_tasks_report.html">e2e_strict_tasks_report</a></td>
-        <td>嚴格 JSON schema + 跨文獻交叉比對</td><td><span class="badge b-rule">json_schema</span> / <span class="badge b-general">cross_doc</span></td><td>單次生成</td>
-        <td><b>程式硬 gate</b>（jsonschema）＋跨文引用/衝突</td></tr>
-      <tr><td><a href="e2e_agentic_workflow_report.html">e2e_agentic_workflow_report</a></td>
-        <td>退款審核 / 退貨庫存（多步驟）</td><td><span class="badge b-rule">env_state</span></td><td><b>agentic 工具迴圈</b></td>
-        <td>模擬環境最終狀態（env <b>有</b>防呆）</td></tr>
-      <tr class="win"><td><a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report</a></td>
-        <td>退款核准（深難、四軸）</td><td><span class="badge b-rule">env_state</span></td><td><b>agentic（env 無防呆）</b></td>
-        <td><b>通用 vs 專用 skill 對照</b>（見「評分機制詳解」分頁）</td></tr>
-    </table>
-    <div class="callout warn"><b>誠實小結：</b>前四份（含 agentic_workflow）多次撞到<b>天花板</b>——強模型連籠統 baseline 都能做對，
-    skill 差異顯不出來。直到第五份 <b>agentic_hard（退款核准，移除環境防呆）</b>才<b>首次成功拉開弱 baseline</b>，
-    且證明「領域專用 skill」精煉有效、「通用 SOP」精煉反而退步（詳見「評分機制詳解」分頁）。這條軌跡本身就是重要結論：
-    <b>skill 精煉的價值在「任務夠難 × 達標能程式客觀驗證」時最明確</b>。</div>
-  </div>
-</section>
-
 </div><!-- /tab-overview -->
 
 <!-- ============ 分頁 B：評分機制詳解 ============ -->
@@ -538,16 +466,14 @@ description: ...
   <b>盡量用客觀證據評分、把 LLM 當最後手段</b>。閱讀順序：先看設計原則與架構，再逐層看各評分元件，最後看 3 個實算範例。</p>
 
   <div class="subnav">
+    <a href="#sc-0">0 導讀</a>
     <a href="#sc-1">1 設計原則·客觀性光譜</a>
     <a href="#sc-2">2 兩層架構總覽</a>
-    <a href="#sc-3">3 judge 家族</a>
-    <a href="#sc-4">4 通用效率指標</a>
-    <a href="#sc-5">5 general detector</a>
-    <a href="#sc-6">6 coding judge</a>
-    <a href="#sc-7">7 agentic env_state</a>
-    <a href="#sc-8">8 合成公式</a>
-    <a href="#sc-9">9 實算範例（3 個）</a>
-    <a href="#sc-10">10 容易混淆的點</a>
+    <a href="#sc-3">3 通用效率指標</a>
+    <a href="#sc-4">4 judge 家族（general/coding/agentic）</a>
+    <a href="#sc-5">5 合成公式</a>
+    <a href="#sc-6">6 實算範例（3 個）</a>
+    <a href="#sc-7">7 容易混淆的點</a>
   </div>
 
   <div class="callout warn"><b>本次實跑 Gemini 身兼兩角，請勿混淆：</b>
@@ -559,6 +485,8 @@ description: ...
   <span class="mut">副作用：Gemini 能力足以無視 skill 差異、把這種簡單 coding 任務全部修對（三變體 pass_rate 都 1.0），
   因此 coding 難顯出 skill 高下——差異改由 general 任務與效率分拉開。若只想單純測「LLM as a judge」，
   應改用 <b>mock runner（固定不同 pass_rate 模擬好壞產出）＋ 真 Gemini judge</b>。</span></div>
+
+  <div class="callout" id="sc-0"><b>導讀 · 怎麼讀這一頁：</b>建議依序閱讀——<b>① 設計原則與客觀性光譜</b>（為何盡量去 LLM）→ <b>② 兩層評分架構</b>（一個 session 怎麼變成分數）→ <b>③ 通用效率指標</b>（任何場景都算的效率分）→ <b>④ judge 家族</b>（各場景怎麼判「達標」：general／coding／agentic）→ <b>⑤ 合成公式</b>（效率＋達標怎麼併成綜合分）→ <b>⑥ 實算範例</b>（coding／general／agentic 三個真實計算）→ <b>⑦ 容易混淆的點</b>。前面是機制、最後用範例把機制串起來。</div>
 
   <div class="card" id="sc-1">
     <h3>1 設計原則：盡量去 LLM，能程式驗證就程式驗證</h3>
@@ -577,7 +505,7 @@ description: ...
     <h3>2 兩層評分架構總覽（決策樹）</h3>
     <p class="mut">每個 session 先算<b>通用效率</b>（任何場景都算），再依 <code>resolve_task_type</code> 與 task 指定的 <b>judge</b> 分流評分，
     最後合成綜合分、跨 task 平均選 winner。下圖畫的是最早的 coding／general 兩分支；實際上「general」那條已擴展成
-    一整個<b>可插拔的 judge 家族</b>（見下方第 3 區），每種 judge 有自己的 check 欄位與達標方式。</p>
+    一整個<b>可插拔的 judge 家族</b>（見下方第 4 區），每種 judge 有自己的 check 欄位與達標方式。</p>
     <figure class="fig">
       <svg viewBox="0 0 980 340" width="100%" role="img" aria-label="評分分流決策樹">
         <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
@@ -614,34 +542,7 @@ description: ...
   </div>
 
   <div class="card" id="sc-3">
-    <h3>3 評測 judge 家族（場景無關的達標判定）</h3>
-    <p class="mut">達標（completion）不是只有一種算法。<code>task.json</code> 的 <code>judge</code> 欄位決定該任務用哪個 judge，
-    對應 <code>refiner/e2e_general.py::_CHECK_KEYS</code>。從「LLM 對照來源材料」到「程式硬驗證（零 LLM）」都有——
-    任務越能程式驗證，達標判定就越客觀。</p>
-    <table>
-      <tr><th>judge</th><th>適用場景</th><th>check 欄位</th><th>達標方式（硬 / 軟）</th></tr>
-      <tr><td><span class="badge b-general">grounded</span></td><td>依來源材料綜整（新聞彙整）</td>
-        <td><code>coverage / faithfulness / conflict_handling / format</code></td><td>LLM 對照來源材料評分</td></tr>
-      <tr><td><span class="badge b-general">ppt_outline</span></td><td>論文 → PPT 大綱</td>
-        <td><code>coverage / structure / granularity / faithfulness</code></td><td>LLM（重結構/顆粒度）</td></tr>
-      <tr><td><span class="badge b-general">cross_doc</span></td><td>跨多份長文獻交叉比對</td>
-        <td><code>coverage / cross_reference / conflict_handling / faithfulness</code></td><td>LLM（重跨文引用/衝突）</td></tr>
-      <tr><td><span class="badge b-rule">json_schema</span></td><td>嚴格結構化輸出</td>
-        <td><code>schema_valid / required_coverage / content_faithfulness</code></td>
-        <td><b>jsonschema 程式硬 gate（0.7）</b> ＋ LLM 內容忠實度（0.3）</td></tr>
-      <tr><td><span class="badge b-rule">env_state</span></td><td>多步驟 agentic 工具流程</td>
-        <td><code>state_correct / order_correct / no_illegal_writes</code></td>
-        <td><b>模擬環境最終狀態程式驗證（零 LLM）</b></td></tr>
-    </table>
-    <ul>
-      <li><b>coding 是特例</b>：可視為「pytest judge」——有客觀 ground truth（測試通過率），見下方第 6 區。</li>
-      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge；回測對每個 (skill×task) 跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 LLM variance。</li>
-      <li><b>硬 gate 為王</b>：<code>json_schema</code>／<code>env_state</code> 的達標主要由程式決定（像 coding 的 pytest），最能拉開弱 baseline；純 LLM judge 在強模型 × 偏易任務時容易全員高分（天花板）。</li>
-    </ul>
-  </div>
-
-  <div class="card" id="sc-4">
-    <h3>4 通用效率指標（不依賴 LLM、任何場景都能算）</h3>
+    <h3>3 通用效率指標（不依賴 LLM、任何場景都能算）</h3>
     <p class="mut">對應 <code>refiner/generic_metrics.py</code>，全部從 session 既有欄位取得。「越少越好」→ 在 cohort 內反向正規化。</p>
     <table>
       <tr><th>指標</th><th>來源</th><th>方向</th><th>權重</th></tr>
@@ -675,8 +576,36 @@ efficiency = Σ(norm_i × 權重_i) / Σ(有值項的權重)</pre>
     若 cohort 三個變體輪數都一樣（如都 5）→ max=min → 該項一律給 1.0（無鑑別度、不懲罰）。</p>
   </div>
 
-  <div class="card" id="sc-5">
-    <h3>5 general 達標判定：規則式 detector（使用者行為訊號，零 LLM）＋ LLM 後備</h3>
+  <div class="card" id="sc-4">
+    <h3>4 評測 judge 家族（各場景怎麼判「達標」）</h3>
+    <p class="mut">這一區把「達標判定」的所有分支收在一起：先看家族總表，再逐一看 general／coding／agentic 三種怎麼判達標。
+    達標（completion）不是只有一種算法。<code>task.json</code> 的 <code>judge</code> 欄位決定該任務用哪個 judge，
+    對應 <code>refiner/e2e_general.py::_CHECK_KEYS</code>。從「LLM 對照來源材料」到「程式硬驗證（零 LLM）」都有——
+    任務越能程式驗證，達標判定就越客觀。</p>
+    <table>
+      <tr><th>judge</th><th>適用場景</th><th>check 欄位</th><th>達標方式（硬 / 軟）</th></tr>
+      <tr><td><span class="badge b-general">grounded</span></td><td>依來源材料綜整（新聞彙整）</td>
+        <td><code>coverage / faithfulness / conflict_handling / format</code></td><td>LLM 對照來源材料評分</td></tr>
+      <tr><td><span class="badge b-general">ppt_outline</span></td><td>論文 → PPT 大綱</td>
+        <td><code>coverage / structure / granularity / faithfulness</code></td><td>LLM（重結構/顆粒度）</td></tr>
+      <tr><td><span class="badge b-general">cross_doc</span></td><td>跨多份長文獻交叉比對</td>
+        <td><code>coverage / cross_reference / conflict_handling / faithfulness</code></td><td>LLM（重跨文引用/衝突）</td></tr>
+      <tr><td><span class="badge b-rule">json_schema</span></td><td>嚴格結構化輸出</td>
+        <td><code>schema_valid / required_coverage / content_faithfulness</code></td>
+        <td><b>jsonschema 程式硬 gate（0.7）</b> ＋ LLM 內容忠實度（0.3）</td></tr>
+      <tr><td><span class="badge b-rule">env_state</span></td><td>多步驟 agentic 工具流程</td>
+        <td><code>state_correct / order_correct / no_illegal_writes</code></td>
+        <td><b>模擬環境最終狀態程式驗證（零 LLM）</b></td></tr>
+    </table>
+    <ul>
+      <li><b>coding 是特例</b>：可視為「pytest judge」——有客觀 ground truth（測試通過率），見下方 4.2。</li>
+      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge；回測對每個 (skill×task) 跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 LLM variance。</li>
+      <li><b>硬 gate 為王</b>：<code>json_schema</code>／<code>env_state</code> 的達標主要由程式決定（像 coding 的 pytest），最能拉開弱 baseline；純 LLM judge 在強模型 × 偏易任務時容易全員高分（天花板）。</li>
+    </ul>
+  </div>
+
+  <div class="card" id="sc-4-1">
+    <h3>4.1 general 達標：規則式 detector（使用者行為訊號，零 LLM）＋ LLM 後備</h3>
     <p class="mut">對應 <code>refiner/completion_detector.py</code>。思路來自 IR／推薦系統的 implicit feedback——不問「滿意嗎」，
     看使用者<b>接下來的回覆</b>。純關鍵詞／正則／<code>difflib</code>，不呼叫 LLM。</p>
     <div class="grid">
@@ -722,11 +651,11 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
       <tr><td>單輪、無使用者後續回覆</td><td>（無訊號）</td><td>0 / 0</td><td>0.5</td><td class="mid">0.0 &lt; 0.5 → 退回 LLM</td><td>交給 judge</td></tr>
     </table>
     <div class="callout warn"><b>限制</b>：行為訊號在<b>多輪真實對話</b>最有效（Phase 2）。Phase 1 headless 單輪、無後續回覆 →
-    confidence=0 → 自動退回 LLM judge（末列）。對照表 general 列標有 <code>completion_source</code>（rule／llm）。</div>
+    confidence=0 → 自動退回 LLM judge（末列）。general 任務的評分會標記 <code>completion_source</code>（rule／llm）以示來源。</div>
   </div>
 
-  <div class="card" id="sc-6">
-    <h3>6 coding judge：pytest 硬指標 + 四維 LLM judge 軟指標</h3>
+  <div class="card" id="sc-4-2">
+    <h3>4.2 coding judge：pytest 硬指標 + 四維 LLM judge 軟指標</h3>
     <p class="mut" style="margin-top:0">judge 家族中「有客觀 ground truth」的一員——測試通過率是硬證據。</p>
 
     <h4 style="margin:6px 0 6px;color:#cdd6e6">硬指標（客觀 ground truth）— <code>run_pytest</code></h4>
@@ -759,8 +688,8 @@ confidence = tanh(pos + neg)           # 訊號越多越有信心；門檻 0.5</
     真實 LLM 模式下四維由模型實際評分、會分化。解析失敗或任一維非數字 → 回 None（該 session 只用硬指標）。</p>
   </div>
 
-  <div class="card" id="sc-7">
-    <h3>7 agentic env_state judge：工具迴圈 + 最終狀態程式驗證</h3>
+  <div class="card" id="sc-4-3">
+    <h3>4.3 agentic env_state judge：工具迴圈 + 最終狀態程式驗證</h3>
     <p class="mut">最難、也最客觀的一類任務：不是單次生成，而是讓 Gemini 用<b>真正的 function-calling</b>
     （<code>refiner/tool_agent.py::run_tool_agent</code>）對一個 <b>in-memory 模擬環境</b>
     （<code>refiner/sim_env.py</code>）一步步操作，跑完後由 <code>env.verify()</code> 檢查最終狀態。<b>達標完全不經 LLM。</b></p>
@@ -796,26 +725,12 @@ completion = 0.7 × state_correct      # 該做的做了、金額/庫存/扣點�
     </table>
     <p class="mut"><b>四軸難度</b>（ops-approval）：① 多相依步驟（查政策→判資格→排序→受預算核銷→連動扣點→通知）；
     ② 政策衝突需推理（fraud &gt; FINAL 不可退 &gt; VIP 窗 &gt; 基本窗）；③ 長 horizon（每日預算上限，須累計、超過 defer）；④ 無防呆。</p>
+    <p class="mut">此情境的<b>實跑對照數字（通用 vs 專用 skill）</b>見下方第 6 區「實算範例 ③」。</p>
 
-    <h4 style="margin:14px 0 6px;color:#cdd6e6">🧪 實算範例 ③：agentic（有 tool call、成功拉開差距）——通用 SOP vs 領域專用 skill</h4>
-    <p class="mut">同一個深難退款核准任務，用兩套 skill 家族各跑一次完整精煉＋回測（真 Gemini、3 rollout、env_state 程式驗證）。
-    這是本專案<b>唯一一次把弱 baseline 真正拉開</b>的實驗，故列為代表範例之一：</p>
-    <table>
-      <tr><th>skill 家族</th><th>baseline mean</th><th>refined mean</th><th>Δ</th><th>結論</th></tr>
-      <tr><td><b>通用</b> <code>ops-workflow</code>（泛用 SOP：先讀後寫、逐條核對）</td>
-        <td>0.467</td><td>0.20</td><td class="no"><b>−0.267</b></td><td>精煉沒幫上、甚至退步</td></tr>
-      <tr class="win"><td><b>專用</b> <code>ops-approval</code>（領域規則寫進 skill）</td>
-        <td>0.348</td><td class="ok"><b>1.0</b></td><td class="ok"><b>+0.652</b></td><td>refined 全對（verify 0.95 accept）</td></tr>
-    </table>
-    <div class="callout good"><b>核心洞見：</b>兩套家族的<b>弱 baseline 都遠低於天花板</b>（state_correct=0、no_illegal_writes=0，錯誤真的落地）——
-    這是本專案<b>首次成功拉開弱 baseline</b>（前四輪皆天花板）。<b>移除環境防呆</b>是關鍵。更重要的是：
-    對規則明確的領域任務，光有「先讀後寫、逐條核對」的<b>通用紀律不夠</b>（通用家族精煉後甚至退步 −0.267）；
-    <b>必須把領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>，精煉才有效（專用家族 +0.652、達滿分）。
-    詳見 <a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report.html</a>。</div>
   </div>
 
-  <div class="card" id="sc-8">
-    <h3>8 合成綜合分公式（依任務類型）</h3>
+  <div class="card" id="sc-5">
+    <h3>5 合成綜合分公式（依任務類型）</h3>
     <p class="mut">前面各元件（效率、judge/detector 達標）算完後，依任務類型合成單一「綜合分」。三種任務三條公式，
     共同精神＝<b>先確認完成度、再讓效率加成，擺爛不會因為快而勝出</b>：</p>
     <pre># coding：pytest+judge 為主體，效率僅 ±5% 微調（向後相容）
@@ -825,13 +740,13 @@ score = base × (0.95 + 0.05 × efficiency)
 # general：完成度為主體，效率在「已完成」前提下加成 ≤40%
 score = completion × (0.6 + 0.4 × efficiency)
 
-# agentic env_state：completion 本身即程式驗證分數（見第 7 區），不再乘效率</pre>
+# agentic env_state：completion 本身即程式驗證分數（見 4.3），不再乘效率</pre>
     <p class="mut"><code>_success</code> 判定：coding 用 <code>all_pass</code>（測試全過）；general／env_state 用 <code>completion ≥ 0.75</code>。
     最後同一變體<b>跨 task 平均綜合分</b>選出 winner，送進 execution 精煉。</p>
   </div>
 
-  <div class="card" id="sc-9">
-    <h3>9 實算範例（精選 3 個：coding／general／agentic）</h3>
+  <div class="card" id="sc-6">
+    <h3>6 實算範例（精選 3 個：coding／general／agentic）</h3>
     <p class="mut">為聚焦，只保留最能說明的三個真實範例：① coding（效率微調如何在全滿分時破平手）、
     ② general（零 LLM 規則 detector＋擺爛防呆）、③ agentic（有 tool call 且成功拉開弱 baseline）。</p>
 
@@ -856,15 +771,27 @@ score = completion × (0.6 + 0.4 × efficiency)
       <tr><td>task_004 · v_c</td><td>0.0 <span class="badge b-rule">rule</span>（「不對、重寫」）</td><td>0.65</td><td>0.0×(0.6+0.26)</td><td class="no"><b>0.0</b></td><td class="no">✗</td></tr>
     </table>
     <p class="mut"><b>看點</b>：v_c 效率其實跟 v_b 一樣（0.65），但因使用者說「不對、重寫」→ completion=0 →
-    綜合分直接歸 0。這證明<b>「擺爛防呆」有效——不會因為做得快就勝出</b>。（若任務無後續回覆，detector 信心不足會退回 LLM judge，見第 5 區。）</p>
+    綜合分直接歸 0。這證明<b>「擺爛防呆」有效——不會因為做得快就勝出</b>。（若任務無後續回覆，detector 信心不足會退回 LLM judge，見 4.1。）</p>
 
-    <h4 style="margin:16px 0 6px;color:#cdd6e6">🧪 範例 ③ agentic · ops-approval（有 tool call、成功拉開）</h4>
-    <p class="mut">完整數字與洞見已在上方<b>第 7 區「實算範例 ③」</b>呈現：專用 skill baseline 0.348 → refined <b>1.0</b>（Δ+0.652）、
-    通用 SOP Δ−0.267。<b>唯一一次把弱 baseline 真正拉開</b>的實驗——關鍵是移除環境防呆＋把領域規則寫進 skill。</p>
+    <h4 style="margin:14px 0 6px;color:#cdd6e6">🧪 範例 ③ agentic · ops-approval（有 tool call、成功拉開弱 baseline）</h4>
+    <p class="mut">同一個深難退款核准任務，用兩套 skill 家族各跑一次完整精煉＋回測（真 Gemini、3 rollout、env_state 程式驗證）。
+    這是本專案<b>唯一一次把弱 baseline 真正拉開</b>的實驗，故列為代表範例之一：</p>
+    <table>
+      <tr><th>skill 家族</th><th>baseline mean</th><th>refined mean</th><th>Δ</th><th>結論</th></tr>
+      <tr><td><b>通用</b> <code>ops-workflow</code>（泛用 SOP：先讀後寫、逐條核對）</td>
+        <td>0.467</td><td>0.20</td><td class="no"><b>−0.267</b></td><td>精煉沒幫上、甚至退步</td></tr>
+      <tr class="win"><td><b>專用</b> <code>ops-approval</code>（領域規則寫進 skill）</td>
+        <td>0.348</td><td class="ok"><b>1.0</b></td><td class="ok"><b>+0.652</b></td><td>refined 全對（verify 0.95 accept）</td></tr>
+    </table>
+    <div class="callout good"><b>核心洞見：</b>兩套家族的<b>弱 baseline 都遠低於天花板</b>（state_correct=0、no_illegal_writes=0，錯誤真的落地）——
+    這是本專案<b>首次成功拉開弱 baseline</b>（前四輪皆天花板）。<b>移除環境防呆</b>是關鍵。更重要的是：
+    對規則明確的領域任務，光有「先讀後寫、逐條核對」的<b>通用紀律不夠</b>（通用家族精煉後甚至退步 −0.267）；
+    <b>必須把領域規則（政策優先序、每日預算累計、連動扣點）寫進 skill</b>，精煉才有效（專用家族 +0.652、達滿分）。
+    詳見 <a href="e2e_agentic_hard_report.html">e2e_agentic_hard_report.html</a>。</div>
   </div>
 
-  <div class="card" id="sc-10">
-    <h3>10 容易混淆的點</h3>
+  <div class="card" id="sc-7">
+    <h3>7 容易混淆的點</h3>
     <div class="callout"><b>三種 judge 來源，公式相同：</b>① 版本 A 真實 LLM（<code>JUDGE_SYSTEM</code>）
     ② 版本 A 離線 mock（base=0.8）③ 版本 B SkillClaw 原生 <code>session_judge</code>——同一組四維權重。</div>
     <div class="callout warn"><b>「評分閘」≠「發布閘」：</b>綜合分用來<b>比較變體選 winner</b>；
@@ -882,7 +809,7 @@ score = completion × (0.6 + 0.4 × efficiency)
 <footer class="wrap">
   Skill 精煉機制 · 版本 A（自建 pipeline）· 本頁由 <code>refiner/html_report.py</code> 自動產生（單一檔、內嵌 SVG/CSS、離線可開）。
   本次實跑：api 模式，Gemini <code>gemini-flash-latest</code> 同時當 runner（執行任務）與 judge（評分）。
-  本頁分「機制總覽」與「評分機制詳解」兩個分頁；評分細節與 3 個實算範例（coding／general／agentic）在後者，各 E2E 場景詳見第 7 節連結報告。
+  本頁分「機制總覽」與「評分機制詳解」兩個分頁；評分細節與 3 個實算範例（coding／general／agentic）在後者，各 E2E 場景詳見第 4 節連結報告。
   資料來源：<code>output/before_after.json</code> · <code>skillclaw_result</code> · <code>publish_result.json</code>。基礎參考：AMAP-ML/SkillClaw。
 </footer>
 <script>
