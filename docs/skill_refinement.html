@@ -244,28 +244,7 @@ description: ...
 
     <h3>Skill 上架驗證</h3>
     
-    <p class="mut">上架檢查：欄位完整（skill_id/name/description）、skill_id slug 格式、唯一性（同 id 不同 name → 衝突）。</p>
-    <table>
-      <tr><th>SKILL.md</th><th>結果</th><th>skill_id / 錯誤</th></tr>
-      
-      <tr><td><code>skills\coding-debug\baseline\SKILL.md</code></td>
-        <td class="ok">✓ 通過</td>
-        <td>coding-debug</td></tr>
-      
-      <tr><td><code>skills\coding-debug\v_a\SKILL.md</code></td>
-        <td class="ok">✓ 通過</td>
-        <td>coding-debug</td></tr>
-      
-      <tr><td><code>skills\coding-debug\v_b\SKILL.md</code></td>
-        <td class="ok">✓ 通過</td>
-        <td>coding-debug</td></tr>
-      
-      <tr><td><code>skills\coding-debug\v_c\SKILL.md</code></td>
-        <td class="ok">✓ 通過</td>
-        <td>coding-debug</td></tr>
-      
-    </table>
-    <p class="mut">通過 4 / 失敗 0。</p>
+    <p class="mut">（執行 <code>python -m refiner.pipeline publish</code> 後顯示上架結果。）</p>
     
 
     <h3>實際使用的 skill_id（actual_used_skill_ids）</h3>
@@ -393,63 +372,7 @@ description: ...
   </div>
 
   
-  <div class="card">
-    <h3>實跑對照（同一批 logs，各自精煉）</h3>
-    <p class="mut">版本 B LLM：mock（離線模擬——注入介面相容 Mock 驅動 SkillClaw 原生階段）
-    </p>
-    <table>
-      <tr><th>維度</th><th>版本 A</th><th>版本 B</th></tr>
-      <tr><td>精煉動作</td><td>improve_skill</td><td>improve_skill</td></tr>
-      <tr><td>是否採用</td>
-        <td class="ok">採用</td>
-        <td class="ok">採用</td></tr>
-      <tr><td>驗證閘分數</td><td>0.98</td><td>0.84</td></tr>
-    </table>
-    
-    <h3>版本 B — SkillClaw session_judge 對各變體評分</h3>
-    <table>
-      <tr><th>變體</th><th>pass_rate</th><th>judge overall</th><th>completion</th><th>quality</th><th>efficiency</th><th>tool</th></tr>
-      
-      <tr><td><code>v_a</code></td><td>1.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_b</code></td><td>1.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_c</code></td><td>1.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_a</code></td><td>1.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_b</code></td><td>1.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_c</code></td><td>1.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_a</code></td><td>0.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_b</code></td><td>0.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_c</code></td><td>0.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_a</code></td><td>0.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_b</code></td><td>0.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-      <tr><td><code>v_c</code></td><td>0.0</td><td><b>0.702</b></td>
-        <td>0.7</td><td>0.7</td><td>0.75</td><td>0.7</td></tr>
-      
-    </table>
-    <p class="mut">兩版對同一批變體的排序一致（v_a &gt; v_b &gt; v_c）→ 互相佐證。</p>
-    
-  </div>
+  <div class="callout warn">版本 B 尚未實跑。執行 <code>python third_party/adapt_to_skillclaw.py --refine --mock</code> 後重新產生本頁。</div>
   
 </section>
 
@@ -529,6 +452,11 @@ description: ...
     <p class="mut">每個 session 先算<b>通用效率</b>（任何場景都算），再依 <code>resolve_task_type</code> 與 task 指定的 <b>judge</b> 分流評分，
     最後合成綜合分、跨 task 平均選 winner。下圖畫的是最早的 coding／general 兩分支；實際上「general」那條已擴展成
     一整個<b>可插拔的 judge 家族</b>（見下方第 4 區），每種 judge 有自己的 check 欄位與達標方式。</p>
+    <div class="callout good"><b>選 winner 與回測用同一把尺：</b>對 <b>program-verified</b> 的 judge（<code>env_state</code>／<code>json_schema</code>），
+    變體評分階段（選 winner）與回測<b>都跑同一套程式驗證</b>——env_state 真的跑 function-calling 工具迴圈 + <code>env.verify()</code>、
+    json_schema 真的跑 jsonschema gate，completion 由程式決定、<b>不乘通用效率</b>（見下方第 4 區與第 5 區）。
+    早期版本曾讓變體評分只用「文字產出＋規則 detector」代理、真正的程式驗證只在回測，兩階段標準不一致；現已統一。
+    LLM-judged 的 judge（grounded／ppt_outline／cross_doc）與 coding 仍走 detector/效率合成。</div>
     <figure class="fig">
       <svg viewBox="0 0 980 340" width="100%" role="img" aria-label="評分分流決策樹">
         <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
@@ -622,8 +550,9 @@ efficiency = Σ(norm_i × 權重_i) / Σ(有值項的權重)</pre>
     </table>
     <ul>
       <li><b>coding 是特例</b>：可視為「pytest judge」——有客觀 ground truth（測試通過率），見下方 4.2。</li>
-      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge；回測對每個 (skill×task) 跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 LLM variance。</li>
+      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge（<code>task.json</code> 的 <code>judge</code> 決定）；變體評分與回測對每個 (skill×task) 都跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 variance。</li>
       <li><b>硬 gate 為王</b>：<code>json_schema</code>／<code>env_state</code> 的達標主要由程式決定（像 coding 的 pytest），最能拉開弱 baseline；純 LLM judge 在強模型 × 偏易任務時容易全員高分（天花板）。</li>
+      <li><b>同一把尺</b>：這兩個 program-verified judge 在<b>選 winner 與回測都跑同一套程式驗證</b>、達標 <code>completion_source=program</code> 且不乘效率，避免「很會講但實際操作會踩雷」的變體在選 winner 勝出、回測卻被打回。</li>
     </ul>
   </div>
 

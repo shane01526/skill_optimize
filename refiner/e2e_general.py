@@ -25,7 +25,7 @@ from . import aggregation, evaluator, execution, summarizer, verifier
 from .llm import LLMClient
 from .normalizer import normalize_experiment_record
 from .runner_codex import run_general_variant_on_task, _read_task_prompt, _read_sources, _compose_general_instruction, _load_variant
-from .skillmd import build_skill_md, parse_skill_md
+from .skillmd import build_skill_md, compute_skill_id, parse_skill_md
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(HERE)
@@ -349,6 +349,53 @@ def backtest(llm: LLMClient, baseline: dict[str, Any], refined: dict[str, Any], 
     return rows
 
 
+# 用「程式驗證」判達標的 judge（選 winner 與回測共用同一把尺，不經 LLM detector、不乘通用效率）
+PROGRAM_JUDGES = {"env_state", "json_schema"}
+
+
+def _variant_session_program(llm: LLMClient, variant: dict[str, Any], variant_label: str,
+                             task_dir: str, task_id: str, *, judge: str, mode: str,
+                             rollout_idx: int) -> dict[str, Any]:
+    """program-verified 變體評分：重用回測那條 `_run_skill_on_task`（工具迴圈 / jsonschema gate），
+    completion 直接由程式驗證決定（不乘效率），組成與其他 session 相容的 dict 供聚合/evolve/報告。
+    """
+    r = _run_skill_on_task(llm, variant, task_dir, task_id, variant_label, judge=judge, mode=mode)
+    completion = r.get("completion")
+    skill_id = variant.get("skill_id") or compute_skill_id(variant.get("name", ""))
+    task_prompt = _read_task_prompt(task_dir)
+    checks = r.get("checks") or {}
+    output = r.get("output", "")
+    # 供 evolve evidence 讀（用工具軌跡/最終狀態或 JSON 產出當 trajectory/summary）
+    summary = f"[{judge} 程式驗證] completion={completion}; " + (r.get("rationale") or "")
+    return {
+        "session_id": f"{task_id}::{variant_label}#r{rollout_idx}",
+        "skill_id": skill_id,
+        "skill_name": variant.get("name", ""),
+        "variant_label": variant_label,
+        "task_id": task_id,
+        "task_type": "general",
+        "rollout_idx": rollout_idx,
+        "_score": completion,
+        "_success": bool(completion is not None and completion >= 0.75),
+        "_metrics": {
+            "completion": completion,
+            "completion_source": "program",
+            "task_type": "general",
+            "checks": checks,
+        },
+        "_summary": summary,
+        "_trajectory": output,
+        "agent_output": output,
+        "task_prompt": task_prompt,
+        "turns": [{"prompt_text": task_prompt, "response_text": output, "tool_calls": [], "tool_results": []}],
+        # 供報告顯示 env_state/json_schema 的細節
+        "_program_checks": checks,
+        "_program_violations": r.get("violations"),
+        "_program_schema_errors": r.get("schema_errors"),
+        "_program_rationale": r.get("rationale", ""),
+    }
+
+
 # ------------------------------------------------------------------ #
 #  主流程                                                              #
 # ------------------------------------------------------------------ #
@@ -368,20 +415,31 @@ def run_e2e(
     variants = [v for v in discover_variants(goal_dir) if os.path.basename(os.path.dirname(v)) != "baseline"]
     tasks = discover_tasks(tasks_dir)
 
-    # 1. 每個 (變體×task) 真跑 Gemini 產出 × ROLLOUTS 次
-    records: list[dict[str, Any]] = []
+    # 1. 每個 (變體×task) 真跑 × ROLLOUTS 次；依 per-task judge 分流：
+    #    - program-verified（env_state / json_schema）：走 _run_skill_on_task 程式驗證（與回測同一把尺）
+    #    - LLM-judged（grounded / ppt_outline / cross_doc）：走既有文字產出 + detector/效率路徑
+    records: list[dict[str, Any]] = []          # LLM-judged 路徑用
+    program_sessions: list[dict[str, Any]] = []  # program-verified 路徑用（已算好分數）
     for vpath in variants:
+        variant = _load_variant(vpath)
+        variant_label = os.path.basename(os.path.dirname(vpath))
         for task_dir in tasks:
             task_id = os.path.basename(task_dir)
+            tj = _task_judge(task_dir, judge)
             for i in range(ROLLOUTS):
-                rec = run_general_variant_on_task(
-                    skill_md_path=vpath, task_dir=task_dir, task_id=task_id, mode=mode, llm=llm
-                )
-                rec["rollout_idx"] = i
-                records.append(rec)
-            print(f"  ran {os.path.basename(os.path.dirname(vpath))} × {task_id} ×{ROLLOUTS}")
+                if tj in PROGRAM_JUDGES:
+                    program_sessions.append(_variant_session_program(
+                        llm, variant, variant_label, task_dir, task_id, judge=tj, mode=mode, rollout_idx=i
+                    ))
+                else:
+                    rec = run_general_variant_on_task(
+                        skill_md_path=vpath, task_dir=task_dir, task_id=task_id, mode=mode, llm=llm
+                    )
+                    rec["rollout_idx"] = i
+                    records.append(rec)
+            print(f"  ran {variant_label} × {task_id} ×{ROLLOUTS}（judge={tj}）")
 
-    # 2. normalize → summarize → evaluate（judge + detector + 效率）；每個 rollout 各自評分
+    # 2. LLM-judged：normalize → summarize → evaluate（judge + detector + 效率）
     sessions = [normalize_experiment_record(r) for r in records]
     for s, r in zip(sessions, records):
         s["agent_output"] = r.get("agent_output")
@@ -390,8 +448,11 @@ def run_e2e(
         s["rollout_idx"] = r.get("rollout_idx")
         # session_id 加 rollout 後綴，避免 cohort/dedupe 誤判為同一筆
         s["session_id"] = f"{s['session_id']}#r{r.get('rollout_idx')}"
-    summarizer.summarize_sessions(llm, sessions)
-    evaluator.evaluate_sessions(llm, sessions, use_judge=True)
+    if sessions:
+        summarizer.summarize_sessions(llm, sessions)
+        evaluator.evaluate_sessions(llm, sessions, use_judge=True)
+    # program-verified session 已含 _score/_metrics，直接併入（不進 evaluate，避免被 detector/效率覆寫）
+    sessions.extend(program_sessions)
 
     # 3. aggregate + evolve + verify
     groups = aggregation.aggregate_by_skill(sessions)

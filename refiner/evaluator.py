@@ -202,6 +202,11 @@ def evaluate_session(
     就地寫入 session["_score"] / ["_success"] / ["_metrics"] / ["_task_type"]。
     單獨呼叫時 cohort=自己一人（效率=中性 1.0）；批次請用 evaluate_sessions。
     """
+    # program-verified session（env_state / json_schema 變體評分）已由程式驗證算好分數，
+    # 不可再套 general detector/效率覆寫——直接跳過。
+    if (session.get("_metrics") or {}).get("completion_source") == "program":
+        return session
+
     if not _cohort_done and "_metrics" not in session:
         generic_metrics.attach_cohort_efficiency([session])
 

@@ -51,6 +51,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
   .badge{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11.5px;font-weight:600}
   .b-rule{background:#0f2a1a;color:#6fdd8b;border:1px solid #235537}
   .b-llm{background:#2c2410;color:#e3c169;border:1px solid #574718}
+  .b-prog{background:#10233f;color:#8ab4ff;border:1px solid #24405f}
   .ok{color:var(--good)} .no{color:var(--bad)} .mid{color:var(--warn)}
   .callout{border-left:3px solid var(--accent);background:#141a26;padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
   .callout.warn{border-color:var(--warn);background:#241f14}
@@ -136,7 +137,9 @@ _TEMPLATE = r"""<!DOCTYPE html>
       {% endfor %}
     </table>
     <p class="mut">達標來源 <span class="badge b-rule">rule</span>＝規則式 detector（零 LLM，靠使用者後續回饋訊號）；
-    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge。成功率＝{{ report.rollouts }} 次中 completion≥0.75 的比例。精煉理由：{{ report.rationale }}</p>
+    <span class="badge b-llm">llm</span>＝detector 信心不足退回 Gemini judge；
+    <span class="badge b-prog">program</span>＝程式驗證（env_state 工具迴圈最終狀態／json_schema gate，選 winner 與回測同一把尺、不乘效率）。
+    成功率＝{{ report.rollouts }} 次中 completion≥0.75 的比例。精煉理由：{{ report.rationale }}</p>
   </div>
 </section>
 

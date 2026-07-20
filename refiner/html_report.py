@@ -506,6 +506,11 @@ description: ...
     <p class="mut">每個 session 先算<b>通用效率</b>（任何場景都算），再依 <code>resolve_task_type</code> 與 task 指定的 <b>judge</b> 分流評分，
     最後合成綜合分、跨 task 平均選 winner。下圖畫的是最早的 coding／general 兩分支；實際上「general」那條已擴展成
     一整個<b>可插拔的 judge 家族</b>（見下方第 4 區），每種 judge 有自己的 check 欄位與達標方式。</p>
+    <div class="callout good"><b>選 winner 與回測用同一把尺：</b>對 <b>program-verified</b> 的 judge（<code>env_state</code>／<code>json_schema</code>），
+    變體評分階段（選 winner）與回測<b>都跑同一套程式驗證</b>——env_state 真的跑 function-calling 工具迴圈 + <code>env.verify()</code>、
+    json_schema 真的跑 jsonschema gate，completion 由程式決定、<b>不乘通用效率</b>（見下方第 4 區與第 5 區）。
+    早期版本曾讓變體評分只用「文字產出＋規則 detector」代理、真正的程式驗證只在回測，兩階段標準不一致；現已統一。
+    LLM-judged 的 judge（grounded／ppt_outline／cross_doc）與 coding 仍走 detector/效率合成。</div>
     <figure class="fig">
       <svg viewBox="0 0 980 340" width="100%" role="img" aria-label="評分分流決策樹">
         <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9dff"/></marker></defs>
@@ -599,8 +604,9 @@ efficiency = Σ(norm_i × 權重_i) / Σ(有值項的權重)</pre>
     </table>
     <ul>
       <li><b>coding 是特例</b>：可視為「pytest judge」——有客觀 ground truth（測試通過率），見下方 4.2。</li>
-      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge；回測對每個 (skill×task) 跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 LLM variance。</li>
+      <li><b>per-task 插拔</b>：同一批 pipeline 可混用不同 judge（<code>task.json</code> 的 <code>judge</code> 決定）；變體評分與回測對每個 (skill×task) 都跑 <code>ROLLOUTS=3</code> 次取 <b>mean±std</b>，降低單次 variance。</li>
       <li><b>硬 gate 為王</b>：<code>json_schema</code>／<code>env_state</code> 的達標主要由程式決定（像 coding 的 pytest），最能拉開弱 baseline；純 LLM judge 在強模型 × 偏易任務時容易全員高分（天花板）。</li>
+      <li><b>同一把尺</b>：這兩個 program-verified judge 在<b>選 winner 與回測都跑同一套程式驗證</b>、達標 <code>completion_source=program</code> 且不乘效率，避免「很會講但實際操作會踩雷」的變體在選 winner 勝出、回測卻被打回。</li>
     </ul>
   </div>
 
